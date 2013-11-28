@@ -1,0 +1,1279 @@
+<?php
+
+  module_load_include('inc', 'gb_maillist', 'constants');
+  module_load_include('inc', 'gb_maillist', 'email.template');
+  module_load_include('inc', 'gb_maillist', 'email.engine');
+  
+  define('_MAILING_LIST_TYPE_STANDARD', 0);
+  define('_MAILING_LIST_TYPE_BROADCAST', 1);
+  
+  define('_REPLY_TO_TYPE_DO_NOT_REPLY', 0);
+  define('_REPLY_TO_TYPE_USE_POSTERS_EMAIL', 1);
+  define('_REPLY_TO_TYPE_USER_DEFINED', 2);
+  define('_REPLY_TO_TYPE_MAILING_LIST', 3);
+  
+  // file field sources
+  // file type for form
+  
+  /**
+   * Class for building the descriptor array of each module's mailing lists
+   * for the main form
+   * 
+   * @api
+   */
+  class DescriptorArrayBuilder implements ArrayAccess {
+    private $data = array();
+    
+    /**
+     * This method adds a storage class to the array
+     * 
+     * @param string $class_id the class id to use
+     * @param string $title the title of the storage class
+     * @param string $description an optional description of the storage class
+     * 
+     * @throws Exception if the storage class already exists OR the class id
+     * contains illegal characters
+     * 
+     * @return string the class id
+     */
+    public function add_storage_class($class_id, $title, $description = NULL) {
+      if (strlen($class_id) > _VARCHAR_MAX_LENGTH) {
+        throw new Exception('$class_id length exceeds _VARCHAR_MAX_LENGTH');
+      }
+      if (strlen($title) > _VARCHAR_MAX_LENGTH) {
+        throw new Exception('$title length exceeds _VARCHAR_MAX_LENGTH');
+      }
+      if (strlen($description) > _VARCHAR_MAX_LENGTH) {
+        throw new Exception('$description length exceeds _VARCHAR_MAX_LENGTH');
+      }
+      
+      if (!$this->validate_id($class_id)) {
+        throw new Exception('$class_id contains illegal characters.');
+      }
+      if (isset($this->data[$class_id])) {
+        throw new Exception("Storage class {$class_id} already exists");
+      }
+      
+      $this->data[$class_id]['title'] = $title;
+      $this->data[$class_id]['description'] = $description;
+      
+      return $class_id;
+    }
+    
+    /**
+     * This method adds an item to a storage class
+     * 
+     * @param string $class_id the class id which the item is added to
+     * @param string $item_id the item id to use
+     * @param string $title the title of the item
+     * @param string $description an optional description of the item
+     * 
+     * @throws Exception if the storage class doesn't exist OR the item id
+     * contains illegal characters
+     * 
+     * @return void
+     */
+    public function add_item_to_class($class_id, $item_id, $title, 
+        $description = NULL) {
+      if (strlen($class_id) > _VARCHAR_MAX_LENGTH) {
+        throw new Exception('$class_id length exceeds _VARCHAR_MAX_LENGTH');
+      }
+      if (strlen($item_id) > _VARCHAR_MAX_LENGTH) {
+        throw new Exception('$item_id length exceeds _VARCHAR_MAX_LENGTH');
+      }
+      if (strlen($description) > _VARCHAR_MAX_LENGTH) {
+        throw new Exception('$description length exceeds _VARCHAR_MAX_LENGTH');
+      }
+      
+      if (!$this->validate_id($item_id)) {
+        throw new Exception('$item_id contains illegal characters.');
+      }
+      if (!isset($this->data[$class_id])) {
+        throw new Exception("Storage class {$class_id} does not exist.");
+      }
+
+      $this->data[$class_id]['items'][$item_id] = array();
+      $item = &$this->data[$class_id]['items'][$item_id];
+      
+      $item['title'] = $title;
+      $item['description'] = $description;
+    }
+    
+    /**
+     * This method builds and returns the array
+     * 
+     * @return array
+     */
+    public function build() {
+      return $this->data;
+    }
+    
+    /* BEGIN ArrayAccess */
+    public function offsetGet($offset) {
+      if (is_null($offset)) {
+        return $this->data;
+      } else {
+        return $this->data[$offset];
+      }
+    }
+    
+    public function offsetSet($offset, $value) {
+      if (is_null($offset)) {
+          $this->data[] = $value;
+      } else {
+          $this->data[$offset] = $value;
+      }
+    }
+  
+    public function offsetExists($offset) {
+      return isset($this->data[$offset]);
+    }
+    
+    public function offsetUnset($offset) {
+      unset($this->data[$offset]);
+    }
+    /* END ArrayAccess */
+    
+    // Make sure ID doesn't contain illegal characters
+    protected function validate_id($id) {
+      return preg_match('/^[a-z0-9_]+$/', $id);
+    }
+  }
+
+  /**
+   * Wrapper class for handling exceptions in a function (Closure).
+   * 
+   * @todo object state isn't multithreaded / concurrency safe.
+   *       is it even possible for the an object's method (or any function)
+   *       to be called from multiple places at the same time in PHP?
+   * @api
+   */
+  class SafeClosure {
+    private $_closure;
+    
+    private /* readonly */ $caught = FALSE;
+    private /* readonly */ $result = FALSE;
+    
+    /**
+     * @param Closure $closure the function to wrap
+     */
+    public function __construct(Closure $closure) {
+      $this->_closure = $closure;
+    }
+    
+    public function call() {
+      try {
+        $closure = $this->_closure;
+        
+        $this->result = $closure();
+        $this->caught = FALSE;
+      } catch (Exception $e) {
+        $this->caught = TRUE;
+        $this->result = FALSE;
+        
+        drupal_set_message('Caught exception: ' .  $e->getMessage(), 'error');
+      }
+      
+      return $this->result;
+    }
+    
+    public function __invoke() {
+      return $this->call();
+    }
+    
+    public function __get($property) {
+      if (property_exists($this, $property)) {
+        return $this->{$property};
+      }
+    }
+  }
+  
+  function _safe_closure(Closure $closure) {
+    $safe_closure = new SafeClosure($closure);
+    return $safe_closure(); // __invoke()
+  }
+  
+  /*
+  // BEGIN FAKE HOOKS
+  function fake_xx_members_mailing_list_descriptors_alter(&$data) {
+    // Insert lists manually
+    $juniors = array();
+    $seniors = array();
+    
+    $juniors['title'] = 'Juniors';
+    $juniors['description'] = 'Junior member mailing lists';
+    $juniors['items'] = array(
+      'id_candidates' => array(
+        'title' => t('Candidates'),
+        'description' => NULL,
+      ),
+      'id_volunteers' => array(
+        'title' => t('Volunteers'),
+        'description' => NULL,
+      ),
+    );
+    
+    $seniors['title'] = 'Seniors';
+    $seniors['description'] = NULL;
+    $seniors['items'] = array(
+      'item_id_members' => array('title' => t('Members')),
+      'item_id_directors' => array('title' => t('Directors')),
+      'item_id_admins' => array('title' => t('Administrators')),
+    );
+    
+    // insert our groups
+    $data['xx_members']['storage_class_juniors'] = $juniors;
+    $data['xx_members']['storage_class_seniors'] = $seniors;
+  }
+    
+  function fake_xx_contacts_mailing_list_descriptors_alter(&$data) {
+   // Use helper class
+   $builder = new DescriptorArrayBuilder();
+   
+   $class = $builder->add_storage_class('gid_contacts', 'Contacts');
+   $builder->add_item_to_class($class, 'iid_fans', 'Fans');
+   $builder->add_item_to_class($class, 'iid_friends', 'Friends');
+   $builder->add_item_to_class($class, 'iid_family', 'Family');
+   
+   $class = $builder->add_storage_class('gid_inactive', 'Inactive Members');
+   $builder->add_item_to_class($class, 'iid_former', 'Former Members');
+   $builder->add_item_to_class($class, 'iid_retired', 'Retired Members');
+   
+   // Insert the descriptors under our module
+   $data['xx_contacts'] = $builder->build(); 
+  }
+  // END FAKE HOOKS
+  */
+  
+  function _is_forum_topic($node) {
+    if ($node->type !== 'forum') {
+      return FALSE;
+    }
+    
+    // Is this coming from the forum post topic form that we've hooked?
+    if ($node->form_id !== 'forum_node_form') {
+      return FALSE;
+    }
+    
+    return TRUE;
+  }
+  
+  function _is_forum_comment($comment) {
+    if ($comment->node_type !== 'comment_node_forum') {
+      return FALSE;
+    }
+    
+    // Is this coming from the forum post comment form?
+    if ($comment->form_id !== 'comment_node_forum_form') {
+      return FALSE;
+    }
+    
+    return TRUE;
+  }
+  
+  function _get_forum_tid_from_topic_node($node) {
+    // Do we have an attached forum taxonomy?
+    if (!isset($node->taxonomy_forums)) {
+      return FALSE;
+    }
+    
+    return $node->taxonomy_forums[LANGUAGE_NONE][0]['tid'];
+  }
+  
+  /*
+   * Build an array of items for insertion into the database
+   */
+  function _each_item_record($values, $tid) {
+    $items = array();
+    
+    foreach ($values as $key => $value) {
+      // Check if key is has the storage class id prefix
+      if (strpos($key, 'scid:') !== 0) {
+        continue;
+      }
+      
+      foreach ($value as $item) {
+        if (gettype($item) !== 'string') {
+          continue;
+        }
+        
+        // Check if element has the item id prefix
+        if (strpos($item, 'iid:') !== 0) {
+          continue;
+        }
+        
+        // We have an item
+        // IID:MODULE:CLASS:ITEM
+        $pieces = explode(':', $item);
+        array_shift($pieces);
+        
+        /**
+         * @todo in PHP > 5.5
+         * yield array(
+         *   'module' => $pieces[0],
+         *   'class' => $pieces[1],
+         *   'item' => $pieces[2]
+         * );
+         */
+      
+        $module = $pieces[0];
+        $class = $pieces[1];
+        $item = $pieces[2];
+        
+        $items[] = array(
+          'tid' => $tid,
+          'module' => $module,
+          'class' => $class,
+          'item' => $item,
+        );
+      } // foreach ($value as $item)
+    } // foreach ($values as $key => $value)
+    
+    return $items;
+  }
+
+  // SQL HELPER FUNCTIONS
+  
+  function _delete_records_for_tid($tid) {
+    return _safe_closure(function () use ($tid) {
+      $result = db_delete('gb_maillist_metadata')
+        ->condition('tid', $tid)
+        ->execute();
+      // $result = n rows deleted, 0 is still success
+        
+      $result = db_delete('gb_maillist_items')
+        ->condition('tid', $tid)
+        ->execute();
+      // $result = n rows deleted, 0 is still success
+      
+      return TRUE;
+    });
+  }
+  
+  /**
+   * @todo InsertQuery::execute return value is undefined for multi-inserts.
+   *       How can we check for success?
+   */
+  function _build_and_insert_records_for_tid($tid, &$values) {
+    return _safe_closure(function () use ($tid, $values) {
+      // We are attaching a list
+      // build and write our query for gb_maillist_metadata
+      // db_merge will handle update & insert
+      $result = db_merge('gb_maillist_metadata')
+        ->key(array('tid' => $tid))
+        ->fields(array(
+          'list_type' => $values['list_type'],
+          'reply_to_type' => $values['reply_to_type'],
+          'reply_to_email' => $values['reply_to_email'],
+          'from_email' => $values['from_email'],
+        ))
+        ->execute();
+      // $result = MergeQuery::STATUS_UPDATE or MeryQuery::STATUS_INSERT
+      
+      // Delete the old items from the database
+      $result = db_delete('gb_maillist_items')
+        ->condition('tid', $tid)
+        ->execute();
+      // $result = n rows deleted, 0 is still success
+      
+      // Build the multi-insert query
+      $query = db_insert('gb_maillist_items')
+        ->fields(array('tid', 'module', 'class', 'item'));
+      
+      // Insert each record into the query
+      foreach (_each_item_record($values, $tid) as $record) {
+        $query->values($record);
+      }
+      
+      // Perform the query
+      $n = $query->execute();
+      // $n = ?
+      
+      return TRUE;
+    });
+  }
+  
+  function _fetch_metadata_for_tid($tid) {
+    return _safe_closure(function () use ($tid) {
+      // Do we have metadata attached to this forum?
+      $result = db_select('gb_maillist_metadata', 'meta')
+        ->fields('meta')
+        ->condition('tid', $tid, '=')
+        ->execute()
+        ->fetchAssoc();
+      
+      return $result;
+    });
+  }
+  
+  function _fetch_items_for_tid($tid) {
+    return _safe_closure(function () use ($tid) {
+      $query = db_select('gb_maillist_items', 'items')
+        ->fields('items')
+        ->condition('tid', $tid, '=')
+        ->execute();
+        
+      $result = array();
+      $row = $query->fetchAssoc();     // first
+      if ($row) {
+        do {
+          $result[] = $row;
+          
+          $row = $query->fetchAssoc(); // next
+        } while ($row);
+      }
+      
+      return empty($result) ? FALSE : $result;
+    });
+  }
+  
+  /*
+   * Fetch a list of outgoing email addresses from other modules
+   */
+  function _fetch_outgoing_email_addresses($items) {
+    $result = array();
+    
+    $lists = array();
+    // Aggregate the items by module and storage class id
+    foreach ($items as $item) {
+      $module = $item['module'];
+      $class_id = $item['class'];
+      $item_id = $item['item'];
+      
+      $lists[$module][$class_id][] = $item_id;
+    }
+    
+    foreach ($lists as $module => $classes) {
+      foreach ($classes as $class_id => $items)
+      // Get the emails for the item id
+      $addresses = call_user_func($module . 
+          '_provide_email_addresses_for_class_items', $class_id, $items);
+      if (!empty($addresses)) {
+        // Append the email array to the result
+        $result = array_merge($result, $addresses);
+      }
+    }
+    
+    // We have an array of emails
+    // give the modules a chance to alter it
+    drupal_alter('outgoing_email_addresses', $result);
+    
+    // Remove any duplicates we may have acquired
+    // from different lists
+    return array_unique($result);
+  }
+  
+  /* 
+   * Retrieve the mailing list descriptors from other modules
+   */
+  function _fetch_mailing_list_descriptors() {
+    $descriptors = array();
+    // We have no default or provided descriptors
+    // so let the other modules alter the descriptors
+    drupal_alter('mailing_list_descriptors', $descriptors);
+    
+    foreach (array_keys($descriptors) as $key) {
+      if (strlen($key) > DRUPAL_EXTENSION_NAME_MAX_LENGTH) {
+        throw new Exception('Module name length exceeds ' . 
+            'DRUPAL_EXTENSION_NAME_MAX_LENGTH');
+      }
+    } 
+    
+    return $descriptors;
+  }
+
+  function _node_update_and_insert($node) {
+    if (!_is_forum_topic($node)) {
+      return;
+    }
+    
+    $tid = _get_forum_tid_from_topic_node($node);
+    if (!$tid) {
+      drupal_set_message(t('Forum node has no attached tid'), 'error');
+      return;
+    }
+    
+    $metadata = _fetch_metadata_for_tid($tid);
+    if (!$metadata) {
+      return; // There is no mailing list attached to this forum
+    }
+    
+    $update = !$node->is_new;
+    $body = $node->body[LANGUAGE_NONE][0]['value'];
+    $plain = ($node->body[LANGUAGE_NONE][0]['format'] === 'plain_text');
+    $subject = $node->title;
+    $fid = isset($node->field_attachment[LANGUAGE_NONE][0]['fid']) ?
+        $node->field_attachment[LANGUAGE_NONE][0]['fid'] : NULL;
+    _dispatch_emails_for_post($metadata, $subject, $body, 
+        $update, $plain, $fid); 
+  }
+
+  /**
+   * @todo report / research bug (inconsistency)
+   * entity type node has is_new property
+   * entity type comment has new property
+   */
+  function _comment_update_and_insert($comment) {
+    if (!_is_forum_comment($comment)) {
+      return;
+    }
+    
+    // load the topic node to get the parent tid
+    $node = node_load($comment->nid);
+    $tid = _get_forum_tid_from_topic_node($node);
+    if (!$tid) {
+      drupal_set_message(t('Forum node has no attached tid'), 'error');
+      return;
+    }
+    
+    $metadata = _fetch_metadata_for_tid($tid);
+    if (!$metadata) {
+      return; // There is no mailing list attached to this forum
+    }
+    
+    // Comment doesn't have the property is_new like node.
+    // However, there is a 'new' property (integer) set to 0 for update
+    // However, the property doesn't exist on insert?
+    $update = FALSE;
+    if (property_exists($comment, 'new')) {
+      if ($comment->new === 0) {
+        $update = TRUE;
+      }
+    }
+    
+    $comment_body = $comment->comment_body[LANGUAGE_NONE][0];
+    $plain = ($comment_body['format'] === 'plain_text');
+    $body = $comment_body['value'];
+    $subject = $comment->subject;
+    $fid = isset($comment->field_attachment[LANGUAGE_NONE][0]['fid']) ?
+        $comment->field_attachment[LANGUAGE_NONE][0]['fid'] : NULL;  
+    _dispatch_emails_for_post($metadata, $subject, $body, 
+        $update, $plain, $fid);
+  }
+
+  /** 
+   * @todo UNSUBSCRIBE FACILITY
+   * @todo PROPER BOUNCES
+   */
+  function _dispatch_emails_for_post($metadata, $subject, $body, 
+      $update, $plain, $attachment_fid = NULL) {
+    $items = _fetch_items_for_tid($metadata['tid']);
+    if (empty($items)) {
+      // We should always have items attached to a mailing list
+      drupal_set_message(t('Mailing list has no attached lists'), 'error');
+      return;
+    }
+    
+    $addresses = _fetch_outgoing_email_addresses($items);
+    if (empty($addresses)) { 
+      drupal_set_message(t('Failed to retrieve any emails for list'), 'error');
+      return;
+    }
+    
+    // Get the current site's domain name
+    global $base_url;
+    $host = parse_url($base_url, PHP_URL_HOST);
+    $domain = preg_replace('/^www\./', '', $host);
+
+    // Read some fields from the list
+    $list_type = $metadata['list_type'];
+    $reply_to_type = $metadata['reply_to_type'];
+    
+    // Set Reply-To
+    switch ($reply_to_type) {
+      case _REPLY_TO_TYPE_DO_NOT_REPLY:
+        //$reply_to = 'DO NOT REPLY <do_not_reply@' . $domain . '>';
+        $reply_to = '<bryan@groupanizer.com>';
+        break;
+      case _REPLY_TO_TYPE_USE_POSTERS_EMAIL:
+        global $user;
+        $reply_to = $user->name . ' <' . $user->mail . '>';
+        break;
+      case _REPLY_TO_TYPE_USER_DEFINED:
+        $reply_to = $metadata['reply_to_email']; // assume non-null
+        break;
+      default: // _REPLY_TO_TYPE_MAILING_LIST
+        drupal_set_message(t('Unknown reply-to type'), 'error');
+        return;
+        break;
+    }
+    
+    // Set From to the Reply-To or the user-defined variable
+    $from = is_null($metadata['from_email']) ? 
+        $reply_to : $metadata['from_email'];
+    
+    // Construct the bounces and sender addresses
+    $sender = 'mailer@' . $domain;
+    //$bounces = 'bounces@' . $domain;
+    $bounces = 'support@groupanizer.com';
+    
+    // Construct the dispatcher
+    $dispatcher = new EmailDispatcher($sender, $bounces);
+    
+    // Get attachment details
+    if (!is_null($attachment_fid)) {
+      $file = file_load($attachment_fid);
+      $filename = $file->uri;
+      $filemime = $file->filemime;
+    }
+    
+    // Construct an array of batch operations
+    $operations = array();
+    
+    foreach ($addresses as $address) {
+      // Construct the email object
+      $email = new EmailMimeEmail;
+      $email->set_paths($address, $from, $reply_to);
+      $email->set_subject($subject);
+      $email->set_body($body, $plain);
+      if (!$plain) {
+        $alt_body = 'To view this e-mail you need an HTML compatible client.';
+        $email->set_alt_body($alt_body);
+      }
+      if (!is_null($attachment_fid)) {
+        $email->add_attachment($filename, $filemime);
+      }
+      
+      $operations[] = array('_dispatch_email', array($dispatcher, $email));
+    }
+    
+    // Create a batch operation to send the e-mails
+    $batch = array(
+      'title' => t('Dispatching e-mail'),
+      'operations' => $operations,
+      'finished' => '_dispatch_email_finished',
+      'file' => drupal_get_path('module', 'gb_maillist') . 
+          '/gb_maillist.batch.inc',
+    );
+    
+    batch_set($batch);
+
+    // _MAILING_LIST_TYPE_ STANDARD|BROADCAST
+  }
+
+  function _fetch_fieldset_default_values($descriptors, $tid) {
+    $defaults = array(
+        'attach_list' => 0,
+        'list_type' => _MAILING_LIST_TYPE_BROADCAST,
+        'reply_to_type' => _REPLY_TO_TYPE_DO_NOT_REPLY,
+        'reply_to_email' => NULL,
+        'from_email' => NULL,
+        'user_defined_from' => NULL,
+     );
+    
+    if (!is_null($tid)) {
+      $metadata = _fetch_metadata_for_tid($tid);
+      if (!$metadata) { // No attached metadata?
+        return $defaults;
+      }
+      
+      $current = array(
+        'attach_list' => 1,
+        'list_type' => $metadata['list_type'],
+        'reply_to_type' => $metadata['reply_to_type'],
+        'reply_to_email' => $metadata['reply_to_email'],
+        'from_email' => $metadata['from_email'],
+        'user_defined_from' => empty($metadata['from_email']) ? 0 : 1,
+      );
+      
+      $items = _fetch_items_for_tid($tid);
+      if (empty($items)) {
+        // We should always have items attached to a mailing list
+        drupal_set_message(t('Mailing list has no attached lists'), 'error');
+        return;
+      }
+      
+      foreach ($items as $item) {
+        // scid:<storage_class_id>
+        $scid = 'scid:' . $item['class'];
+        // iid:<module>:<storage_class_id>:<item_id>
+        $siid = 'iid:' . $item['module'] . ':' . 
+            $item['class'] . ':' . $item['item'];
+        
+        $current[$scid][] = $siid;
+      }
+      
+      return $current;
+    }
+
+    return $defaults;
+  }
+
+  /**
+   * Insert our elements into the mailing list fieldset of the
+   * forum form
+   */
+  function _insert_fieldset_elements(&$fieldset, $descriptors, $defaults) {
+    // Checkbox whether or not to attach a mailing list
+    $fieldset['attach_list'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Attach Mailing list'),
+      '#decription' => t('Whether to include a mailing list'),
+      '#return_value' => 1, 
+      '#default_value' => $defaults['attach_list'], 
+    );
+    
+   // Group of elements to set the list options 
+    $fieldset['list_options'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('List options'),
+    );
+    $options = array(
+      //_MAILING_LIST_TYPE_STANDARD => t('Standard mailing list (Two-way)'),
+      _MAILING_LIST_TYPE_BROADCAST => t('Broadcast only list (One-way)'),
+    );
+    $fieldset['list_options']['list_type'] = array(
+      '#type' => 'radios',
+      '#title' => t('List type'),
+      '#description' => t('The type of Mailing List to create.'),
+      '#options' => $options,
+      '#default_value' => $defaults['list_type'],
+      '#states' => array(
+        // enabled if we are attaching a list
+        'enabled' => array( 
+          ':input[name="attach_list"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+    
+    $options = array(
+      _REPLY_TO_TYPE_DO_NOT_REPLY => t('Do not reply'),
+      _REPLY_TO_TYPE_USE_POSTERS_EMAIL => t('Use Poster\'s email'),
+      _REPLY_TO_TYPE_USER_DEFINED => t('User-defined'),
+    );
+    $fieldset['list_options']['reply_to_type'] = array(
+      '#type' => 'radios',
+      '#title' => t('Broadcast list reply-to'),
+      '#description' => t('How a broadcast list sets reply-to'),
+      '#options' => $options,
+      '#default_value' => $defaults['reply_to_type'],
+      '#states' => array(
+        // enabled if selected list type is broadcast
+        // and we are attaching a list
+        'enabled' => array( 
+          ':input[name="list_type"]' => array('value' => 1),
+          ':input[name="attach_list"]' => array('checked' => TRUE),
+        ),     
+      ),
+    );
+    $fieldset['list_options']['reply_to_email'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Reply-to'),
+      '#description' => t('The email that list recipients can reply to'),
+      '#default_value' => $defaults['reply_to_email'],
+      '#states' => array(
+        // visible if reply-to type is user-defined
+        'visible' => array(
+          ':input[name="reply_to_type"]' => array(
+            'value' => _REPLY_TO_TYPE_USER_DEFINED
+          ),
+        ),
+        // required if reply-to type is user-defined and we are attaching a list
+        'required' => array(
+          ':input[name="reply_to_type"]' => array(
+            'value' => _REPLY_TO_TYPE_USER_DEFINED
+          ),
+          ':input[name="attach_list"]' => array('checked' => TRUE),
+        ),
+        // enabled if we are attaching a list
+        'enabled' => array(
+          ':input[name="attach_list"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+    $fieldset['list_options']['user_defined_from'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('User-defined \'from\' in emails'),
+      '#decription' => t('Whether to include a custom from email'),
+      '#return_value' => 1, 
+      '#default_value' => $defaults['user_defined_from'],
+      '#states' => array(
+        // enabled if we are attaching a list
+        'enabled' => array( 
+          ':input[name="attach_list"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+    $fieldset['list_options']['from_email'] = array(
+      '#type' => 'textfield',
+      '#title' => t('From'),
+      '#default_value' => $defaults['from_email'],
+      '#states' => array(
+        // visible if user-defined from is checked
+        'visible' => array(
+          ':input[name="user_defined_from"]' => array('checked' => TRUE),
+        ),
+        // required if user-defined from is checked and we are attaching a list
+        'required' => array(
+          ':input[name="user_defined_from"]' => array('checked' => TRUE),
+          ':input[name="attach_list"]' => array('checked' => TRUE),
+        ),
+        // enabled if we are attaching a list
+        'enabled' => array(
+          ':input[name="attach_list"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+    
+    // Elements to set which items are included in the list
+    $fieldset['items'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('List items'),
+    ); 
+    foreach ($descriptors as $module => $classes) {
+      foreach ($classes as $class_id => $class) {
+        // serialize id for storage & parsing
+        // SCID:CLASS
+        $scid = 'scid:' . $class_id;
+        $fieldset['items'][$scid] = array(
+          '#type' => 'checkboxes',
+          '#prefix' => '<div style="float: left; margin: 15px;">', 
+          '#suffix' => '</div>',
+          '#title' => $class['title'],
+          '#description' => $class['description'],
+          '#default_value' => isset($defaults[$scid]) ? 
+              $defaults[$scid] : array(),
+          '#options' => array(),
+          '#states' => array(
+            // enabled if we are attaching a list
+            'enabled' => array( 
+              ':input[name="attach_list"]' => array('checked' => TRUE),
+            ),
+          ),
+        ); 
+        foreach ($class['items'] as $item_id => $item) {
+          // serialize id for storage & parsing
+          // IID:MODULE:CLASS:ITEM
+          $siid = 'iid:' . $module . ':' . $class_id . ':' . $item_id;
+          $fieldset['items'][$scid]['#options'][$siid] = $item['title'];
+        }
+      } 
+    }
+  }
+
+  /*
+  function _insert_file_upload_elements(&$form) {
+    $types = variable_get('attachment_mime_types_var');
+    $size = variable_get('attachment_max_size_var');
+    
+    // Install the file attachment element
+    $form['attachment_fid'] = array(
+      '#title' => t('Add attachment'),
+      '#type' => 'managed_file',
+      '#description' => t('Attach a file to this post.'),
+      '#weight' => $form['comment_body']['#weight'] + 1, // Position below body
+      '#default_value' => NULL,
+      '#upload_location' => 'public://attachments', // TODO: private://
+     //#upload_validators
+      '#upload_validators' => array(
+        'file_validate_extensions' => array($types),
+        'file_validate_size' => array($size),
+      ),
+      // #progess_indicator
+    );
+  }
+  */
+    
+  /**
+   * Implements hook_TYPE_alter()
+   * 
+   * @param type $data the data to be altered
+   */
+  function gb_maillist_mailing_list_descriptors_alter(&$data) {
+    if (_WATCHDOG === 1) watchdog('gb_maillist', 'in gb_maillist_alter');
+    
+    /*
+    array(
+      'module' => array(
+        'storage class id here' => array(
+          'title' => 'Title here',
+          'description' => 'Description here',
+          'items' => array(
+            'item id here' => array(
+              'title' => 'Title here'
+              'description' => 'Description here',
+            ),
+          ),
+        ),
+      ),
+    );
+    
+    We would pull these lists from somewhere real...
+    */
+    $data['gb_maillist'] = array(
+      'storage_class_test' => array(
+        'title' => 'Test Mail Clients',
+        'description' => 'E-Mails for testing purposes',
+        'items' => array(
+          'list_yahoo' => array('title' => 'Yahoo'),
+          'list_hotmail' => array('title' => 'Hotmail'),
+          'list_gmail' => array('title' => 'Gmail'),
+          'list_inbox' => array('title' => 'Inbox.com'),
+          'list_mail' => array('title' => 'Mail.com'),
+          'list_aim' => array('title' => 'AOL AIM Mail'),
+          'list_icloud' => array('title' => 'iCloud'),
+          'list_all' => array('title' => 'All'),
+        ),
+      ),
+    );
+  }
+
+  /**
+   * Implements hook_TYPE_alter()
+   * 
+   * @param array $data an array of emails
+   */
+  function gb_maillist_outgoing_email_addresses_alter(&$data) {
+    /*
+    // Blacklist (remove) emails ending with @blacklist.net
+    $data = array_filter($data, function ($email) {
+      $needle = '@blacklist.net';
+      return (substr($email, -strlen($needle)) !== $needle);
+    });
+    */
+  }
+      
+  /**
+   * Implements hook_provide_email_addresses_for_item()
+   * 
+   * @param string $class_id the class the items belong to
+   * @param array $item_ids a list of items (email list ids)
+   * 
+   * @return should return an array of emails as strings
+   */
+  function gb_maillist_provide_email_addresses_for_class_items($class_id, 
+      $item_ids) {
+    if ($class_id != 'storage_class_test') {
+      return array();
+    }
+    
+    $emails = array(
+      'list_yahoo' => 'groupanizertest@yahoo.com',
+      'list_hotmail' => 'groupanizertest@hotmail.com',
+      'list_gmail' => 'bryan@groupanizer.com',
+      'list_inbox' => 'groupanizertest@inbox.com',
+      'list_mail' => 'groupanizert3st@mail.com',
+      'list_aim' => 'groupanizertestaim@aim.com',
+      'list_icloud' => 'bp2626@icloud.com',
+    );
+    
+    if (in_array('list_all', $item_ids)) {
+      return array_values($emails);
+    } else {
+      return array_map(function ($item_id) use ($emails) {
+        return $emails[$item_id];
+      }, $item_ids);
+    }
+    
+    dpm("UNKNOWN LIST ID: {$item_id}");
+    return array();
+  }
+
+  /**
+   * Validation function for forum form
+   *
+   * @param type $form
+   * @param type $form_state 
+   */
+  function gb_maillist_forum_form_validate($form, &$form_state) {
+    if (_WATCHDOG === 1) {
+      watchdog('gb_maillist', 'in gb_maillist_forum_form_validate');
+    }
+    
+    $required_error = function ($index, $parent) use ($form, $form_state) {
+      $title = $form['mailing_list_setup'][$parent][$index]['#title'];
+      form_set_error($index, $title . ' field is required.');
+    };
+    
+    /** 
+     * The internal drupal form validator can't seem to handle
+     * '#required' changes by jQuery for the forum_form when the elements
+     * are in our field set. So, we'll validate them manually.
+     * 
+     * @todo bug report or determine if the #states code isn't correct
+     */
+    $values = &$form_state['values'];
+     
+    if ($values['attach_list'] === 1) { // Are we including a mailing list
+      if ($values['reply_to_type'] === _REPLY_TO_TYPE_USER_DEFINED) {
+        if (empty($values['reply_to_email'])) {
+          $required_error('reply_to_email', 'list_options');
+        }
+      }
+      
+      if ($values['user_defined_from'] === 1) {
+        if (empty($values['from_email'])) {
+          $required_error('from_email', 'list_options');
+        }
+      }
+      
+      // We need at least one list selected if we're attaching a list
+      foreach ($values as $key => $value) {
+        // Check if key is has the storage class id prefix
+        if (strpos($key, 'scid:') !== 0) {
+          continue;
+        }
+        
+        // Iterate the array of items attached
+        foreach ($value as $item) {
+          if (gettype($item) !== 'string') {
+            continue;
+          }
+          
+          // Check if element has the item id prefix, so it's checked
+          if (strpos($item, 'iid:') === 0) {
+            return; // Leave, we've found a checked item
+          }
+        }
+      }
+
+      // We're still here...
+      form_set_error('items', 'At least one mailing list item is required.');
+    }
+  }
+
+  /**
+   * Submit function for forum confirm delete form
+   * 
+   * @param type $form
+   * @param type $form_state 
+   */
+  function gb_maillist_forum_confirm_delete_submit($form, &$form_state) {
+    // Is a user logged in and authenticated?
+    global $user;
+    if (!(isset($user->uid)) || $user->uid === 0) {
+      drupal_access_denied();
+    }
+    
+    // Do we have the right form id?
+    if ($form_state['build_info']['form_id'] != 'forum_confirm_delete') {
+      return;
+    }
+    
+    $tid = $form_state['values']['tid'];
+    $result = _delete_records_for_tid($tid);
+    if (!$result) {
+      drupal_set_message(t('Failed to query the database'), 'error');
+      // Something failed, rebuild the form
+      $form_state['rebuild'] = TRUE;
+    }
+  }
+  
+  /**
+   * Submit function for forum form
+   * 
+   * @param type $form
+   * @param type $form_state 
+   * 
+   * @todo db_insert()->execute() return value is undefined for multi-inserts,
+   *       we need to check that query and the others for success
+   */
+  function gb_maillist_forum_form_submit($form, &$form_state) {
+    if (_WATCHDOG === 1) {
+      watchdog('gb_maillist', 'in gb_maillist_forum_form_submit');
+    }
+    
+    // Is a user logged in and authenticated?
+    global $user;
+    if (!(isset($user->uid)) || $user->uid === 0) {
+      drupal_access_denied();
+    }
+    
+    // Do we have the right form id?
+    if ($form_state['build_info']['form_id'] != 'forum_form_forum') {
+      return;
+    }
+    
+    // Reference to 'values' element
+    $values = &$form_state['values'];
+    
+    // Are we attaching a list?
+    $attach = $values['attach_list'];
+    $tid = $values['tid'];
+    
+    if (!$attach) {
+      // We are not attaching a list, so, delete any previously associated
+      // metadata and items in the database
+      $result = _delete_records_for_tid($tid);
+    } else {
+      // If the user has unselected user_defined_from we don't want to write
+      // the from email because that's all we store in the database. If it's
+      // there we will assume user_defined_from is 1 later.
+      if ($values['user_defined_from'] !== 1) {
+        $values['from_email'] = NULL;
+      }
+      // We are attaching a list
+      // build and write our query for gb_maillist_metadata
+      // db_merge will handle update & insert
+      $result = _build_and_insert_records_for_tid($tid, $values);
+    }
+    if (!$result) {
+      drupal_set_message(t('Failed to query the database'), 'error');
+      // Something failed, rebuild the form
+      $form_state['rebuild'] = TRUE;
+    }
+  }
+
+  /**
+   * Implements hook_form_FORM_ID_alter()
+   * 
+   * @param array $form nested array of form elements that comprise the form
+   * @param array $form_state an array containing the current state of the form
+   * @param string $form_id string representing the name of the form itself
+   */
+  function gb_maillist_form_forum_form_forum_alter(&$form, 
+      &$form_state, $form_id) {
+    if (_WATCHDOG === 1) {
+      watchdog('gb_maillist', 'in gb_maillist_form_forum_form_forum_alter');
+    }
+    
+    // Create the mailing list fieldset
+    $form['mailing_list_setup'] = array(
+      '#type' => 'fieldset',
+      '#title' => 'Mailing list',
+      '#collapsible' => TRUE,
+    );
+    
+    $descriptors = _fetch_mailing_list_descriptors();
+    // Typically NULL for new forms, fill to current values in db on edit
+    $defaults = _fetch_fieldset_default_values($descriptors, 
+        isset($form['tid']) ? $form['tid']['#value'] : NULL);
+    // Insert the mailing list fieldset elements
+    _insert_fieldset_elements($form['mailing_list_setup'], 
+        $descriptors, $defaults);
+    
+    // Set some handlers
+    $form['#submit'][] = 'gb_maillist_forum_form_submit';
+    $form['#validate'][] = 'gb_maillist_forum_form_validate';
+   
+    // $destination = drupal_get_destination(); 
+  }
+
+  /**
+   * Implements hook_form_FORM_ID_alter()
+   * 
+   * @param array $form nested array of form elements that comprise the form
+   * @param array $form_state an array containing the current state of the form
+   * @param string $form_id string representing the name of the form itself
+   */
+  function gb_maillist_form_forum_confirm_delete_alter(&$form, 
+      &$form_state, $form_id) {
+     // Insert our submit handler for deleting of forums
+     $form['#submit'][] = 'gb_maillist_forum_confirm_delete_submit';
+  }   
+ 
+  /** 
+   * Implements hook_page_alter 
+   */
+  function gb_maillist_page_alter(&$page) {
+    // Try and read the taxonomy from the path forum/%
+    // and insert a URL to a page to view the emails!
+    $term = menu_get_object('forum_forum', 1);
+    if (!empty($term)) {
+      if ($term->vocabulary_machine_name === 'forums') {
+        // Append our link
+        global $base_url;
+        $markup = '<a class="POPUP" href ="' . $base_url . '/mailing-list/view/' 
+            . $term->tid . '"> View e-mails associated with list</a>';
+        $page['content']['system_main']['main']['#markup'] .= $markup;
+      }
+    }
+  }
+      
+  /**
+   * Implemenets hook menu
+   */
+  function gb_maillist_menu() {
+    if (_WATCHDOG === 1) watchdog('gb_maillist', 'in gb_maillist_menu');
+    
+    $items = array();
+    $items['mailing-list/view/%'] = array(
+      'title' => t('View mailing list emails'),
+      'page callback' => 'gb_maillist_view_list_page',
+      'page arguments' => array(2), // nid as argument
+      'access arguments' => array('administer forums'),
+      'file' => 'gb_maillist.pages.inc',
+      'type' => MENU_CALLBACK,
+    );
+    $items['mailing-list/export/%'] = array(
+      'title' => t('Export emails to CSV'),
+      'page callback' => 'gb_maillist_export_list_page',
+      'page arguments' => array(2), // nid as argument
+      'access arguments' => array('administer forums'),
+      'file' => 'gb_maillist.pages.inc',
+      'type' => MENU_CALLBACK,
+    );
+    return $items;
+  }
+      
+  /**
+   * Implements hook_admin_paths_alter()
+   */
+  function gb_maillist_admin_paths_alter(&$paths) {
+    if (_WATCHDOG === 1) {
+      watchdog('gb_maillist', 'in gb_maillist_admin_paths_alter');
+    }
+    
+    $paths['mailing-list/view/%'] = TRUE;
+    $paths['mailing-list/export/%'] = TRUE;
+  }
+  
+  /**
+   * Implements hook_admin_paths()
+   */
+  function gb_maillist_admin_paths() {
+    if (_WATCHDOG === 1) {
+      watchdog('gb_maillist', 'in gb_maillist_admin_paths');
+    }
+    
+    $paths = array();
+    $paths['mailing-list/view/%'] = TRUE;
+    $paths['mailing-list/export/%'] = TRUE;
+    return $paths;
+  }
+  
+  /**
+   * Implements hook_node_insert()
+   */
+  function gb_maillist_node_insert($node) {
+    if (_WATCHDOG === 1) {
+      watchdog('gb_maillist', 'in gb_maillist_node_insert');
+    }
+    
+    _node_update_and_insert($node);
+  }
+  
+  /**
+   * Implements hook_node_update()
+   */
+  function gb_maillist_node_update($node) {
+    if (_WATCHDOG === 1) {
+      watchdog('gb_maillist', 'in gb_maillist_node_update');
+    }
+    
+    _node_update_and_insert($node);
+  }
+  
+  /**
+   * Implements hook_comment_insert()
+   */
+  function gb_maillist_comment_insert($comment) {
+    if (_WATCHDOG === 1) {
+      watchdog('gb_maillist', 'in gb_maillist_comment_insert');
+    }
+    
+    _comment_update_and_insert($comment);
+  }
+  
+  /**
+   * Implements hook_comment_update()
+   */
+  function gb_maillist_comment_update($comment) {
+    if (_WATCHDOG === 1) {
+      watchdog('gb_maillist', 'in gb_maillist_comment_update');
+    }
+    
+    _comment_update_and_insert($comment);
+  }
+  
+  

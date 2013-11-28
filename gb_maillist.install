@@ -1,0 +1,98 @@
+<?php
+
+  module_load_include('inc', 'gb_maillist', 'constants');
+  
+/**
+ * Implements hook_install()
+ */
+  function gb_maillist_install() {
+    if (_WATCHDOG === 1) watchdog('gb_maillist', 'in gb_maillist_install');
+  }
+ 
+ /**
+  * Implements hook_uninstall()
+  */
+  function gb_maillist_uninstall() {
+    if (_WATCHDOG === 1) watchdog('gb_maillist', 'in gb_maillist_uninstall');
+  }
+  
+  /**
+   * Implements hook_schema()
+   */
+  function gb_maillist_schema() {
+    if (_WATCHDOG === 1) watchdog('gb_maillist', 'in gb_maillist_schema');
+    
+    $schema['gb_maillist_metadata'] = array(
+      'description' => t('A table of mailing list metadata for gb_maillist'),
+      'fields' => array(
+        'tid' => array(
+          'description' => t('The tid of the forum this data is bound to'),
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE,
+        ),
+        'list_type' => array(
+          'description' => t('The type of list (broadcast or standard)'),
+          'type' => 'int',
+          'not nulll' => TRUE,
+          'size' => 'tiny',
+        ),
+        'reply_to_type' => array(
+          'description' => t('The type of reply-to to generate'),
+          'type' => 'int',
+          'not null' => TRUE,
+          'size' => 'tiny'
+        ),
+        'reply_to_email' => array(
+          'description' => 
+              t('(optional) user-defined email to act as the reply-to email'),
+          'type' => 'varchar',
+          'not null' => FALSE,
+          'default' => NULL,
+          'length' => _EMAIL_ADDRESS_MAX_LENGTH,
+        ),
+        'from_email' => array(
+          'description' => 
+              t('(optional) user-defined email to act a the from email'),
+          'type' => 'varchar',
+          'not null' => FALSE,
+          'default' => NULL,
+          'length' => _EMAIL_ADDRESS_MAX_LENGTH,
+        ),
+      ),
+    );
+    
+    $schema['gb_maillist_items'] = array(
+      'description' => t('A table of mailing list items for gb_maillist'),
+      'fields' => array(
+        'tid' => array(
+          'description' => t('The tid of the forum this item is bound to'),
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE,
+        ),
+        'module' => array(
+          'description' => t('The module that defines this item'),
+          'type' => 'varchar',
+          'not nulll' => TRUE,
+          'length' => DRUPAL_EXTENSION_NAME_MAX_LENGTH,
+        ), 
+        'class' => array(
+          'description' => t('The storage class the item belongs to'),
+          'type' => 'varchar',
+          'not null' => TRUE,
+          'length' => _VARCHAR_MAX_LENGTH, 
+        ),
+        'item' => array(
+          'description' => t('The item itself'),
+          'type' => 'varchar',
+          'not null' => TRUE,
+          'length' => _VARCHAR_MAX_LENGTH,
+        ),
+      ),
+    );
+    
+    return $schema;
+  }
+
+
