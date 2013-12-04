@@ -1,13 +1,13 @@
 <?php
 /**
  * @file
- * groupanizer_basic_mail_list_feature.features.field_base.inc
+ * gb_maillist_feature.features.field_base.inc
  */
 
 /**
  * Implements hook_field_default_field_bases().
  */
-function groupanizer_basic_mail_list_feature_field_default_field_bases() {
+function gb_maillist_feature_field_default_field_bases() {
   $field_bases = array();
 
   // Exported field_base: 'field_attachment'

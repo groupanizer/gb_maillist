@@ -1,10 +1,9 @@
-name = Groupanizer Basic - Mail Lists (D7)
-description = Mail interface & handling for Groupanizer Universe & SING 3
+name = Groupanizer Basic - Mailing Lists (D7)
+description = Mailing lists for Groupanizer Universe & SING 3
 package = Groupanizer Basic Group
 core = 7.x
-version = 7.x-0.1-beta1
+version = 7.x-1.0-beta2
 files[] = gb_maillist.module
 dependencies[] = forum
 dependencies[] = forum_access
-dependencies[] = mimemail
-dependencies[] = mailsystem
+dependencies[] = gb_mail

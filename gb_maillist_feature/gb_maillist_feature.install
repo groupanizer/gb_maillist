@@ -1,0 +1,39 @@
+<?php
+
+  /**
+   * Implements hook_enable().
+   */
+  function gb_maillist_feature_enable() {
+    // Set the MailSystem for gb_mailllist
+    mailsystem_set(array('gb_maillist' => 'MimeMailSystem'));
+  }
+  
+  /**
+   * Implements hook_disable().
+   */
+  function gb_maillist_feature_disable() {
+    mailsystem_clear(array('gb_maillist' => 'MimeMailSystem'));
+  }
+  
+  /**
+   * Implements hook_default_permissions()
+   */
+  function gb_maillist_feature_default_permissions() {
+      return array(
+      'administer forums' => array(
+        'name' => 'administer forums',
+        'roles' => array(
+          'site_admin' => 'site_admin',
+          'communications' => 'communications',
+        ),
+        'module' => 'forum',
+      ),
+      'send arbitrary files' => array(
+        'name' => 'send arbitrary files',
+        'roles' => array(
+          'authenticated_user' => 'authenticated_user'
+        ),
+        'module' => 'mimemail'
+      ),
+    );
+  }

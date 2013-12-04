@@ -1,0 +1,8 @@
+<?php
+/**
+ * @file
+ * Drupal needs this blank file.
+ */
+
+   module_load_include('inc', 'gb_maillist', 
+      'gb_maillist_feature/gb_maillist_feature.gfeature');
