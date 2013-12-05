@@ -1,7 +1,4 @@
 <?php
-
-  //module_load_include('inc', 'gb_maillist', 'email.template');
-  //module_load_include('inc', 'gb_maillist', 'email.engine');
   
   module_load_include('inc', 'gb_maillist', 'gb_maillist.constants');
   module_load_include('inc', 'gb_maillist', 'gb_maillist.queries');
@@ -660,7 +657,7 @@
     }
     
     $tid = $form_state['values']['tid'];
-    $result = _delete_records_for_tid($tid);
+    $result = _delete_all_list_records_for_tid($tid);
     if (!$result) {
       drupal_set_message(t('Failed to query the database'), 'error');
       // Something failed, rebuild the form
