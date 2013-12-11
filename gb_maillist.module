@@ -63,7 +63,6 @@
       $addresses = call_user_func($module . 
           '_provide_email_addresses_for_class_items', $class_id, $items);
       if (!empty($addresses)) {
-        // Append the email array to the result
         $result = array_merge($result, $addresses);
       }
     }
@@ -150,16 +149,15 @@
     $sender = 'mailer@' . $domain;
     //$bounces = 'bounces@' . $domain;
     $bounces = 'support@groupanizer.com';
-
-    // Construct the dispatcher
-    $dispatcher = new EmailDispatcher($sender, $bounces);
     
-    // Get attachment details
+    // Read attachment details
     if (!is_null($attachment_fid)) {
       $file = file_load($attachment_fid);
       $filename = $file->uri;
       $filemime = $file->filemime;
     }
+    
+    $dispatcher = new EmailDispatcher($sender, $bounces);
     
     // Construct an array of batch operations
     $operations = array();
@@ -179,7 +177,8 @@
       // Handle unsubscribe for broadcast lists
       if ($list_type == _MAILING_LIST_TYPE_BROADCAST) {
         $mailto = "<mailto:unsubscribe-{$tid}@{$domain}>";
-        $url = "{$base_url}/mailing-list/unsubscribe/{$tid}/{$address}";
+        $encoded = urlencode($address);
+        $url = "{$base_url}/mailing-list/unsubscribe/{$tid}/{$encoded}";
         
         $email->add_header('List-Unsubscribe', $mailto);
         $email->add_additional_body(
@@ -239,7 +238,7 @@
       return;
     }
     
-    // load the topic node to get the parent tid
+    // Load the topic node to get the parent tid
     $node = node_load($comment->nid);
     $tid = _get_forum_tid_from_topic_node($node);
     if (!$tid) {
@@ -272,7 +271,7 @@
         $update, $plain, $fid);
   }
 
-  function _fetch_fieldset_default_values($descriptors, $tid) {
+  function _fetch_forum_form_default_values($tid) {
     $defaults = array(
         'attach_list' => 0,
         'list_type' => _MAILING_LIST_TYPE_BROADCAST,
@@ -280,6 +279,7 @@
         'reply_to_email' => NULL,
         'from_email' => NULL,
         'user_defined_from' => NULL,
+        'num_aliases' => 0,
      );
     
     if (!is_null($tid)) {
@@ -314,17 +314,113 @@
         $current[$scid][] = $siid;
       }
       
+      $aliases = _fetch_list_aliases_for_tid($tid);
+      if (empty($aliases)) {
+        $current['num_aliases'] = 0;
+      } else {
+        $n = count($aliases);
+        $current['num_aliases'] = $n;
+        while ($n-- > 0) {
+          $current["alias_{$n}"] = $aliases[$n]['alias'];
+        } 
+      }
+
       return $current;
     }
 
     return $defaults;
   }
 
+  /** Callback to replace the 'aliases' elements */
+  function ajax_gb_maillist_add_alias($form, $form_state) {
+    return $form['mailing_list_setup']['alias_options']['aliases'];
+  }
+  
+  /** Callback to replace the 'aliases' element */
+  function ajax_gb_maillist_delete_alias($form, $form_state) {
+    return $form['mailing_list_setup']['alias_options']['aliases'];
+  }
+  
+  /** Callback function to theme the 'aliases' */
+  function theme_gb_maillist_aliases($container) {
+    $elements = $container['aliases'];
+    
+    if (isset($elements['num_aliases']) && $elements['num_aliases'] > 0) {
+      $variables = array(
+        'header' => array(t('Aliases'), t('Delete')),
+        'empty' => t("No aliases."),
+        'rows' => array(),
+        'attributes' => array(),
+        'caption' => '',
+        'colgroups' => array(),
+        'sticky' => FALSE,
+      );
+      
+      $num_aliases = $elements['num_aliases']['#value'];
+      for ($i = 0; $i < $num_aliases; $i++) {
+        $variables['rows'][$i][] = drupal_render($elements["alias_{$i}"]);
+        $variables['rows'][$i][] = drupal_render($elements["del_alias_{$i}"]);
+      }
+      
+      return theme_table($variables);
+    }
+  }
+  
+  /** Handles the logic for adding and removing aliases */
+  function _aliases_ajax_logic(&$form, &$form_state, 
+      $descriptors, $defaults) {
+    // Set the number of aliases to 0 on form creation
+    if (!isset($form_state['storage']['num_aliases'])) {
+      $form_state['storage']['num_aliases'] = $defaults['num_aliases'];
+    }
+    
+    // If we were brought here by the AJAX event to an alias than the number of
+    // aliases has increased or decreased
+    if (isset($form_state['triggering_element'])) {
+      $matches = array();
+      $name = $form_state['triggering_element']['#name'];
+      if ($name === 'add_alias') { // brought here by add_alias
+        if ($form_state['storage']['num_aliases'] < 5) { // cap of 5 aliases
+          $form_state['storage']['num_aliases'] += 1;
+          //dpm('+= 1;');
+        }
+      } elseif (preg_match('/^del_alias_([0-5])$/', $name, $matches)) {
+        $form_state['storage']['num_aliases'] -= 1;
+        
+        $new_num_aliases = $form_state['storage']['num_aliases'];
+        $index_to_delete = $matches[1];
+        
+        // We need to rebuild & restructure the input array to preserve
+        // the current input values
+        $input = $form_state['input']['aliases'];
+        unset($input["alias_{$index_to_delete}"]); // delete alias
+        $values = array_values($input);  
+        $keys = array();
+        for ($i = 0; $i < $new_num_aliases; $i++) {
+          $keys[] = "alias_{$i}";
+        }
+        // Assign the new input values
+        $form_state['input']['aliases'] = array_combine($keys, $values);  
+      }
+    }
+  }
+
   /**
-   * Insert our elements into the mailing list fieldset of the
-   * forum form
+   * Insert our elements into the forum form
+   * @todo make collapsable
    */
-  function _insert_fieldset_elements(&$fieldset, $descriptors, $defaults) {
+  function _insert_mailing_list_elements(&$form, &$form_state, 
+      $descriptors, $defaults) {
+    $collapsed = ($defaults['attach_list'] === 0) ? TRUE : FALSE;
+    
+    // Create the mailing list fieldset
+    $form['mailing_list_setup'] = array(
+      '#type' => 'fieldset',
+      '#title' => 'Mailing list',
+      '#collapsible' => TRUE,
+    );
+    $fieldset = &$form['mailing_list_setup'];
+    
     // Checkbox whether or not to attach a mailing list
     $fieldset['attach_list'] = array(
       '#type' => 'checkbox',
@@ -334,13 +430,111 @@
       '#default_value' => $defaults['attach_list'], 
     );
     
-   // Group of elements to set the list options 
+    // Create the aliases fieldset
+    $fieldset['alias_options'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Aliases'),
+      '#description' => t('Add an alias which can be used to e-mail this list'),
+      '#theme' => 'gb_maillist_aliases',
+      '#collapsible' => TRUE,
+      '#collapsed' => $collapsed,
+      '#states' => array(
+        // collapsed if we aren't attaching a list
+        'collapsed' => array(
+          ':input[name="attach_list"]' => array('checked' => FALSE),
+        ),
+      ),
+    );
+    
+    // Handle the alias ajax logic before we render the elements
+    _aliases_ajax_logic($form, $form_state, $descriptors, $defaults);
+    
+    $fieldset['alias_options']['aliases'] = array(
+      '#type' => 'container',
+      '#tree' => TRUE,
+      '#prefix' => '<br /><div id="aliases">', // new line & div to script
+      '#suffix' => '</div>',
+      '#theme' => 'gb_maillist_aliases',
+    );
+    
+    // embed the number of aliases into the form
+    $fieldset['alias_options']['aliases']['num_aliases'] = array(
+      '#type' => 'value',
+      '#value' => $form_state['storage']['num_aliases'],
+    );
+    
+    $i = $form_state['storage']['num_aliases'];
+    for ($i = 0; $i < $form_state['storage']['num_aliases']; $i++) {
+      $fieldset['alias_options']['aliases']["alias_$i"] = array(
+        '#type' => 'textfield',
+        '#title' => t('Alias'),
+        '#description' => t('Must be unique. ' .
+            'Valid characters include lower case letters and underscores.'),
+        '#maxlength' => _ALIAS_MAX_LENGTH,
+        '#default_value' => isset($defaults["alias_{$i}"]) ? 
+              $defaults["alias_{$i}"] : "",
+      );
+      
+      $fieldset['alias_options']['aliases']["del_alias_{$i}"] = array(
+        '#type' => 'button',
+        '#value' => t("Delete alias"),
+        '#name' => "del_alias_{$i}",            // override op
+        '#href' => '',
+        '#executes_submit_callback' => FALSE,   // don't submit
+        '#limit_validation_errors' => array(),  // no elements will be validated
+        '#states' => array(
+          // enabled if we are attaching a list
+          'enabled' => array(
+            ':input[name="attach_list"]' => array('checked' => TRUE),
+          ),
+        ),
+        '#ajax' => array(
+          // ajax to add 'textfield' elements
+          'callback' => 'ajax_gb_maillist_delete_alias',
+          'wrapper' => 'aliases',
+          'method' => 'replaceWith',
+          'prevent' => 'submit click mousedown',
+        ),
+      );
+    }
+
+    $fieldset['alias_options']['add_alias'] = array(
+      '#type' => 'button',
+      '#value' => t('Add an alias'),
+      '#name' => 'add_alias',
+      '#href' => '',
+      '#executes_submit_callback' => FALSE,   // don't submit
+      '#limit_validation_errors' => array(),  // no elements will be validated
+      '#states' => array(
+        // enabled if we are attaching a list
+        'enabled' => array(
+          ':input[name="attach_list"]' => array('checked' => TRUE),
+        ),
+      ),
+      '#ajax' => array(
+        // ajax to add 'textfield' elements
+        'callback' => 'ajax_gb_maillist_add_alias',
+        'wrapper' => 'aliases',
+        'method' => 'replaceWith',
+        'prevent' => 'submit click mousedown',
+      ),
+    );
+    
+    // Group of elements to set the list options 
     $fieldset['list_options'] = array(
       '#type' => 'fieldset',
       '#title' => t('List options'),
+      '#collapsible' => TRUE,
+      '#collapsed' => $collapsed,
+      '#states' => array(
+        // collapsed if we aren't attaching a list
+        'collapsed' => array(
+          ':input[name="attach_list"]' => array('checked' => FALSE),
+        ),
+      ),
     );
     $options = array(
-      //_MAILING_LIST_TYPE_STANDARD => t('Standard mailing list (Two-way)'),
+      _MAILING_LIST_TYPE_STANDARD => t('Standard mailing list (Two-way)'),
       _MAILING_LIST_TYPE_BROADCAST => t('Broadcast only list (One-way)'),
     );
     $fieldset['list_options']['list_type'] = array(
@@ -440,6 +634,14 @@
     $fieldset['items'] = array(
       '#type' => 'fieldset',
       '#title' => t('List items'),
+      '#collapsible' => TRUE,
+      '#collapsed' => $collapsed,
+      '#states' => array(
+        // collapsed if we aren't attaching a list
+        'collapsed' => array(
+          ':input[name="attach_list"]' => array('checked' => FALSE),
+        ),
+      ),
     ); 
     foreach ($descriptors as $module => $classes) {
       foreach ($classes as $class_id => $class) {
@@ -578,6 +780,9 @@
       return; // Not including a mailing list
     }
     
+    if ($form_state['triggering_element']['#parents'][0] === 'add_alias') {
+      return; // Brought here by the add_alias AJAX event
+    }
     
     /** 
      * The internal drupal form validator can't seem to handle
@@ -586,6 +791,9 @@
      * sure they are valid e-mails as well.
      * 
      * We also need to check if a mailing list item was selected.
+     * 
+     * We also need to check if the aliases aren't duplicates, aren't empty
+     * and don't contain invalid characters.
      * 
      * @todo bug report or determine if the #states code isn't correct
      */
@@ -599,7 +807,7 @@
       } elseif (!filter_var($values['reply_to_email'], FILTER_VALIDATE_EMAIL)) {
         $email = $values['reply_to_email'];
         form_set_error('reply_to_email', 
-            t("{$email} is not a valid e-mail address."));
+            t("'{$email}' is not a valid e-mail address."));
       }
     }
     
@@ -610,26 +818,50 @@
       } elseif (!filter_var($values['from_email'], FILTER_VALIDATE_EMAIL)) {
         $email = $values['from_email'];
         form_set_error('from_email', 
-            t("{$email} is not a valid e-mail address."));
+            t("'{$email}' is not a valid e-mail address."));
+      }
+    }
+    
+    $aliases = array();
+    // Get only the elements with an alias_N key
+    foreach ($form_state['values']['aliases'] as $key => $value) {
+      if (preg_match('/^alias_[0-5]$/', $key)) {
+        $aliases[$key] = $form_state['values']['aliases'][$key];
+      }
+    }
+    $aliases_unique = array_unique($aliases); // filter duplicates
+    // Get the keys that are in $aliases but not in $aliases_unique. These
+    // are aliases with duplicate values.
+    $duplicate_keys = array_diff_key($aliases, $aliases_unique);
+    foreach ($duplicate_keys as $key => $value) {
+      form_set_error("aliases][{$key}", t('Aliases must be unique.'));
+    }
+    foreach ($aliases_unique as $key => $value) {
+      if (empty($value)) {
+        form_set_error("aliases][{$key}", t('Aliases cannot be empty.'));
+      } elseif (!preg_match('/^[a-z_]+$/', $value)) {
+        form_set_error("aliases][{$key}", 
+            t("Alias '{$value}' contains illegal characters."));
+            $form_state['rebuild'] = TRUE;
+      } elseif (_check_for_alias_record($value, isset($values['tid']) ? 
+          $values['tid'] : NULL)) {
+        form_set_error("aliases][{$key}", 
+            t("Alias '{$value}' is already in use by another mailing list."));
       }
     }
     
     // We need at least one list selected if we're attaching a list
     foreach ($values as $key => $value) {
       // Check if key is has the storage class id prefix
-      if (strpos($key, 'scid:') !== 0) {
-        continue;
-      }
-      
-      // Iterate the array of items attached
-      foreach ($value as $item) {
-        if (gettype($item) !== 'string') {
-          continue;
-        }
-        
-        // Check if element has the item id prefix, so it's checked
-        if (strpos($item, 'iid:') === 0) {
-          return; // Leave, we've found a checked item
+      if (strpos($key, 'scid:') === 0) {
+        // Iterate the array of items attached
+        foreach ($value as $item) {
+          if (gettype($item) === 'string') {
+            // Check if element has the item id prefix, so it's checked
+            if (strpos($item, 'iid:') === 0) {
+              return; // Leave, we've found a checked item
+            }
+          }
         }
       }
     }
@@ -656,11 +888,9 @@
       return;
     }
     
-    $tid = $form_state['values']['tid'];
-    $result = _delete_all_list_records_for_tid($tid);
+    $result = _delete_all_list_records_for_tid($form_state['values']['tid']);
     if (!$result) {
       drupal_set_message(t('Failed to query the database'), 'error');
-      // Something failed, rebuild the form
       $form_state['rebuild'] = TRUE;
     }
   }
@@ -694,10 +924,13 @@
     $attach = $values['attach_list'];
     $tid = $values['tid'];
     
+    dpm('submit values:');
+    dpm($values);
+    
     if (!$attach) {
       // We are not attaching a list, so, delete any previously associated
       // metadata and items in the database
-      $result = _delete_records_for_tid($tid);
+      $result = _delete_all_list_records_for_tid($tid);
     } else {
       // If the user has unselected user_defined_from we don't want to write
       // the from email because that's all we store in the database. If it's
@@ -712,7 +945,6 @@
     }
     if (!$result) {
       drupal_set_message(t('Failed to query the database'), 'error');
-      // Something failed, rebuild the form
       $form_state['rebuild'] = TRUE;
     }
   }
@@ -730,20 +962,11 @@
       watchdog('gb_maillist', 'in gb_maillist_form_forum_form_forum_alter');
     }
     
-    // Create the mailing list fieldset
-    $form['mailing_list_setup'] = array(
-      '#type' => 'fieldset',
-      '#title' => 'Mailing list',
-      '#collapsible' => TRUE,
-    );
-    
     $descriptors = _fetch_mailing_list_descriptors();
     // Typically NULL for new forms, fill to current values in db on edit
-    $defaults = _fetch_fieldset_default_values($descriptors, 
+    $defaults = _fetch_forum_form_default_values(
         isset($form['tid']) ? $form['tid']['#value'] : NULL);
-    // Insert the mailing list fieldset elements
-    _insert_fieldset_elements($form['mailing_list_setup'], 
-        $descriptors, $defaults);
+    _insert_mailing_list_elements($form, $form_state, $descriptors, $defaults);
     
     $form['#submit'][] = 'gb_maillist_forum_form_submit';
     $form['#validate'][] = 'gb_maillist_forum_form_validate';
@@ -760,6 +983,19 @@
       &$form_state, $form_id) {
      // Insert our submit handler for deleting of forums
      $form['#submit'][] = 'gb_maillist_forum_confirm_delete_submit';
+  }
+      
+  /**
+   * Implements hook_form_FORM_ID_alter()
+   * 
+   * @param array $form nested array of form elements that comprise the form
+   * @param array $form_state an array containing the current state of the form
+   * @param string $form_id string representing the name of the form itself
+   */
+  function gb_maillist_form_forum_node_form_alter(&$form, 
+      &$form_state, $form_id) {
+    // Hide the element that lets the user choose which forum to post to.
+    $form['taxonomy_forums']['#type'] = 'hidden';
   }   
  
   /** 
@@ -840,6 +1076,17 @@
       'mailing-list/view/%' => TRUE,
       'mailing-list/export/%' => TRUE,
       'mailing-list/unsubscribe/%/%' => TRUE,
+    );
+  }
+
+  /** 
+   * Implements hook_theme() 
+   */
+  function gb_maillist_theme($existing, $type, $theme, $path) {
+    return array(
+      'gb_maillist_aliases' => array(
+        'render element' => 'aliases',
+      ),
     );
   }
   

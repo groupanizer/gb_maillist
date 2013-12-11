@@ -55,65 +55,75 @@
 
   // Build an array of items for insertion into the database
   function _each_item_record($values, $tid) {
-    $items = array();
+    $records = array();
     
     foreach ($values as $key => $value) {
       // Check if key is has the storage class id prefix
-      if (strpos($key, 'scid:') !== 0) {
-        continue;
+      if (strpos($key, 'scid:') === 0) {
+        foreach ($value as $item) {
+          if (gettype($item) === 'string') {
+            // Check if element has the item id prefix
+            if (strpos($item, 'iid:') === 0) {
+              // We have an item
+              // IID:MODULE:CLASS:ITEM
+              $pieces = explode(':', $item);
+              array_shift($pieces);
+              
+              /**
+               * @todo in PHP > 5.5
+               * yield array(
+               *   'module' => $pieces[0],
+               *   'class' => $pieces[1],
+               *   'item' => $pieces[2]
+               * );
+               */
+            
+              $module = $pieces[0];
+              $class = $pieces[1];
+              $item = $pieces[2];
+              
+              $records[] = array(
+                'tid' => $tid,
+                'module' => $module,
+                'class' => $class,
+                'item' => $item,
+              );
+            }
+          }
+        } // foreach ($value as $item)
       }
-      
-      foreach ($value as $item) {
-        if (gettype($item) !== 'string') {
-          continue;
-        }
-        
-        // Check if element has the item id prefix
-        if (strpos($item, 'iid:') !== 0) {
-          continue;
-        }
-        
-        // We have an item
-        // IID:MODULE:CLASS:ITEM
-        $pieces = explode(':', $item);
-        array_shift($pieces);
-        
-        /**
-         * @todo in PHP > 5.5
-         * yield array(
-         *   'module' => $pieces[0],
-         *   'class' => $pieces[1],
-         *   'item' => $pieces[2]
-         * );
-         */
-      
-        $module = $pieces[0];
-        $class = $pieces[1];
-        $item = $pieces[2];
-        
-        $items[] = array(
-          'tid' => $tid,
-          'module' => $module,
-          'class' => $class,
-          'item' => $item,
-        );
-      } // foreach ($value as $item)
     } // foreach ($values as $key => $value)
     
-    return $items;
+    return $records;
+  }
+
+  // Build an array of aliases for insertion into the database
+  function _each_alias_record($values, $tid) {
+    $records = array();
+    
+    foreach ($values['aliases'] as $key => $value) {
+      if (preg_match('/^alias_[0-5]$/', $key)) {
+        $records[] = array('tid' => $tid, 'alias' => $value);
+      }
+    }
+    
+    return $records;
   }
   
+  /** @return boolean */
   function _delete_all_list_records_for_tid($tid) {
     return _safe_closure(function () use ($tid) {
-      $result = db_delete('gb_maillist_metadata')
+      db_delete('gb_maillist_metadata')
         ->condition('tid', $tid)
         ->execute();
-      // $result = n rows deleted, 0 is still success
-        
-      $result = db_delete('gb_maillist_items')
+
+      db_delete('gb_maillist_items')
         ->condition('tid', $tid)
         ->execute();
-      // $result = n rows deleted, 0 is still success
+      
+      db_delete('gb_maillist_aliases')
+        ->condition('tid', $tid)
+        ->execute();
       
       return TRUE;
     });
@@ -122,13 +132,15 @@
   /**
    * @todo InsertQuery::execute return value is undefined for multi-inserts.
    *       How can we check for success?
+   * 
+   * @return boolean
    */
   function _build_and_insert_list_records_for_tid($tid, &$values) {
     return _safe_closure(function () use ($tid, $values) {
       // We are attaching a list
       // build and write our query for gb_maillist_metadata
       // db_merge will handle update & insert
-      $result = db_merge('gb_maillist_metadata')
+      db_merge('gb_maillist_metadata')
         ->key(array('tid' => $tid))
         ->fields(array(
           'list_type' => $values['list_type'],
@@ -137,44 +149,50 @@
           'from_email' => $values['from_email'],
         ))
         ->execute();
-      // $result = MergeQuery::STATUS_UPDATE or MeryQuery::STATUS_INSERT
+      // MergeQuery::STATUS_UPDATE or MeryQuery::STATUS_INSERT
       
-      // Delete the old items from the database
-      $result = db_delete('gb_maillist_items')
+      db_delete('gb_maillist_items')
         ->condition('tid', $tid)
         ->execute();
-      // $result = n rows deleted, 0 is still success
+      db_delete('gb_maillist_aliases')
+        ->condition('tid', $tid)
+        ->execute();
       
-      // Build the multi-insert query
+      // Build the multi-insert queries
       $query = db_insert('gb_maillist_items')
         ->fields(array('tid', 'module', 'class', 'item'));
-      
-      // Insert each record into the query
       foreach (_each_item_record($values, $tid) as $record) {
         $query->values($record);
       }
+      $query->execute();
       
-      // Perform the query
-      $n = $query->execute();
-      // $n = ?
+      // Aliases are optional
+      if ($values['aliases']['num_aliases'] > 0) {
+        $query = db_insert('gb_maillist_aliases')
+          ->fields(array('tid', 'alias'));
+        foreach (_each_alias_record($values, $tid) as $record) {
+          $query->values($record);
+        }
+        $query->execute();
+      }
       
       return TRUE;
     });
   }
   
+  /** @return a metadata record */
   function _fetch_list_metadata_for_tid($tid) {
     return _safe_closure(function () use ($tid) {
       // Do we have metadata attached to this forum?
-      $result = db_select('gb_maillist_metadata', 'meta')
+      return db_select('gb_maillist_metadata', 'meta')
         ->fields('meta')
         ->condition('tid', $tid, '=')
         ->execute()
         ->fetchAssoc();
-      
-      return $result;
     });
   }
   
+  /** @return an array of item records */
   function _fetch_list_items_for_tid($tid) {
     return _safe_closure(function () use ($tid) {
       $query = db_select('gb_maillist_items', 'items')
@@ -196,36 +214,73 @@
     });
   }
   
+  /** @return an array of alias records */
+  function _fetch_list_aliases_for_tid($tid) {
+    return _safe_closure(function () use ($tid) {
+      $query = db_select('gb_maillist_aliases', 'a')
+        ->fields('a')
+        ->condition('tid', $tid, '=')
+        ->execute();
+        
+      $result = array();
+      $row = $query->fetchAssoc();     // first
+      if ($row) {
+        do {
+          $result[] = $row;
+          
+          $row = $query->fetchAssoc(); // next
+        } while ($row);
+      }
+      
+      return empty($result) ? FALSE : $result;
+    });
+  }
+  
+  /** @return boolean test can be used */
+  function _check_for_alias_record($alias, $tid_to_exclude = NULL) {
+    return _safe_closure(function () use ($alias, $tid_to_exclude) {
+      $query = db_select('gb_maillist_aliases', 'a')
+        ->fields('a')
+        ->condition('alias', $alias, '=');
+        
+      if (!is_null($tid_to_exclude)) {
+        $query->condition('tid', $tid_to_exclude, '!=');
+      }
+        
+      return $query->execute()->fetch();
+    });
+  }
+  
+  /** @return boolean */
   function _insert_blacklist_record($tid, $email) {
     return _safe_closure(function () use ($tid, $email) {
-      $result = db_insert('gb_maillist_blacklist')
+      db_insert('gb_maillist_blacklist')
         ->fields(array(
           'tid' => $tid,
           'email' => $email,
         ))
         ->execute();
-        // $result = last insert ID of the query
         
-        return TRUE;
+      return TRUE;
     });
   }
   
-  function _fetch_matching_blacklist_record($tid, $email) {
+  /** @return boolean test can be used */
+  function _check_for_matching_blacklist_record($tid, $email) {
     return _safe_closure(function () use ($tid, $email) {
-      $result = db_select('gb_maillist_blacklist', 'black')
+      return db_select('gb_maillist_blacklist', 'black')
         ->fields('black')
         ->condition('tid', $tid, '=')
         ->condition('email', $email, '=')
         ->execute()
         ->fetch();
-        
-        return $result;
     });
   }
   
+  /** @return an array of e-mail addresses */
   function _fetch_blacklisted_emails_for_tid($tid) {
     return _safe_closure(function () use ($tid) {
-      return $query = db_select('gb_maillist_blacklist', 'black')
+      return db_select('gb_maillist_blacklist', 'black')
         ->fields('black', array('email'))
         ->condition('tid', $tid, '=')
         ->execute()

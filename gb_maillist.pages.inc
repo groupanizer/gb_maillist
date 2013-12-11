@@ -86,7 +86,7 @@
     $already = t('already');
     
     // Already blacklisted?
-    if (_fetch_matching_blacklist_record($tid, $email)) {
+    if (_check_for_matching_blacklist_record($tid, $email)) {
       return "{$text}&nbsp;<em>{$already}</em>";
     }
     

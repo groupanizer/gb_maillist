@@ -39,14 +39,14 @@
             'size' => 'tiny',
           ),
           'reply_to_type' => array(
-            'description' => t('The type of reply-to to generate'),
+            'description' => t('How the reply-to e-mail is generated'),
             'type' => 'int',
             'not null' => TRUE,
             'size' => 'tiny'
           ),
           'reply_to_email' => array(
             'description' => 
-                t('(optional) user-defined email to act as the reply-to'),
+                t('(optional) user-defined e-mail to act as the reply-to'),
             'type' => 'varchar',
             'not null' => FALSE,
             'default' => NULL,
@@ -54,7 +54,7 @@
           ),
           'from_email' => array(
             'description' => 
-                t('(optional) user-defined email to act a the from email'),
+                t('(optional) user-defined e-mail to act as the from e-mail'),
             'type' => 'varchar',
             'not null' => FALSE,
             'default' => NULL,
@@ -108,6 +108,23 @@
           ),
         ), // fields
       ), // gb_maillist_blacklist
+      'gb_maillist_aliases' => array(
+        'description' => t('A table of mailing list aliases for gb_maillist'),
+        'fields' => array(
+          'tid' => array(
+            'description' => t('The tid of the forum this alias is bound to'),
+            'type' => 'int',
+            'not null' => TRUE,
+            'unsigned' => TRUE,
+          ),
+          'alias' => array(
+            'description' => t('An alias used to send e-mail to the list'),
+            'type' => 'varchar',
+            'not null' => TRUE,
+            'length' => _ALIAS_MAX_LENGTH,
+          ),
+        ), // fields
+      ), // gb_maillist_aliases
     ); 
   }
 
@@ -137,5 +154,32 @@
     
     db_create_table('gb_maillist_blacklist', $schema['gb_maillist_blacklist']);
   }
-
+  
+  /**
+   * Add the database table {gb_maillist_aliases}.
+   */
+  function gb_maillist_update_7101(&$sandbox) {
+    $schema = array(
+      'gb_maillist_aliases' => array(
+        'description' => t('A table of mailing list aliases for gb_maillist'),
+        'fields' => array(
+          'tid' => array(
+            'description' => t('The tid of the forum this alias is bound to'),
+            'type' => 'int',
+            'not null' => TRUE,
+            'unsigned' => TRUE,
+          ),
+          'alias' => array(
+            'description' => t('An alias used to send e-mail to the list'),
+            'type' => 'varchar',
+            'not null' => TRUE,
+            'length' => _ALIAS_MAX_LENGTH,
+          ),
+        ), // fields
+      ), // gb_maillist_aliases
+    );
+    
+    db_create_table('gb_maillist_aliases', $schema['gb_maillist_aliases']);
+  }
+ 
   
