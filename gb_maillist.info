@@ -1,4 +1,4 @@
-name = Groupanizer Basic - Mailing Lists (D7)
+name = Mailing Lists
 description = Mailing lists for Groupanizer Universe & SING 3
 package = Groupanizer Basic Group
 core = 7.x
