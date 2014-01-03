@@ -57,42 +57,32 @@
   function _each_item_record($values, $tid) {
     $records = array();
     
-    foreach ($values as $key => $value) {
-      // Check if key is has the storage class id prefix
-      if (strpos($key, 'scid:') === 0) {
-        foreach ($value as $item) {
-          if (gettype($item) === 'string') {
-            // Check if element has the item id prefix
-            if (strpos($item, 'iid:') === 0) {
-              // We have an item
-              // IID:MODULE:CLASS:ITEM
-              $pieces = explode(':', $item);
-              array_shift($pieces);
-              
-              /**
-               * @todo in PHP > 5.5
-               * yield array(
-               *   'module' => $pieces[0],
-               *   'class' => $pieces[1],
-               *   'item' => $pieces[2]
-               * );
-               */
-            
-              $module = $pieces[0];
-              $class = $pieces[1];
-              $item = $pieces[2];
-              
-              $records[] = array(
-                'tid' => $tid,
-                'module' => $module,
-                'class' => $class,
-                'item' => $item,
-              );
-            }
-          }
-        } // foreach ($value as $item)
+    $list_classes = _extract_values_with_keys_that_match_pattern(
+        $values, '/^scid:.*$/');
+    foreach ($list_classes as $list_class) {
+      foreach ($list_class as $item_key => $item_value) {
+        if ($item_key === $item_value) { // checked if value === key
+          // IID:MODULE:CLASS:ITEM
+          $pieces = explode(':', $item_value);
+          array_shift($pieces);
+          
+          /**
+           * @todo in PHP > 5.5
+           * yield array(
+           *   'module' => $pieces[0],
+           *   'class' => $pieces[1],
+           *   'item' => $pieces[2]
+           * );
+           */
+          $records[] = array(
+            'tid' => $tid,
+            'module' => $pieces[0],
+            'class' => $pieces[1],
+            'item' => $pieces[2]
+          );
+        }
       }
-    } // foreach ($values as $key => $value)
+    }
     
     return $records;
   }
@@ -101,10 +91,10 @@
   function _each_alias_record($values, $tid) {
     $records = array();
     
-    foreach ($values['aliases'] as $key => $value) {
-      if (preg_match('/^alias_[0-5]$/', $key)) {
-        $records[] = array('tid' => $tid, 'alias' => $value);
-      }
+    $aliases = _extract_values_with_keys_that_match_pattern(
+        $values['aliases'], '/^alias_[0-5]$/');
+    foreach ($aliases as $alias) {
+      $records[] = array('tid' => $tid, 'alias' => $alias);
     }
     
     return $records;

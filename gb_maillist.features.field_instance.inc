@@ -1,13 +1,13 @@
 <?php
 /**
  * @file
- * gb_maillist_feature.features.field_instance.inc
+ * gb_maillist.features.field_instance.inc
  */
 
 /**
  * Implements hook_field_default_field_instances().
  */
-function gb_maillist_feature_field_default_field_instances() {
+function gb_maillist_field_default_field_instances() {
   $field_instances = array();
 
   // Exported field_instance: 'comment-comment_node_forum-field_attachment'

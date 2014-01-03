@@ -2,18 +2,56 @@
 
   module_load_include('inc', 'gb_maillist', 'constants');
   
-/**
- * Implements hook_install()
- */
+  /**
+   * Implements hook_enable().
+   */
+  function gb_maillist_enable() {
+    // Set the MailSystem for gb_mailllist
+    mailsystem_set(array('gb_maillist' => 'MimeMailSystem'));
+  }
+  
+  /**
+   * Implements hook_disable().
+   */
+  function gb_maillist_disable() {
+    mailsystem_clear(array('gb_maillist' => 'MimeMailSystem'));
+  }
+  
+  /**
+   * Implements hook_install()
+   */
   function gb_maillist_install() {
-    if (_WATCHDOG === 1) watchdog('gb_maillist', 'in gb_maillist_install');
+    //
   }
  
- /**
-  * Implements hook_uninstall()
-  */
+  /**
+   * Implements hook_uninstall()
+   */
   function gb_maillist_uninstall() {
-    if (_WATCHDOG === 1) watchdog('gb_maillist', 'in gb_maillist_uninstall');
+    //
+  }
+  
+  /**
+   * Implements hook_default_permissions()
+   */
+  function gb_maillist_default_permissions() {
+      return array(
+      'administer forums' => array(
+        'name' => 'administer forums',
+        'roles' => array(
+          'site_admin' => 'site_admin',
+          'communications' => 'communications',
+        ),
+        'module' => 'forum',
+      ),
+      'send arbitrary files' => array(
+        'name' => 'send arbitrary files',
+        'roles' => array(
+          'authenticated_user' => 'authenticated_user'
+        ),
+        'module' => 'mimemail'
+      ),
+    );
   }
   
   /**

@@ -1,13 +1,13 @@
 <?php
 /**
  * @file
- * gb_maillist_feature.features.field_base.inc
+ * gb_maillist.features.field_base.inc
  */
 
 /**
  * Implements hook_field_default_field_bases().
  */
-function gb_maillist_feature_field_default_field_bases() {
+function gb_maillist_field_default_field_bases() {
   $field_bases = array();
 
   // Exported field_base: 'field_attachment'

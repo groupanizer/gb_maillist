@@ -1,13 +1,13 @@
 <?php
 /**
  * @file
- * gb_maillist_feature.features.menu_links.inc
+ * gb_maillist.features.menu_links.inc
  */
 
 /**
  * Implements hook_menu_default_menu_links().
  */
-function gb_maillist_feature_menu_default_menu_links() {
+function gb_maillist_menu_default_menu_links() {
   $menu_links = array();
 
   // Exported menu link: menu-groupanizer-menu:forum
