@@ -220,7 +220,6 @@
       return; // There is no mailing list attached to this forum
     }
     
-    dpm($node);
     return;
     
     $update = !$node->is_new;
