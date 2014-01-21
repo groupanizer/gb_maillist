@@ -1277,22 +1277,3 @@
     _comment_update_and_insert($comment);
   }
   
-
-  /**
-   * Implements hook_context_widgets
-   */
-  function gb_maillist_context_widgets() {
-    return array(
-      'forum*' => array( 
-        'configure' => array(
-          'title' => t("Discussions settings"), 
-          'href' => 'admin/structure/forum'
-        ),
-        'help' => array(
-          'title' => t("Discussions help"), 
-          'href' => 'http://support.groupanizer.com'
-        ),
-      ),
-    );
-  }
-  
