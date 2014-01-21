@@ -13,7 +13,7 @@ function gb_maillist_field_default_field_bases() {
   // Exported field_base: 'field_attachment'
   $field_bases['field_attachment'] = array(
     'active' => 1,
-    'cardinality' => 1,
+    'cardinality' => -1,
     'deleted' => 0,
     'entity_types' => array(),
     'field_name' => 'field_attachment',
@@ -35,7 +35,7 @@ function gb_maillist_field_default_field_bases() {
     'settings' => array(
       'display_default' => 0,
       'display_field' => 0,
-      'uri_scheme' => 'public',
+      'uri_scheme' => 'private',
     ),
     'translatable' => 0,
     'type' => 'file',

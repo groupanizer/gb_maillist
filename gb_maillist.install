@@ -1,34 +1,35 @@
 <?php
 
-  module_load_include('inc', 'gb_maillist', 'constants');
+  module_load_include('inc', 'gb_maillist', 'gb_maillist.constants');
   
   /**
    * Implements hook_enable().
    */
   function gb_maillist_enable() {
-    // Set the MailSystem for gb_mailllist
-    mailsystem_set(array('gb_maillist' => 'MimeMailSystem'));
+    //
   }
   
   /**
    * Implements hook_disable().
    */
   function gb_maillist_disable() {
-    mailsystem_clear(array('gb_maillist' => 'MimeMailSystem'));
+    //
   }
   
   /**
    * Implements hook_install()
    */
   function gb_maillist_install() {
-    //
+    variable_set('gb_maillist_filter_format', 'full_html');
+    variable_set('gb_maillist_email_max_size', 10 * 1024 * 1024); // 10 MB
   }
  
   /**
    * Implements hook_uninstall()
    */
   function gb_maillist_uninstall() {
-    //
+    variable_del('gb_maillist_filter_format');
+    variable_del('gb_maillist_email_max_size');
   }
   
   /**
@@ -57,9 +58,7 @@
   /**
    * Implements hook_schema()
    */
-  function gb_maillist_schema() {
-    if (_WATCHDOG === 1) watchdog('gb_maillist', 'in gb_maillist_schema');
-    
+  function gb_maillist_schema() {    
     return array(
       'gb_maillist_metadata' => array(
         'description' => t('A table of mailing list metadata for gb_maillist'),
@@ -77,7 +76,7 @@
             'size' => 'tiny',
           ),
           'reply_to_type' => array(
-            'description' => t('How the reply-to e-mail is generated'),
+            'description' => t('The type of reply-to for a broadcast list'),
             'type' => 'int',
             'not null' => TRUE,
             'size' => 'tiny'

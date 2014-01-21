@@ -19,7 +19,7 @@
         } else {
           $message = t('Failed to send e-mail to %to.', 
               array('%to' => $result['to']));
-          drupal_set_message($message, 'error');
+          watchdog('gb_maillist', $message);
         }
       }
       
@@ -34,6 +34,6 @@
           'arguments: @arguments', array(
           '%error_operation' => $error_operation[0], 
           '@arguments' => print_r($error_operation[1], TRUE)));
-      drupal_set_message($message, 'error');
+      watchdog('gb_maillist', $message);
     }
   }

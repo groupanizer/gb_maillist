@@ -30,16 +30,35 @@ function gb_maillist_field_default_field_instances() {
     'required' => 0,
     'settings' => array(
       'description_field' => 0,
-      'file_directory' => 'attachments',
-      'file_extensions' => 'txt pdf jpg jpeg png',
-      'max_filesize' => '10 MB',
+      'file_directory' => 'forum',
+      'file_extensions' => 'txt rtf pdf jpg jpeg png bmp doc docx ppt pptx',
+      'filefield_paths' => array(
+        'active_updating' => 0,
+        'file_name' => array(
+          'options' => array(
+            'pathauto' => FALSE,
+            'transliterate' => 0,
+          ),
+          'value' => '[file:ffp-name-only-original].[file:ffp-extension-original]',
+        ),
+        'file_path' => array(
+          'options' => array(
+            'pathauto' => FALSE,
+            'transliterate' => 0,
+          ),
+          'value' => 'forum/[comment:node:nid]',
+        ),
+        'retroactive_update' => 0,
+      ),
+      'filefield_paths_enabled' => 1,
+      'max_filesize' => '9 MB',
       'user_register_form' => FALSE,
     ),
     'widget' => array(
       'active' => 1,
       'module' => 'file',
       'settings' => array(
-        'progress_indicator' => 'throbber',
+        'progress_indicator' => 'bar',
       ),
       'type' => 'file_generic',
       'weight' => 2,
@@ -72,16 +91,35 @@ function gb_maillist_field_default_field_instances() {
     'required' => 0,
     'settings' => array(
       'description_field' => 0,
-      'file_directory' => 'attachments',
-      'file_extensions' => 'txt pdf jpg jpeg png',
-      'max_filesize' => '10 MB',
+      'file_directory' => 'forum',
+      'file_extensions' => 'txt rtf pdf jpg jpeg png bmp doc docx ppt pptx',
+      'filefield_paths' => array(
+        'active_updating' => 0,
+        'file_name' => array(
+          'options' => array(
+            'pathauto' => FALSE,
+            'transliterate' => 0,
+          ),
+          'value' => '[file:ffp-name-only-original].[file:ffp-extension-original]',
+        ),
+        'file_path' => array(
+          'options' => array(
+            'pathauto' => FALSE,
+            'transliterate' => 0,
+          ),
+          'value' => 'forum/[node:nid]',
+        ),
+        'retroactive_update' => 0,
+      ),
+      'filefield_paths_enabled' => 1,
+      'max_filesize' => '9 MB',
       'user_register_form' => FALSE,
     ),
     'widget' => array(
       'active' => 1,
       'module' => 'file',
       'settings' => array(
-        'progress_indicator' => 'throbber',
+        'progress_indicator' => 'bar',
       ),
       'type' => 'file_generic',
       'weight' => 33,
