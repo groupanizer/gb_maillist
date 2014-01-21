@@ -239,8 +239,6 @@
       return;
     }
     
-    DPM('DIRTY DEEDS AND THEY\'RE DONE DIRT CHEAP');
-    
     $tid = _get_forum_tid_from_topic_node($node);
     if (!$tid) {
       drupal_set_message(t('Forum node has no attached tid'), 'error');
@@ -1277,5 +1275,24 @@
    */
   function gb_maillist_comment_update($comment) {
     _comment_update_and_insert($comment);
+  }
+  
+
+  /**
+   * Implements hook_context_widgets
+   */
+  function gb_maillist_context_widgets() {
+    return array(
+      'forum*' => array( 
+        'configure' => array(
+          'title' => t("Discussions settings"), 
+          'href' => 'admin/structure/forum'
+        ),
+        'help' => array(
+          'title' => t("Discussions help"), 
+          'href' => 'http://support.groupanizer.com'
+        ),
+      ),
+    );
   }
   
