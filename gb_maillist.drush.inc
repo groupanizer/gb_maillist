@@ -230,7 +230,8 @@
     
     module_load_include('inc', 'mimemail', 'includes/mimemail.incoming');
     
-    $email = stream_get_contents(STDIN);            // read raw e-mail
+    $email = stream_get_contents(STDIN);            // read encoded raw e-mail
+    $email = base64_decode($email);                 // decode e-mail
     $email = mimemail_parse($email);                // parse e-mail into array
     $email['html'] = _parse_email_for_body($email); // re-parse to fix bugs
     
