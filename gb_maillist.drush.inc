@@ -266,6 +266,4 @@
     }
 
     _post_to_forum($tid, $user, $email);
-    
-    exit(0);
   }
