@@ -30,7 +30,7 @@ function gb_maillist_field_default_field_instances() {
     'required' => 0,
     'settings' => array(
       'description_field' => 0,
-      'file_directory' => 'forum',
+      'file_directory' => 'attachments',
       'file_extensions' => 'txt rtf pdf jpg jpeg png bmp doc docx ppt pptx',
       'filefield_paths' => array(
         'active_updating' => 0,
@@ -46,7 +46,7 @@ function gb_maillist_field_default_field_instances() {
             'pathauto' => FALSE,
             'transliterate' => 0,
           ),
-          'value' => 'forum/[comment:node:nid]',
+          'value' => 'attachments/[comment:node:nid]',
         ),
         'retroactive_update' => 0,
       ),
@@ -91,7 +91,7 @@ function gb_maillist_field_default_field_instances() {
     'required' => 0,
     'settings' => array(
       'description_field' => 0,
-      'file_directory' => 'forum',
+      'file_directory' => 'attachments',
       'file_extensions' => 'txt rtf pdf jpg jpeg png bmp doc docx ppt pptx',
       'filefield_paths' => array(
         'active_updating' => 0,
@@ -107,7 +107,7 @@ function gb_maillist_field_default_field_instances() {
             'pathauto' => FALSE,
             'transliterate' => 0,
           ),
-          'value' => 'forum/[node:nid]',
+          'value' => 'attachments/[node:nid]',
         ),
         'retroactive_update' => 0,
       ),

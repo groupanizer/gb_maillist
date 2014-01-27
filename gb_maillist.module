@@ -327,7 +327,8 @@
     $defaults = array(
         'attach_list' => 0,
         'list_type' => _MAILING_LIST_TYPE_BROADCAST,
-        'reply_to_type' => _BROADCAST_REPLY_TO_TYPE_POSTERS_EMAIL,
+        'broadcast_reply_to_type' => _BROADCAST_REPLY_TO_TYPE_POSTERS_EMAIL,
+        'standard_reply_to_type' => _STANDARD_REPLY_TO_TYPE_POSTERS_EMAIL,
         'reply_to_email' => NULL,
         'from_email' => NULL,
         'user_defined_from' => NULL,
@@ -1168,7 +1169,7 @@
   }   
  
   /** 
-   * Implements hook_page_alter 
+   * Implements hook_page_alter() 
    */
   function gb_maillist_page_alter(&$page) {
     // Try and read the taxonomy from the path forum/%
@@ -1179,39 +1180,48 @@
         // Append our link
         global $base_url;
         $tid = $term->tid;
-        $t = t('View the e-mails associated with this list');
-        $markup = "<a href =\"{$base_url}/mailing-list/view/{$tid}\">{$t}</a";
+        $translatable = t('View the e-mails associated with this list');
+        $markup = "<a href =\"{$base_url}/g/comm/maillist/view/{$tid}\">" . 
+            "{$translatable}</a";
         $page['content']['system_main']['main']['#markup'] .= $markup;
       }
     }
   }
       
   /**
-   * Implemenets hook menu
+   * Implemenets hook_menu()
    */
   function gb_maillist_menu() {
     return array(
-      'mailing-list/view/%' => array(
+      'g/comm/maillist/view/%' => array(
         'title' => t('View e-mails assocated with a mailing list'),
         'page callback' => 'gb_maillist_view_list_page',
-        'page arguments' => array(2), // tid as argument
+        'page arguments' => array(4), // tid as argument
         'access arguments' => array('administer forums'),
         'file' => 'gb_maillist.pages.inc',
         'type' => MENU_CALLBACK,
       ),
-      'mailing-list/export/%' => array(
+      'g/comm/maillist/export/%' => array(
         'title' => t('Export a mailing list to CSV'),
         'page callback' => 'gb_maillist_export_list_page',
-        'page arguments' => array(2), // tid as argument
+        'page arguments' => array(4), // tid as argument
         'access arguments' => array('administer forums'),
         'file' => 'gb_maillist.pages.inc',
         'type' => MENU_CALLBACK,
       ),
-      'mailing-list/unsubscribe/%/%' => array(
+      'g/comm/maillist/unsubscribe/%/%' => array(
         'title' => t('Unsubscribe from a mailing list'),
         'page callback' => 'gb_maillist_unsubscribe_from_list_page',
-        'page arguments' => array(2, 3), // nid & email as arguments
+        'page arguments' => array(4, 5), // nid & email as arguments
         'access arguments' => array(TRUE),
+        'file' => 'gb_maillist.pages.inc',
+        'type' => MENU_CALLBACK,
+      ),
+      'g/comm/maillist/forums' => array(
+        'title' => t('Groupanizer Mailing List Forums'),
+        'page callback' => 'gb_maillist_forums_page',
+        'page arguments' => array(),
+        'access arguments' => array('access forums'),
         'file' => 'gb_maillist.pages.inc',
         'type' => MENU_CALLBACK,
       ),
@@ -1222,9 +1232,9 @@
    * Implements hook_admin_paths_alter()
    */
   function gb_maillist_admin_paths_alter(&$paths) {
-    $paths['mailing-list/view/%'] = TRUE;
-    $paths['mailing-list/export/%'] = TRUE;
-    $paths['mailing-list/unsubscribe/%/%'] = TRUE;
+    $paths['g/comm/maillist/view/%'] = TRUE;
+    $paths['g/comm/maillist/export/%'] = TRUE;
+    $paths['g/comm/maillist/unsubscribe/%/%'] = TRUE;
   }
   
   /**
@@ -1232,9 +1242,9 @@
    */
   function gb_maillist_admin_paths() {
     return array(
-      'mailing-list/view/%' => TRUE,
-      'mailing-list/export/%' => TRUE,
-      'mailing-list/unsubscribe/%/%' => TRUE,
+      'g/comm/maillist/view/%' => TRUE,
+      'g/comm/maillist/export/%' => TRUE,
+      'g/comm/maillist/unsubscribe/%/%' => TRUE,
     );
   }
 
@@ -1275,5 +1285,18 @@
    */
   function gb_maillist_comment_update($comment) {
     _comment_update_and_insert($comment);
+  }
+  
+  /**
+   * Implements hook_permission()
+   */
+  function gb_maillist_permission() {
+    return array(
+      'view forums' => array(
+        'title' => t('View the forums'),
+        'description' => t('This is a top-level permission that allows users' .
+            ' to view the forums'),
+      ),
+    );
   }
   

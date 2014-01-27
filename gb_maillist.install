@@ -22,6 +22,9 @@
   function gb_maillist_install() {
     variable_set('gb_maillist_filter_format', 'full_html');
     variable_set('gb_maillist_email_max_size', 10 * 1024 * 1024); // 10 MB
+    
+    // Re-build permissions for forum_access
+    node_access_rebuild();
   }
  
   /**
@@ -30,6 +33,7 @@
   function gb_maillist_uninstall() {
     variable_del('gb_maillist_filter_format');
     variable_del('gb_maillist_email_max_size');
+    variable_del('gb_maillist_file_scheme');
   }
   
   /**
@@ -44,6 +48,13 @@
           'communications' => 'communications',
         ),
         'module' => 'forum',
+      ),
+      'view forums' => array(
+        'name' => 'view forums',
+        'roles' => array(
+          'authenticated_user' => 'authenticated_user'
+        ),
+        'module' => 'gb_maillist'
       ),
       'send arbitrary files' => array(
         'name' => 'send arbitrary files',

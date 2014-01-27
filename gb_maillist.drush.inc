@@ -73,8 +73,7 @@
       $body = $email['html']; // mimemail parsed the e-mail properly
     }
     
-    return $body;
-       
+    return $body;    
   }
   
   // Extract only the e-mails from any RFC compliant header
@@ -90,7 +89,7 @@
     );
   }
   
-  function _save_attachments_and_generate_file_fields($user, $email) {
+  function _save_attachments_and_generate_file_fields($nid, $user, $email) {
     $file_fields = array();
     
     for ($i = 0; $i < count($email['attachments']); $i++) {
@@ -107,8 +106,11 @@
       }
       
       // Save file data
-      /** @todo save where? */
-      $destination = file_default_scheme() . '://' . $filename;
+      $destination = "private://attachments/{$nid}/";
+      // Make sure the directory exists and is writable
+      file_prepare_directory($destination, 
+          FILE_MODIFY_PERMISSIONS | FILE_CREATE_DIRECTORY);
+      $destination .= $filename;
       if ($uri = file_unmanaged_save_data($attachment['content'], 
           $destination, FILE_EXISTS_RENAME)) {
         // Create and save file object
@@ -165,12 +167,16 @@
       // MimeMail creates the element html even for plaintext e-mails
       // and wraps the text in <p> tags.
       $node->body[LANGUAGE_NONE][0]['value'] = $email['html'];
-      $file_fields = _save_attachments_and_generate_file_fields($user->uid, 
-          $email);
+      node_submit($node);
+      node_save($node);
+      // Now we have a node id and can write the attachments
+      // into the proper directory structure
+      $file_fields = _save_attachments_and_generate_file_fields(
+          $node->nid, $user, $email);
       for ($i = 0; $i < count($file_fields); $i++) {
         $node->field_attachment[LANGUAGE_NONE][$i] = $file_fields[$i];
       }
-      node_submit($node);
+      // Re-save
       node_save($node);
     } catch (Exception $e) {
       watchdog_exception('gb_maillist', $e);
@@ -195,8 +201,8 @@
       $comment->comment_body[LANGUAGE_NONE][0]['format'] = variable_get(
           'gb_maillist_filter_format');
       $comment->comment_body[LANGUAGE_NONE][0]['value'] = $email['html'];
-      $file_fields = _save_attachments_and_generate_file_fields($user->uid, 
-          $email);
+      $file_fields = _save_attachments_and_generate_file_fields(
+          $nid, $user, $email);
       for ($i = 0; $i < count($file_fields); $i++) {
         $comment->field_attachment[LANGUAGE_NONE][$i] = $file_fields[$i];
       }
@@ -204,8 +210,7 @@
       comment_save($comment);
     } catch (Exception $e) {
       watchdog_exception('gb_maillist', $e);
-    }
-    
+    } 
   }
 
   function _post_to_forum($tid, $user, $email) {
@@ -240,7 +245,7 @@
 
     watchdog('gb_maillist', "{$from} -> {$to}:\n{$email['html']}", NULL);
     
-    // Sanitize
+    // Parse the alias & from
     $parsed_to = _parse_string_for_emails($to);
     $alias = $parsed_to['aliases'][0];
     
@@ -259,8 +264,8 @@
     if (!$user) {           // No, so we'll try and proceed as anoynmous
       $user = user_load(0); // anonymous
     }
-
-    // Check permissions
+    
+    // Check for posting permission
     if (!forum_access_access('create', $tid, $user)) {
       exit(EX_NOPERM);
     }
