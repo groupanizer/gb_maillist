@@ -1217,8 +1217,8 @@
         'file' => 'gb_maillist.pages.inc',
         'type' => MENU_CALLBACK,
       ),
-      'g/comm/maillist/forums' => array(
-        'title' => t('Groupanizer Mailing List Forums'),
+      'g/comm/maillist/board' => array(
+        'title' => t('Discussion Boards'),
         'page callback' => 'gb_maillist_forums_page',
         'page arguments' => array(),
         'access arguments' => array('access forums'),
