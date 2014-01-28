@@ -214,16 +214,51 @@
   }
 
   function _post_to_forum($tid, $user, $email) {
+    global $base_url;
+    $host = parse_url($base_url, PHP_URL_HOST);
+    $domain = preg_replace('/^www\./', '', $host);
     
-    /** @todo check for in-reply-to */
-    
-    /** @todo check subject */
-    
-    if (0) {
-      _post_comment_to_topic($tid, $user, $email);
-    } else {
-      _post_new_topic($tid, $user, $email);
+    // Try and locate the forum topic via In-Reply-To: <$tid.$nid@$domain>
+    if (isset($email['headers']['In-Reply-To'])) {
+      $inreplyto = $email['headers']['In-Reply-To'];
+      
+      $matches = array();
+      if (preg_match("/^<([\d]+).([\d]+)@{$domain}>.*$/", 
+          $inreplyto, $matches)) {
+        $inreplyto_tid = $matches[1];
+        $inreplyto_nid = $matches[2];
+        
+        if ($inreplyto_tid == $tid) { // this check is to prevent spoofing
+          $query = new EntityFieldQuery();
+          $result = $query->entityCondition('entity_type', 'node')
+              ->entityCondition('bundle', 'forum')
+              ->propertyCondition('nid', $inreplyto_nid)
+              ->fieldCondition('taxonomy_forums', 'tid', $inreplyto_tid)
+              ->execute();
+          if ($result && count($result)) {
+            return _post_comment_to_topic($nid, $user, $email); 
+          }
+        }
+      }
     }
+          
+    // Try and locate the forum topic via the subject
+    $subject = $email['headers']['Subject'];
+    $subject = preg_replace("/^(RE:|FWD:)\s?/i", '', $subject);
+    
+    $query = new EntityFieldQuery();
+    $result = $query->entityCondition('entity_type', 'node')
+        ->entityCondition('bundle', 'forum')
+        ->propertyCondition('title', $subject)
+        ->fieldCondition('taxonomy_forums', 'tid', $tid)
+        ->execute();
+    if ($result) {
+      $node = array_shift($result); // take the first match
+      return _post_comment_to_topic($node->nid, $user, $email);
+    }    
+   
+    // Couldn't find the topic!
+    _post_new_topic($tid, $user, $email);
   }
   
   /** @todo check multi email */

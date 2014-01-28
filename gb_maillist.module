@@ -215,6 +215,7 @@
         // Set headers for standard lists
         $email->add_header('Precedence', 'bulk');
         $email->add_header('List-Id', "<{$nid}.{$domain}>");
+        $email->add_header('Message-Id', "<{$nid}.{$tid}@{$domain}>");
       }
     
       $operations[] = array('_dispatch_email', array($dispatcher, $email));
