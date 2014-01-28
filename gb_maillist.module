@@ -177,7 +177,7 @@
         "{$alias}@{$domain}" : "broadcast@{$domain}";
     $bounces = "bounces@{$domain}";
     
-    $dispatcher = new EmailDispatcher($sender, $bounces, FALSE);
+    $dispatcher = new EmailDispatcher($sender, $bounces, TRUE);
     
     // Construct an array of batch operations
     $operations = array();
