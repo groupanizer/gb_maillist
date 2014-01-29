@@ -108,6 +108,21 @@
     // dpm($email);
   }
   
+  function _get_base_url() {
+    global $base_url;
+    return $base_url;
+  }
+  
+  function _get_user() {
+    global $user;
+    return $user;
+  }
+  
+  function _get_domain() {
+    global $base_url;
+    return preg_replace('/^www\./', '', parse_url($base_url, PHP_URL_HOST));
+  }
+  
   function _dispatch_emails_for_post($nid, $metadata, $subject, $body, 
       $update, $plain, $attachment_fids) {
     $tid = $metadata['tid'];
@@ -128,12 +143,9 @@
       return;
     }
     
-    global $base_url;
-    global $user;
-    
-    // Get the current site's domain name
-    $host = parse_url($base_url, PHP_URL_HOST);
-    $domain = preg_replace('/^www\./', '', $host);
+    $base_url = _get_base_url();
+    $user = _get_user();
+    $domain = _get_domain();
     $alias = '';
     
     // Generate the reply-to e-mail
@@ -1038,7 +1050,7 @@
    */
   function gb_maillist_forum_confirm_delete_submit($form, &$form_state) {
     // Is a user logged in and authenticated?
-    global $user;
+    $user = _get_user();
     if (!(isset($user->uid)) || $user->uid === 0) {
       drupal_access_denied();
     }
@@ -1070,7 +1082,7 @@
     }
     
     // Is a user logged in and authenticated?
-    global $user;
+    $user = _get_user();
     if (!(isset($user->uid)) || $user->uid === 0) {
       drupal_access_denied();
     }
@@ -1173,13 +1185,16 @@
    * Implements hook_page_alter() 
    */
   function gb_maillist_page_alter(&$page) {
+    /*
+     * DEPRECATED *
+     * 
     // Try and read the taxonomy from the path forum/%
     // and insert a URL to a page to view the emails!
     $term = menu_get_object('forum_forum', 1);
     if (!empty($term)) {
       if ($term->vocabulary_machine_name === 'forums') {
         // Append our link
-        global $base_url;
+        $base_url = _get_base_url();
         $tid = $term->tid;
         $translatable = t('View the e-mails associated with this list');
         $markup = "<a href =\"{$base_url}/g/comm/maillist/view/{$tid}\">" . 
@@ -1187,6 +1202,7 @@
         $page['content']['system_main']['main']['#markup'] .= $markup;
       }
     }
+     */
   }
       
   /**
@@ -1195,7 +1211,7 @@
   function gb_maillist_menu() {
     return array(
       'g/comm/maillist/view/%' => array(
-        'title' => t('View e-mails assocated with a mailing list'),
+        'title' => t('View the e-mail(s) assocated with a mailing list'),
         'page callback' => 'gb_maillist_view_list_page',
         'page arguments' => array(4), // tid as argument
         'access arguments' => array('administer forums'),
@@ -1222,9 +1238,9 @@
         'title' => t('Discussion Boards'),
         'page callback' => 'gb_maillist_forums_page',
         'page arguments' => array(),
-        'access arguments' => array('access forums'),
+        'access arguments' => array('view forums'),
         'file' => 'gb_maillist.pages.inc',
-        'type' => MENU_CALLBACK,
+        'type' => MENU_NORMAL_ITEM,
       ),
     );
   }

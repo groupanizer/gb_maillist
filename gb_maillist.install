@@ -33,114 +33,142 @@
   function gb_maillist_uninstall() {
     variable_del('gb_maillist_filter_format');
     variable_del('gb_maillist_email_max_size');
-    variable_del('gb_maillist_file_scheme');
   }
   
   /**
    * Implements hook_default_permissions()
    */
   function gb_maillist_default_permissions() {
-  $permissions = array();
-
-  // Exported permission: 'view forums'.
-  $permissions['view forums'] = array(
-    'name' => 'view forums',
-    'roles' => array(
-      'Candidate' => 'Candidate',
-      'Communications' => 'Communications',
-      'Events' => 'Events',
-      'Executive' => 'Executive',
-      'Librarian' => 'Librarian',
-      'Member' => 'Member',
-      'Member Inactive' => 'Member Inactive',
-      'Membership' => 'Membership',
-      'Music' => 'Music',
-      'Parent' => 'Parent',
-      'Site Admin' => 'Site Admin',
-      'Supporter' => 'Supporter',
-    ),
-    'module' => 'gb_maillist',
-  );
-
-  // Exported permission: 'create forum content'.
-  $permissions['create forum content'] = array(
-    'name' => 'create forum content',
-    'roles' => array(
-      'Communications' => 'Communications',
-      'Executive' => 'Executive',
-      'Member' => 'Member',
-      'Parent' => 'Parent',
-      'Site Admin' => 'Site Admin',
-    ),
-    'module' => 'node',
-  );
-
-  // Exported permission: 'delete any forum content'.
-  $permissions['delete any forum content'] = array(
-    'name' => 'delete any forum content',
-    'roles' => array(
-      'Communications' => 'Communications',
-      'Executive' => 'Executive',
-      'Site Admin' => 'Site Admin',
-    ),
-    'module' => 'node',
-  );
-
-  // Exported permission: 'delete own forum content'.
-  $permissions['delete own forum content'] = array(
-    'name' => 'delete own forum content',
-    'roles' => array(
-      'Communications' => 'Communications',
-      'Executive' => 'Executive',
-      'Member' => 'Member',
-      'Parent' => 'Parent',
-      'Site Admin' => 'Site Admin',
-    ),
-    'module' => 'node',
-  );
-
-  // Exported permission: 'edit any forum content'.
-  $permissions['edit any forum content'] = array(
-    'name' => 'edit any forum content',
-    'roles' => array(
-      'Communications' => 'Communications',
-      'Executive' => 'Executive',
-      'Site Admin' => 'Site Admin',
-    ),
-    'module' => 'node',
-  );
-
-  // Exported permission: 'edit own forum content'.
-  $permissions['edit own forum content'] = array(
-    'name' => 'edit own forum content',
-    'roles' => array(
-      'Communications' => 'Communications',
-      'Executive' => 'Executive',
-      'Member' => 'Member',
-      'Parent' => 'Parent',
-      'Site Admin' => 'Site Admin',
-    ),
-    'module' => 'node',
-  );
-
-  // Exported permission: 'edit terms in forums'.
-  $permissions['edit terms in forums'] = array(
-    'name' => 'edit terms in forums',
-    'roles' => array(),
-    'module' => 'taxonomy',
-  );
-
-
-  // Exported permission: 'delete terms in forums'.
-  $permissions['delete terms in forums'] = array(
-    'name' => 'delete terms in forums',
-    'roles' => array(),
-    'module' => 'taxonomy',
-  );
-
-
-
-  return $permissions;
+    $permissions = array();
+  
+    // Exported permission: 'view forums'.
+    $permissions['view forums'] = array(
+      'name' => 'view forums',
+      'roles' => array(
+        'Candidate' => 'Candidate',
+        'Communications' => 'Communications',
+        'Events' => 'Events',
+        'Executive' => 'Executive',
+        'Librarian' => 'Librarian',
+        'Member' => 'Member',
+        'Member Inactive' => 'Member Inactive',
+        'Membership' => 'Membership',
+        'Music' => 'Music',
+        'Parent' => 'Parent',
+        'Site Admin' => 'Site Admin',
+        'Supporter' => 'Supporter',
+      ),
+      'module' => 'gb_maillist',
+    );
+  
+    // Exported permission: 'create forum content'.
+    $permissions['create forum content'] = array(
+      'name' => 'create forum content',
+      'roles' => array(
+        'Communications' => 'Communications',
+        'Executive' => 'Executive',
+        'Member' => 'Member',
+        'Parent' => 'Parent',
+        'Site Admin' => 'Site Admin',
+      ),
+      'module' => 'node',
+    );
+  
+    // Exported permission: 'delete any forum content'.
+    $permissions['delete any forum content'] = array(
+      'name' => 'delete any forum content',
+      'roles' => array(
+        'Communications' => 'Communications',
+        'Executive' => 'Executive',
+        'Site Admin' => 'Site Admin',
+      ),
+      'module' => 'node',
+    );
+  
+    // Exported permission: 'delete own forum content'.
+    $permissions['delete own forum content'] = array(
+      'name' => 'delete own forum content',
+      'roles' => array(
+        'Communications' => 'Communications',
+        'Executive' => 'Executive',
+        'Member' => 'Member',
+        'Parent' => 'Parent',
+        'Site Admin' => 'Site Admin',
+      ),
+      'module' => 'node',
+    );
+  
+    // Exported permission: 'edit any forum content'.
+    $permissions['edit any forum content'] = array(
+      'name' => 'edit any forum content',
+      'roles' => array(
+        'Communications' => 'Communications',
+        'Executive' => 'Executive',
+        'Site Admin' => 'Site Admin',
+      ),
+      'module' => 'node',
+    );
+  
+    // Exported permission: 'edit own forum content'.
+    $permissions['edit own forum content'] = array(
+      'name' => 'edit own forum content',
+      'roles' => array(
+        'Communications' => 'Communications',
+        'Executive' => 'Executive',
+        'Member' => 'Member',
+        'Parent' => 'Parent',
+        'Site Admin' => 'Site Admin',
+      ),
+      'module' => 'node',
+    );
+  
+    // Exported permission: 'edit terms in forums'.
+    $permissions['edit terms in forums'] = array(
+      'name' => 'edit terms in forums',
+      'roles' => array(),
+      'module' => 'taxonomy',
+    );
+  
+  
+    // Exported permission: 'delete terms in forums'.
+    $permissions['delete terms in forums'] = array(
+      'name' => 'delete terms in forums',
+      'roles' => array(),
+      'module' => 'taxonomy',
+    );
+    
+    // Exported permission: 'administer forums'
+    $permissions['administer forums'] = array(
+      'name' => 'administer forums',
+      'roles' => array(
+        'Communications' => 'Communications',
+        'Executive' => 'Executive',
+        'Site Admin' => 'Site Admin',
+      ),
+      'module' => 'forum',
+    );
+    
+    // Exported permission: 'send arbitrary files'
+    $permissions['send arbitrary files'] = array(
+      'name' => 'send arbitrary files',
+      'roles' => array(
+        'Candidate' => 'Candidate',
+        'Communications' => 'Communications',
+        'Events' => 'Events',
+        'Executive' => 'Executive',
+        'Librarian' => 'Librarian',
+        'Member' => 'Member',
+        'Member Inactive' => 'Member Inactive',
+        'Membership' => 'Membership',
+        'Music' => 'Music',
+        'Parent' => 'Parent',
+        'Site Admin' => 'Site Admin',
+        'Supporter' => 'Supporter',
+      ),
+      'module' => 'mimemail'
+    );
+    
+    return $permissions;
   }
   
   /**
