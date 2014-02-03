@@ -1224,7 +1224,6 @@
         'page arguments' => array(),
         'access arguments' => array('access forums'),
         'file' => 'gb_maillist.pages.inc',
-        'type' => MENU_CALLBACK,
       ),
     );
   }
