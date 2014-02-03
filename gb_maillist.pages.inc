@@ -8,7 +8,7 @@
     
     $variables = array(
       'header' => array(t('E-mail')),
-      'empty' => t("No mailing list associated with tid {$tid}"),
+      'empty' => t("No mailing list associated with tid '{$tid}'"),
       'rows' => array(),
       'attributes' => array(),
       'caption' => '',
@@ -17,8 +17,6 @@
     );
     
     // If a mailing list is attached add the addresses to output
-    $addresses = array();
-    
     $items = _fetch_list_items_for_tid($tid);
     if (!empty($items)) {
       $addresses = _fetch_outgoing_email_addresses($tid, $items);
@@ -28,17 +26,16 @@
       }
     }
     
-    global $base_url;
-    
     // Render e-mails
+    $base = _get_base_url();
     $n = count($addresses);
-    $translatable1 = t("{$n} e-mail(s) in the mailing list");
-    $translatable2 = t('Export to CSV');
+    $count_text = t("There are {$n} e-mail(s) in the mailing list");
+    $export_text = t('Export to CSV');
     
-    $output = "<p>{$translatable1}</p>\r\n";
-    $output .= theme_table($variables) . "\r\n";// theme('table', $variables);
-    $output .= "<a href =\"{$base_url}/g/comm/maillist/export/{$tid}\">" . 
-        "{$translatable2}</a>";
+    $output = "<br /><p>{$count_text}</p>";
+    $output .= theme_table($variables) . "\r\n"; // theme('table', $variables);
+    $output .= "<a href =\"{$base}/g/comm/maillist/export/{$tid}\">" . 
+        "{$export_text}</a>";
     return $output;
   }
 
@@ -51,7 +48,7 @@
     // If a mailing list is attached generate the CSV output
     $items = _fetch_list_items_for_tid($tid);
     if (empty($items)) {
-      return t("No mailing list associated with tid {$tid}");
+      return t("No mailing list associated with tid '{$tid}'");
     }
     
     $addresses = _fetch_outgoing_email_addresses($tid, $items);
@@ -79,7 +76,7 @@
     
     $result = entity_load('taxonomy_term', array($tid));
     if (empty($result)) {
-      return t("No mailing list associated with tid {$tid}");
+      return t("No mailing list associated with tid '{$tid}'");
     }
     
     $name = $result[$tid]->name;
@@ -101,22 +98,109 @@
   
   /** Page to see forum hierarchy and details */
   function gb_maillist_forums_page() {
-    global $base_url;
-    global $user;
-    
-    $output = '';
-    
-    dpm($user);
+    $user = _get_user();
+    $base = _get_base_url();
+    $domain = _get_domain();
     
     $is_admin = FALSE;
-    if (in_array('Communications', $user->roles) ||
-        in_array('Site Admin', $user->roles) ||
+    if (in_array('communications', $user->roles) ||
+        in_array('site_admin', $user->roles) ||
+        in_array('executive', $user->roles) ||
         $user->uid == 1) {
       $is_admin = TRUE;
     }
-
+    
+    $action_markup = function($tid, $admin, $container) use ($base) {
+      $actions = array(
+        array(
+          'path' => 'forum/%',
+          'name' => t('View'),
+          'admin' => FALSE,     // requires admin?
+          'container' => FALSE, // action for container?
+        ),
+        array(
+          'path' => 'node/add/forum/%',
+          'name' => t('Post'),
+          'admin' => FALSE,
+          'container' => FALSE,
+        ),
+        array(
+          // Admin paths are automatically routed to the overlays it seems
+          // no need to add '#overlay=admin/structure/forum/edit/forum/%'
+          // to the base URL
+          'path' => 'admin/structure/forum/edit/forum/%',
+          'name' => t('Edit'),
+          'admin' => TRUE,
+          'container' => FALSE,
+        ),
+        array(
+          'path' => 'g/comm/maillist/view/%',
+          'name' => t('See e-mail(s)'),
+          'admin' => TRUE,
+          'container' => FALSE,
+        ),
+        array(
+          'path' => 'admin/structure/forum/edit/container/%',
+          'name' => t('Edit'),
+          'admin' => TRUE,
+          'container' => TRUE,
+        ),
+      );
+      
+      $i = 0;
+      // count of applicable $actions
+      $n = array_reduce($actions, function ($n, $action) use ($container) {
+        return ($action['container'] === $container) ? ++$n : $n;
+      }, -1);
+      // reduce $actions to single markup string
+      return array_reduce($actions, function ($markup, $action) 
+          use ($admin, $container, $base, $tid, $n, &$i) {
+        if (($action['admin'] && $admin || !$action['admin']) && 
+            ($action['container'] === $container)) {
+          $path = str_replace('%', (string) $tid, $action['path']);
+          $name = $action['name'];
+            
+          $markup .= "<a href=\"{$base}/{$path}\">{$name}</a>";
+          if ($i++ < $n) $markup .= '&nbsp;&nbsp;/&nbsp;&nbsp;';
+        }
+            
+        return $markup;
+      });
+    };
+    
+    $alias_markup = function ($tid) use ($domain) {
+      $aliases = _fetch_list_aliases_for_tid($tid);
+      if (!empty($aliases)) {
+        $i = 0;
+        $n = count($aliases) - 1;
+        return array_reduce($aliases, function ($markup, $alias) 
+            use ($domain, $n, &$i) {
+          $markup .= "<em>{$alias['alias']}</em>@{$domain}";
+          if ($i++ < $n) $markup .= ',<br />';
+          return $markup;
+        }, '<br />');
+      }
+      
+      return '';
+    };
+    
+    $last_post_markup = function ($forum) use ($base) {
+      $markup = '-';
+      
+      if (property_exists($forum->last_post, 'created')) {
+        $url = "{$base}/user/{$forum->last_post->uid}";
+        $name = $forum->last_post->name;
+        $date = format_date($forum->last_post->created, 'short');
+        
+        return t("By <a href=\"{$url}\">{$name}</a> on {$date}");
+      }
+      
+      return $markup;  
+    };
+    
     $variables = array(
-      'header' => array(t('Forum'), t('Topics'), t('Posts'), t('Last post')),
+      'header' => array('', t('Board'), t('Topics'), t('Posts'), 
+          t('Last post'), t('Actions')),
       'empty' => t("There are currently no forums."),
       'rows' => array(),
       'attributes' => array(),
@@ -124,87 +208,52 @@
       'colgroups' => array(),
       'sticky' => FALSE,
     );
-    
-    if ($is_admin) {
-      array_unshift($variables['header'], t('Notifications'));
-      array_push($variables['header'], t('Actions'));
-    }
-    
+
     $forum_term = forum_forum_load(0);
-    dpm($forum_term);
     foreach ($forum_term->forums as $forum) {
-      $forum_name = '';
-      $num_topics = '';
-      $num_posts = '';
-      $last_post_info = '';
-      $header = FALSE;
+      $tid = $forum->tid;
       
       if (property_exists($forum, 'container') && $forum->container) {
-        $forum_name .= "{$forum->name}";
-        
         $row = array(
           'no_striping' => FALSE,
           'data' => array(
             array(
-              'data' => $forum_name,
+              'data' => $forum->name,
               'header' => TRUE,
-              'colspan' => $is_admin ? 5 : 4,
+              'colspan' => 5,
             ),
           ),
         );
         
         if ($is_admin) {
-          $uri = "{$base_url}/g/comm/maillist/forums" .
-              "#overlay=admin/structure/forum/edit/container/{$forum->tid}";
           $row['data'][] = array(
             'header' => TRUE, 
-            'data' => "<a href=\"{$uri}\">EDIT</a>",
+            'data' => $action_markup($tid, $is_admin, TRUE),
           );
         }
       } else { // not a container
-        $furi = "{$base_url}/forum/{$forum->tid}";
-        $forum_name .= "<a href=\"{$furi}\">$forum->name</a>";
-        
-        $num_topics = $forum->num_topics;
-        $num_posts = $forum->num_posts;
-        
-        if (!property_exists($forum->last_post, 'created')) {
-          $last_post_info = "-";
-        } else {
-          $uuri = "{$base_url}/user/{$forum->last_post->uid}";
-          $uname = $forum->last_post->name;
-          $date = format_date($forum->last_post->created, 'short');
-          $last_post_info = t("By <a href=\"{$uuri}\">{$uname}</a> on {$date}");
-        }
+        $name_markup = "<a href=\"{$base}/forum/{$tid}\">{$forum->name}</a>";
         
         $row = array(
           'no_striping' => FALSE,
           'data' => array(
-            $forum_name, 
-            $num_topics, 
-            $num_posts, 
-            $last_post_info,
+            '', /** @todo icons */
+            $name_markup . $alias_markup($tid),
+            $forum->num_topics, 
+            $forum->num_posts, 
+            $last_post_markup($forum),
+            $action_markup($tid, $is_admin, FALSE),
           ),
         );
-        
-        if ($is_admin) {
-          /** @todo insert notifications */
-          array_unshift($row['data'], 'PLACEHOLDER');
-          
-          /** @todo insert actions */
-          $uri = "{$base_url}/g/comm/maillist/forums" .
-              "#overlay=admin/structure/forum/edit/forum/{$forum->tid}";
-         $row['data'][] = "<a href=\"{$uri}\">EDIT</a>";
-        }
-      } 
+      }
 
       $variables['rows'][] = $row;
     }
     
+    $output = '';
     $output .= theme_table($variables);
     return $output;
   }
 
-  /** @todo View Forum Permission */
-  /** @todo delete forum re-directs to admin/structure/forum */
+  /** @todo fix that delete forum re-directs to admin/structure/forum */
   

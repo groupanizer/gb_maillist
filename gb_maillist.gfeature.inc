@@ -18,14 +18,18 @@
    /** Implements hook_context_widgets */
   function gb_maillist_context_widgets() {
     return array(
-      'g/comm/maillist' => array( 
-        'view' => array(
-          'title' => t('Discussion Boards'), 
-          'href' => 'g/comm/maillist/board'
+      'g/comm/maillist/board' => array( 
+        'add forum' => array(
+          'title' => t('Add new board'), 
+          'href' => 'admin/structure/forum/add/forum',
+        ),
+        'add container' => array(
+          'title' => t('Add new container'),
+          'href' => 'admin/structure/forum/add/container',
         ),
         'help' => array(
-          'title '=> t('Maillist Help'), 
-          'href' => 'http://support.groupanizer.com' 
+          'title' => t('Maillist help'), 
+          'href' => 'http://support.groupanizer.com',
         ),
       ),
     );

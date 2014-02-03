@@ -49,9 +49,7 @@
     
     if (preg_match("/Content-Type: multipart\/alternative;[\s]+boundary=\"?" . 
         "([\w'()+,\-.\/\?=:]+)\"?\r?\n/ms", $body, $matches)) {
-      print($matches);
       $boundary = $matches[1];
-      print("BOUNDARY: {$boundary}\n");
       preg_match_all("/Content-Type: text\/(html|plain); [\w\"\-=]+\s?\s". 
           "(Content-Transfer-Encoding: [\w\"\-]+\s?\s)?\s?\s(.*?)\s" . 
           "\-{2,}{$boundary}/ms", $body, $matches);
@@ -214,9 +212,7 @@
   }
 
   function _post_to_forum($tid, $user, $email) {
-    global $base_url;
-    $host = parse_url($base_url, PHP_URL_HOST);
-    $domain = preg_replace('/^www\./', '', $host);
+    $domain = _get_domain();
     
     // Try and locate the forum topic via In-Reply-To: <$tid.$nid@$domain>
     if (isset($email['headers']['In-Reply-To'])) {
@@ -296,7 +292,7 @@
     
     // Does the user exist?
     $user = user_load_by_mail($sender);
-    if (!$user) {           // No, so we'll try and proceed as anoynmous
+    if (!$user) {           // no, so we'll try and proceed as anoynmous
       $user = user_load(0); // anonymous
     }
     
