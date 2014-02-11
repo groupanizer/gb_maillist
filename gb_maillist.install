@@ -20,7 +20,7 @@
    * Implements hook_install()
    */
   function gb_maillist_install() {
-    variable_set('gb_maillist_filter_format', 'full_html');
+    variable_set('gb_maillist_filter_format', 'advanced');
     variable_set('gb_maillist_email_max_size', 10 * 1024 * 1024); // 10 MB
     
     // Re-build permissions for forum_access
