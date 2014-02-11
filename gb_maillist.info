@@ -17,4 +17,3 @@ features[features_api][] = api:2
 features[field_base][] = field_attachment
 features[field_instance][] = comment-comment_node_forum-field_attachment
 features[field_instance][] = node-forum-field_attachment
-features[menu_links][] = menu-groupanizer-menu:forum
