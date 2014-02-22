@@ -9,6 +9,7 @@
     define('DRUPAL_EXTENSION_NAME_MAX_LENGTH', 50);
   }
   
+  // legacy, 
   // see: http://dev.mysql.com/doc/refman/5.0/en/string-type-overview.html
   define('_VARCHAR_MAX_LENGTH', 255);
   

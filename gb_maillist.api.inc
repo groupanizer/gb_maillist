@@ -1,5 +1,39 @@
 <?php
   
+  function gb_maillist_insert_new_forum_container($name, $description = '', 
+      $parent = 0) {
+    $vocabulary = taxonomy_vocabulary_load(
+        variable_get('forum_nav_vocabulary', 0));
+    
+    $term = new stdClass();
+    $term->name = $name;
+    $term->description = $description;
+    $term->parent = array($parent);
+    $term->vid = $vocabulary->vid;
+    taxonomy_term_save($term);
+    
+    $containers = variable_get('forum_containers', array());
+    $containers[] = $term->tid;
+    variable_set('forum_containers', $containers);
+    
+    return $term->tid;
+  }
+  
+  function gb_maillist_insert_new_forum($name, $description = '',
+      $parent = 0) {
+    $vocabulary = taxonomy_vocabulary_load(
+        variable_get('forum_nav_vocabulary', 0));
+
+    $term = new stdClass();
+    $term->name = $name;
+    $term->description = $description;
+    $term->parent = array($parent);
+    $term->vid = $vocabulary->vid;
+    taxonomy_term_save($term);
+    
+    return $term->tid;
+  }
+  
   /**
    * Class for building the descriptor array of each module's mailing lists
    * for the main form

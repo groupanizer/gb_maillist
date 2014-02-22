@@ -214,6 +214,9 @@
             'length' => _EMAIL_ADDRESS_MAX_LENGTH,
           ),
         ), // fields
+        'unique keys' => array(
+          'tid' => array('tid',),
+        ),
       ), // gb_maillist_metadata
       'gb_maillist_items' => array(
         'description' => t('A table of mailing list items for gb_maillist'),
@@ -260,6 +263,9 @@
             'length' => _EMAIL_ADDRESS_MAX_LENGTH,
           ),
         ), // fields
+        'unique keys' => array(
+          'tid' => array('tid', 'email'),
+        ),
       ), // gb_maillist_blacklist
       'gb_maillist_aliases' => array(
         'description' => t('A table of mailing list aliases for gb_maillist'),
@@ -277,6 +283,9 @@
             'length' => _ALIAS_MAX_LENGTH,
           ),
         ), // fields
+        'unique keys' => array(
+          'alias' => array('alias',),
+        ),
       ), // gb_maillist_aliases
     ); 
   }
@@ -302,6 +311,9 @@
             'length' => _EMAIL_ADDRESS_MAX_LENGTH,
           ),
         ), // fields
+        'unique keys' => array(
+          'tid' => array('tid', 'email'),
+        ),
       ), // gb_maillist_blacklist
     );
     
@@ -329,10 +341,12 @@
             'length' => _ALIAS_MAX_LENGTH,
           ),
         ), // fields
+        'unique keys' => array(
+          'alias' => array('alias',),
+        ),
       ), // gb_maillist_aliases
     );
     
     db_create_table('gb_maillist_aliases', $schema['gb_maillist_aliases']);
   }
  
-  

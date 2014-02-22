@@ -790,8 +790,6 @@
    * @param array $data the data to be altered
    */
   function gb_maillist_mailing_list_descriptors_alter(&$data) {
-    if (_WATCHDOG === 1) watchdog('gb_maillist', 'in gb_maillist_alter');
-    
     if (_TEST_LISTS === 1) {
       $data['gb_maillist'] = array(
         'storage_class_test' => array(
@@ -819,10 +817,6 @@
    * @param array $data an array of emails
    */
   function gb_maillist_outgoing_email_addresses_alter(&$data) {
-    if (_WATCHDOG === 1) {
-      watchdog('gb_maillist', 'in gb_maillist_outgoing_email_addresses_alter');
-    }
-    
     if (_TEST_LISTS === 1) {
       // Blacklist (remove) emails ending with @blacklist.me
       $data = array_filter($data, function ($email) {
@@ -842,11 +836,6 @@
    */
   function gb_maillist_provide_email_addresses_for_class_items($class_id, 
       $item_ids) {
-    if (_WATCHDOG === 1) {
-      watchdog('gb_maillist', 
-          'in gb_maillist_provide_email_addresses_for_class_items');
-    }
-    
     if (_TEST_LISTS === 1) {
       if ($class_id != 'storage_class_test') {
         return array();
@@ -942,10 +931,6 @@
    * @param array $form_state 
    */
   function gb_maillist_forum_form_validate($form, &$form_state) {
-    if (_WATCHDOG === 1) {
-      watchdog('gb_maillist', 'in gb_maillist_forum_form_validate');
-    }
-    
     if ($form_state['values']['attach_list'] !== 1) {
       return; // Not including a mailing list
     }
@@ -1036,7 +1021,6 @@
       }
     }
 
-    // We're still here, no items enabled
     if (!$a_list_item_is_checked) {
       form_set_error('items', t('At least one mailing list item is required.'));
     }
@@ -1077,10 +1061,6 @@
    *       we need to check that query and the others for success
    */
   function gb_maillist_forum_form_submit($form, &$form_state) {
-    if (_WATCHDOG === 1) {
-      watchdog('gb_maillist', 'in gb_maillist_forum_form_submit');
-    }
-    
     // Is a user logged in and authenticated?
     $user = _get_user();
     if (!(isset($user->uid)) || $user->uid === 0) {
@@ -1314,6 +1294,16 @@
         'description' => t('This is a top-level permission that allows users' .
             ' to view the forums'),
       ),
+    );
+  }
+  
+  /**
+   * Implements hook_notification()
+   */
+  function gb_maillist_notification() {
+    return array(
+      'rejection' => t('Rejection'),
+      'bounce' => t('Bounce'),
     );
   }
   
