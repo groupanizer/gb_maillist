@@ -103,11 +103,21 @@
     $domain = _get_domain();
     
     $is_admin = FALSE;
-    if (in_array('communications', $user->roles) ||
-        in_array('site_admin', $user->roles) ||
-        in_array('executive', $user->roles) ||
+    if (in_array('Communications', $user->roles) ||
+        in_array('Site Admin', $user->roles) ||
+        in_array('Executive', $user->roles) ||
         $user->uid == 1) {
       $is_admin = TRUE;
+    }
+        
+    if ($is_admin) {
+      $mxhosts = array();
+      if (!getmxrr($domain, $mxhosts)) {
+        drupal_set_message(t("No MX records were found for {$domain}." .
+            " Until this is resolved you will be unable to receive e-mail to" . 
+            " this site. Contact your DNS provider/host for assistance."), 
+            'warning');
+      }
     }
     
     $action_markup = function($tid, $admin, $container) use ($base) {
