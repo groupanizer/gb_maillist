@@ -1224,6 +1224,14 @@
       ),
     );
   }
+ 
+ /**
+  * Implements hook_menu_alter
+  */
+  function gb_maillist_menu_alter(&$items) {
+    // Disable the forum page
+    $items['forum']['access callback'] = FALSE;
+  }
 
   /**
    * Implements hook_preprocess_breadcrumb
