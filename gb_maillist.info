@@ -11,7 +11,6 @@ dependencies[] = forum
 dependencies[] = forum_access
 dependencies[] = mimemail
 dependencies[] = mailsystem
-dependencies[] = g3core
 dependencies[] = gl_mail
 features[features_api][] = api:2
 features[field_base][] = field_attachment
