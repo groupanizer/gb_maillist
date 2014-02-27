@@ -759,7 +759,8 @@
         // SCID:CLASS
         $scid = 'scid:' . $class_id;
         $fieldset['items'][$scid] = array(
-          '#type' => 'checkboxes',
+          '#type' => count($class['items']) < 20 ? 'checkboxes' : 'select',
+          '#multiple' => TRUE,
           '#prefix' => '<div style="float: left; margin: 15px;">', 
           '#suffix' => '</div>',
           '#title' => $class['title'],

@@ -14,7 +14,7 @@
   define('_VARCHAR_MAX_LENGTH', 255);
   
   define('_WATCHDOG', 0);
-  define('_TEST_LISTS', 1);
+  define('_TEST_LISTS', 0);
   
   define('_MAILING_LIST_TYPE_STANDARD', 0);
   define('_MAILING_LIST_TYPE_BROADCAST', 1);
