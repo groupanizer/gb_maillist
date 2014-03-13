@@ -1145,8 +1145,10 @@
     // Don't hide it if it's through Content -> Add Content
     $requested_forum_id = arg(3);
     if (is_numeric($requested_forum_id)) {
-      $form['taxonomy_forums'][LANGUAGE_NONE]['#type'] = 'hidden';
+      //$form['taxonomy_forums'][LANGUAGE_NONE]['#type'] = 'hidden';
+      $form['taxonomy_forums'][LANGUAGE_NONE]['#access'] = FALSE;
     }
+    
     $form['#validate'][] = 'gb_maillist_forum_node_form_validate';
   }
       
