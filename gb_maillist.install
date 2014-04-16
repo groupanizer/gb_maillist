@@ -291,62 +291,9 @@
   }
 
   /**
-   * Add the database table {gb_maillist_blacklist}.
+   * Remove any 'FROM' addresses that may have been set.
    */
-  function gb_maillist_update_7100(&$sandbox) {
-    $schema = array(
-      'gb_maillist_blacklist' => array(
-        'description' => t('A table of blacklisted e-mails for gb_maillist'),
-        'fields' => array(
-          'tid' => array(
-            'description' => t('The tid of the forum this e-mail is bound to'),
-            'type' => 'int',
-            'not null' => TRUE,
-            'unsigned' => TRUE,
-          ),
-          'email' => array(
-            'description' => t('E-mail address to exclude from the list'),
-            'type' => 'varchar',
-            'not null' => TRUE,
-            'length' => _EMAIL_ADDRESS_MAX_LENGTH,
-          ),
-        ), // fields
-        'unique keys' => array(
-          'tid' => array('tid', 'email'),
-        ),
-      ), // gb_maillist_blacklist
-    );
-    
-    db_create_table('gb_maillist_blacklist', $schema['gb_maillist_blacklist']);
-  }
-  
-  /**
-   * Add the database table {gb_maillist_aliases}.
-   */
-  function gb_maillist_update_7101(&$sandbox) {
-    $schema = array(
-      'gb_maillist_aliases' => array(
-        'description' => t('A table of mailing list aliases for gb_maillist'),
-        'fields' => array(
-          'tid' => array(
-            'description' => t('The tid of the forum this alias is bound to'),
-            'type' => 'int',
-            'not null' => TRUE,
-            'unsigned' => TRUE,
-          ),
-          'alias' => array(
-            'description' => t('An alias used to send e-mail to the list'),
-            'type' => 'varchar',
-            'not null' => TRUE,
-            'length' => _ALIAS_MAX_LENGTH,
-          ),
-        ), // fields
-        'unique keys' => array(
-          'alias' => array('alias',),
-        ),
-      ), // gb_maillist_aliases
-    );
-    
-    db_create_table('gb_maillist_aliases', $schema['gb_maillist_aliases']);
+  function gb_maillist_update_7103(&$sandbox) {
+    db_query('UPDATE {gb_maillist_metadata} SET from_email = NULL WHERE from_email IS NOT NULL');
   }
  
