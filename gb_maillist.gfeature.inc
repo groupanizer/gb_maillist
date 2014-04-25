@@ -20,11 +20,11 @@
     return array(
       'g/comm/maillist/board' => array( 
         'add forum' => array(
-          'title' => t('Add new board'), 
+          'title' => t('Add board'), 
           'href' => 'admin/structure/forum/add/forum',
         ),
         'add container' => array(
-          'title' => t('Add new container'),
+          'title' => t('Add container'),
           'href' => 'admin/structure/forum/add/container',
         ),
         'help' => array(

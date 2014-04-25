@@ -17,6 +17,7 @@
     );
     
     // If a mailing list is attached add the addresses to output
+    $addresses = array();
     $items = _fetch_list_items_for_tid($tid);
     if (!empty($items)) {
       $addresses = _fetch_outgoing_email_addresses($tid, $items);
@@ -123,14 +124,9 @@
     $action_markup = function($tid, $admin, $container) use ($base) {
       $actions = array(
         array(
-          'path' => 'forum/%',
-          'name' => t('View'),
-          'admin' => FALSE,     // requires admin?
-          'container' => FALSE, // action for container?
-        ),
-        array(
           'path' => 'node/add/forum/%',
-          'name' => t('Post'),
+          'class' => 'g-maillist-post',
+          'title' => t('Post'),
           'admin' => FALSE,
           'container' => FALSE,
         ),
@@ -139,19 +135,22 @@
           // no need to add '#overlay=admin/structure/forum/edit/forum/%'
           // to the base URL
           'path' => 'admin/structure/forum/edit/forum/%',
-          'name' => t('Edit'),
+          'class' => 'g-maillist-edit',
+          'title' => t('Edit'),
           'admin' => TRUE,
           'container' => FALSE,
         ),
         array(
           'path' => 'g/comm/maillist/view/%',
-          'name' => t('See e-mail(s)'),
+          'class' => 'g-maillist-export',
+          'title' => t('View & export e-mail list'),
           'admin' => TRUE,
           'container' => FALSE,
         ),
         array(
           'path' => 'admin/structure/forum/edit/container/%',
-          'name' => t('Edit'),
+          'class' => 'g-maillist-edit',
+          'title' => t('Edit'),
           'admin' => TRUE,
           'container' => TRUE,
         ),
@@ -168,10 +167,10 @@
         if (($action['admin'] && $admin || !$action['admin']) && 
             ($action['container'] === $container)) {
           $path = str_replace('%', (string) $tid, $action['path']);
-          $name = $action['name'];
+          $class = $action['class'];
+          $title = $action['title'];
             
-          $markup .= "<a href=\"{$base}/{$path}\">{$name}</a>";
-          if ($i++ < $n) $markup .= '&nbsp;&nbsp;/&nbsp;&nbsp;';
+          $markup .= "<a href=\"{$base}/{$path}\" title=\"{$title}\" class=\"{$class}\"></a>";
         }
             
         return $markup;
@@ -185,8 +184,11 @@
         $n = count($aliases) - 1;
         return array_reduce($aliases, function ($markup, $alias) 
             use ($domain, $n, &$i) {
-          $markup .= "<em>{$alias['alias']}</em>@{$domain}";
+          $alias = $alias['alias'];
+          $markup .= "<a href=\"mailto:{$alias}@{$domain}\">" . 
+              "<em>{$alias}</em>@{$domain}";
           if ($i++ < $n) $markup .= ',<br />';
+          $markup .= '</a>';
           return $markup;
         }, '<br />');
       }
@@ -209,7 +211,7 @@
     };
     
     $variables = array(
-      'header' => array('', t('Board'), t('Topics'), t('Posts'), 
+      'header' => array(t('Board'), t('Topics'), t('Posts'), 
           t('Last post'), t('Actions')),
       'empty' => t("There are currently no forums."),
       'rows' => array(),
@@ -242,12 +244,11 @@
           );
         }
       } else { // not a container
-        $name_markup = "<a href=\"{$base}/forum/{$tid}\">{$forum->name}</a>";
+        $name_markup = "<a href=\"{$base}/forum/{$tid}\"><strong>{$forum->name}</strong></a>";
         
         $row = array(
           'no_striping' => FALSE,
           'data' => array(
-            '', /** @todo icons */
             $name_markup . $alias_markup($tid),
             $forum->num_topics, 
             $forum->num_posts, 

@@ -5,8 +5,6 @@
   module_load_include('inc', 'gb_maillist', 'gb_maillist.queries');
   module_load_include('inc', 'gb_maillist', 'gb_maillist.api');
   
-  /** @todo only send HTML emails. WRAP PlainText in <p> tags. */
-  
   function _is_forum_topic($node) {
     if ($node->type !== 'forum') {
       return FALSE;
@@ -275,12 +273,7 @@
     _dispatch_emails_for_post($node->nid, $metadata, $subject, $body, 
         $update, $plain, $fids); 
   }
-
-  /**
-   * @todo report / research bug (inconsistency)
-   * entity type node has is_new property
-   * entity type comment has new property
-   */
+  
   function _comment_update_and_insert($comment) {
     if (!_is_forum_comment($comment)) {
       return;
@@ -484,7 +477,6 @@
 
   /**
    * Insert our elements into the forum form
-   * @todo make collapsable
    */
   function _insert_mailing_list_elements(&$form, &$form_state, 
       $descriptors, $defaults) {
@@ -1059,9 +1051,6 @@
    * 
    * @param array $form
    * @param array $form_state 
-   * 
-   * @todo db_insert()->execute() return value is undefined for multi-inserts,
-   *       we need to check that query and the others for success
    */
   function gb_maillist_forum_form_submit($form, &$form_state) {
     // Is a user logged in and authenticated?
