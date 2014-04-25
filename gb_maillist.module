@@ -141,17 +141,32 @@
       return;
     }
     
+    // Get some globals
     $base_url = _get_base_url();
     $user = _get_user();
     $domain = _get_domain();
     $alias = '';
     
+    // global $user is not a complete object, no fields
+    $user = user_load($user->uid);
+    
+    // Construct a username
+    if (isset($user->field_first_name[LANGUAGE_NONE])) {
+      $username = $user->field_first_name[LANGUAGE_NONE][0]['value'];
+      if (isset($user->field_last_name[LANGUAGE_NONE])) {
+        $username .= ' ';
+        $username .= $user->field_last_name[LANGUAGE_NONE][0]['value'];
+      }
+    } else {
+      $username = $user->name;
+    }
+    
     // Generate the reply-to e-mail
     if ($list_type == _MAILING_LIST_TYPE_BROADCAST) {
       if ($reply_to_type == _BROADCAST_REPLY_TO_TYPE_POSTERS_EMAIL) {
-        $reply_to = "{$user->name} <{$user->mail}>";
+        $reply_to = "\"{$username}\" <{$user->mail}>";
       } elseif ($reply_to_type == _BROADCAST_REPLY_TO_TYPE_DO_NOT_REPLY) {
-        $reply_to = "DO NOT REPLY <do_not_reply@{$domain}>";
+        $reply_to = "\"DO NOT REPLY\" <do_not_reply@{$domain}>";
       } elseif ($reply_to_type == _BROADCAST_REPLY_TO_TYPE_USER_DEFINED) {
         $reply_to = $reply_to_email;
       }
@@ -165,8 +180,9 @@
         }
         $alias = $aliases[0]['alias'];
         $reply_to = "{$alias}@{$domain}";
+        $from = "\"{$username}\" <{$reply_to}>"; // override from
       } elseif ($reply_to_type == _STANDARD_REPLY_TO_TYPE_POSTERS_EMAIL) {
-        $reply_to = "{$user->name} <{$user->mail}>";
+        $reply_to = "\"{$username}\" <{$user->mail}>";
       }
     }
     
@@ -176,8 +192,10 @@
     }       
     
     // Set from to the reply-to or the user-defined variable
-    $from = is_null($metadata['from_email']) ? 
-        $reply_to : $metadata['from_email'];
+    if (!isset($from)) {
+      $from = is_null($metadata['from_email']) ? 
+          $reply_to : $metadata['from_email'];
+    }
         
     // Set the sender and bounce handler
     // We'll use the alias for a standard list and the generic 'broadcast'
