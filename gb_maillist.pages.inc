@@ -171,6 +171,7 @@
           $title = $action['title'];
             
           $markup .= "<a href=\"{$base}/{$path}\" title=\"{$title}\" class=\"{$class}\"></a>";
+          if ($i++ < $n) $markup .= '&nbsp;';
         }
             
         return $markup;
