@@ -305,6 +305,8 @@
     }
     
     watchdog('gb_maillist', 'user exists');
+    $userz = print_r($user, TRUE);
+    watchdog('gb_maillist', $userz);
     
     // Check for posting permission
     if (!forum_access_access('create', $tid, $user)) {
