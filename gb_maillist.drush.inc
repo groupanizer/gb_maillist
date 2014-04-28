@@ -288,6 +288,7 @@
     
     $parsed_from = _parse_string_for_emails($from);
     $sender = $parsed_from['emails'][0];
+    watchdog('gb_maillist', "'{$sender}'");
     
     // Does a forum with alias $alias exist?
     $record = _check_for_alias_record($alias);
@@ -300,6 +301,9 @@
     
     // Does the user exist?
     $user = user_load_by_mail($sender);
+    if (!$user) {
+      watchdog('gb_maillist', 'failed to load user');
+    }
     if (!$user) {           // no, so we'll try and proceed as anoynmous
       $user = user_load(0); // anonymous
     }
