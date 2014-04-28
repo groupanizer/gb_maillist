@@ -296,16 +296,22 @@
     }
     $tid = $record->tid;
     
+    watchdog('gb_maillist', 'record exists');
+    
     // Does the user exist?
     $user = user_load_by_mail($sender);
     if (!$user) {           // no, so we'll try and proceed as anoynmous
       $user = user_load(0); // anonymous
     }
     
+    watchdog('gb_maillist', 'user exists');
+    
     // Check for posting permission
     if (!forum_access_access('create', $tid, $user)) {
       exit(EX_NOPERM);
     }
+    
+    watchdog('gb_maillist', 'posting permission exists');
 
     _post_to_forum($tid, $user, $email);
   }
