@@ -280,7 +280,8 @@
     $to = $email['headers']['To']; /** @todo 'Delivered-To' ? */
     $from = $email['headers']['From'];
 
-    watchdog('gb_maillist', "{$from} -> {$to}:\n{$email['html']}", NULL);
+    watchdog('gb_maillist', 
+        "Incoming {$from} -> {$to}:\n{$email['html']}", NULL);
     
     // Parse the alias & from
     $parsed_to = _parse_string_for_emails($to);
@@ -288,7 +289,6 @@
     
     $parsed_from = _parse_string_for_emails($from);
     $sender = $parsed_from['emails'][0];
-    watchdog('gb_maillist', "'{$sender}'");
     
     // Does a forum with alias $alias exist?
     $record = _check_for_alias_record($alias);
@@ -297,27 +297,17 @@
     }
     $tid = $record->tid;
     
-    watchdog('gb_maillist', 'record exists');
     
     // Does the user exist?
     $user = user_load_by_mail($sender);
-    if (!$user) {
-      watchdog('gb_maillist', 'failed to load user');
-    }
     if (!$user) {           // no, so we'll try and proceed as anoynmous
       $user = user_load(0); // anonymous
     }
-    
-    watchdog('gb_maillist', 'user exists');
-    $userz = print_r($user, TRUE);
-    watchdog('gb_maillist', $userz);
     
     // Check for posting permission
     if (!forum_access_access('create', $tid, $user)) {
       exit(EX_NOPERM);
     }
-    
-    watchdog('gb_maillist', 'posting permission exists');
 
     _post_to_forum($tid, $user, $email);
   }
