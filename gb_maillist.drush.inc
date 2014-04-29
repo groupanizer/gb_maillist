@@ -154,6 +154,7 @@
     try {
       // Create & save node object
       $node = new stdClass();
+      $node->no_batch = TRUE; // turn off batch for Drush
       $node->is_new = TRUE;
       $node->type = 'forum';
       node_object_prepare($node);         // sets some defaults & calls hooks
@@ -191,6 +192,7 @@
     try {
       // Create & save comment obj
       $comment = new stdClass();
+      $comment->no_batch = TRUE; // turn off batch for Drush
       $comment->nid = $nid;
       $comment->node_type = 'comment_node_forum';
       $comment->cid = 0;
@@ -296,7 +298,6 @@
       exit(EX_NOUSER);
     }
     $tid = $record->tid;
-    
     
     // Does the user exist?
     $user = user_load_by_mail($sender);

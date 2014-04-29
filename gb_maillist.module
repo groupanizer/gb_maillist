@@ -122,7 +122,7 @@
   }
   
   function _dispatch_emails_for_post($nid, $metadata, $subject, $body, 
-      $update, $plain, $attachment_fids) {
+      $update, $plain, $attachment_fids, $batch) {
     $tid = $metadata['tid'];
     $list_type = $metadata['list_type'];
     $reply_to_type = $metadata['reply_to_type'];
@@ -206,9 +206,8 @@
     $bounces = "bounces@{$domain}";
     
     $dispatcher = new EmailDispatcher($sender, $bounces, TRUE);
-    
-    // Construct an array of batch operations
     $operations = array();
+    $dispatched = 0;
     
     foreach ($addresses as $address) {
       $key = ($list_type == _MAILING_LIST_TYPE_STANDARD) ? 
@@ -246,21 +245,30 @@
         $email->add_header('Message-Id', "<{$nid}.{$tid}@{$domain}>");
       }
     
-      $operations[] = array('_dispatch_email', array($dispatcher, $email));
+      if ($batch) {
+        $operations[] = array('_dispatch_email', array($dispatcher, $email));
+      } else {
+        if ($dispatcher->dispatch($email)) {
+          $dispatched += 1;
+        }
+      }
     }
-    
-    // Create a batch operation to send the e-mails
-    $batch = array(
-      'title' => t('Dispatching e-mail'),
-      'operations' => $operations,
-      'finished' => '_dispatch_email_finished',
-      'file' => drupal_get_path('module', 'gb_maillist') . 
-          '/gb_maillist.batch.inc',
-    );
-    
-    batch_set($batch);
 
-    // _MAILING_LIST_TYPE_ STANDARD|BROADCAST
+    if ($batch) { // create a batch operation to send the e-mails
+      $batch = array(
+        'title' => t('Dispatching e-mail'),
+        'operations' => $operations,
+        'finished' => '_dispatch_email_finished',
+        'file' => drupal_get_path('module', 'gb_maillist') . 
+            '/gb_maillist.batch.inc',
+      );
+      
+      batch_set($batch);
+    } else {
+      $message = t('Dispatched @count of @total e-mail.', 
+          array('@count' => $dispatched, '@total' => count($addresses)));
+      watchdog('gb_maillist', $message);
+    }
   }
 
   function _node_update_and_insert($node) {
@@ -279,6 +287,7 @@
       return; // There is no mailing list attached to this forum
     }
     
+    $batch = !isset($node->no_batch);
     $update = !$node->is_new;
     $body = $node->body[LANGUAGE_NONE][0]['value'];
     //$plain = ($node->body[LANGUAGE_NONE][0]['format'] === 'plain_text');
@@ -289,7 +298,7 @@
       $fids[] = $attachment['fid'];
     }
     _dispatch_emails_for_post($node->nid, $metadata, $subject, $body, 
-        $update, $plain, $fids); 
+        $update, $plain, $fids, $batch); 
   }
   
   function _comment_update_and_insert($comment) {
@@ -320,6 +329,7 @@
       }
     }
     
+    $batch = !isset($comment->no_batch);
     $comment_body = $comment->comment_body[LANGUAGE_NONE][0];
     //$plain = ($comment_body['format'] === 'plain_text');
     $plain = FALSE;
@@ -330,7 +340,7 @@
       $fids[] = $attachment['fid'];
     }
     _dispatch_emails_for_post($node->nid, $metadata, $subject, $body, 
-        $update, $plain, $fids);
+        $update, $plain, $fids, $batch);
   }
 
   function _extract_values_with_keys_that_match_pattern($values, $pattern) {
