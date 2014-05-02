@@ -60,6 +60,7 @@
     drupal_add_http_header('Content-Disposition', 
         'attachment; filename="emails.csv"');
     print("E-mail\r\n{$list}\r\n");
+    drupal_exit();
   }
   
   /** Page to unsubscribe from a list */
