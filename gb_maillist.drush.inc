@@ -220,9 +220,6 @@
   }
 
   function _post_to_forum($tid, $user, $email) {
-    // Let the mailer know we're in Drush
-    //$_SESSION['g3incomingmail'] = TRUE;
-    
     $domain = g3core_get_domain();
     
     // Try and locate the forum topic via In-Reply-To: <$tid.$nid@$domain>
@@ -275,8 +272,6 @@
       exit(EX_SOFTWARE);
     }
     
-    watchdog('gb_maillist', php_sapi_name());
-    
     module_load_include('inc', 'mimemail', 'includes/mimemail.incoming');
     
     $email = stream_get_contents(STDIN);            // read encoded raw e-mail
@@ -304,16 +299,22 @@
     }
     $tid = $record->tid;
     
+    watchdog('gb_maillist', 'got forum');
+    
     // Does the user exist?
     $user = user_load_by_mail($sender);
     if (!$user) {           // no, so we'll try and proceed as anoynmous
       $user = user_load(0); // anonymous
     }
     
+    watchdog('gb_maillist', 'use exists');
+    
     // Check for posting permission
     if (!forum_access_access('create', $tid, $user)) {
       exit(EX_NOPERM);
     }
+    
+    watchdog('gb_maillist', 'access');
 
     _post_to_forum($tid, $user, $email);
   }

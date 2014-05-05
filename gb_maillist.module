@@ -205,7 +205,6 @@
     
     $dispatcher = new EmailDispatcher($sender, $bounces, TRUE);
     $operations = array();
-    $dispatched = 0;
     
     foreach ($addresses as $address) {
       $key = ($list_type == _MAILING_LIST_TYPE_STANDARD) ? 
@@ -243,30 +242,19 @@
         $email->add_header('Message-Id', "<{$nid}.{$tid}@{$domain}>");
       }
     
-      if ($batch) {
-        $operations[] = array('_dispatch_email', array($dispatcher, $email));
-      } else {
-        if ($dispatcher->dispatch($email)) {
-          $dispatched += 1;
-        }
-      }
+      $operations[] = array('_dispatch_email', array($dispatcher, $email));
     }
 
-    if ($batch) { // create a batch operation to send the e-mails
-      $batch = array(
-        'title' => t('Dispatching e-mail'),
-        'operations' => $operations,
-        'finished' => '_dispatch_email_finished',
-        'file' => drupal_get_path('module', 'gb_maillist') . 
-            '/gb_maillist.batch.inc',
-      );
-      
-      batch_set($batch);
-    } else {
-      $message = t('Dispatched @count of @total e-mail.', 
-          array('@count' => $dispatched, '@total' => count($addresses)));
-      watchdog('gb_maillist', $message);
-    }
+    // Create a batch operation to send the e-mails
+    $batch = array(
+      'title' => t('Dispatching e-mail'),
+      'operations' => $operations,
+      'finished' => '_dispatch_email_finished',
+      'file' => drupal_get_path('module', 'gb_maillist') . 
+          '/gb_maillist.batch.inc',
+    );
+    
+    batch_set($batch);
     
     watchdog('gb_maillist', php_sapi_name());
     
@@ -302,7 +290,7 @@
      watchdog('gb_maillist', 'got meta');
     
     
-    $batch = isset($_SESSION['g3incomingmail']);
+    $batch = TRUE;
     $update = !$node->is_new;
     $body = $node->body[LANGUAGE_NONE][0]['value'];
     //$plain = ($node->body[LANGUAGE_NONE][0]['format'] === 'plain_text');
@@ -317,7 +305,7 @@
   }
   
   function _comment_update_and_insert($comment) {
-    watchdog('gb_maillist', print_r($node, TRUE));
+    watchdog('gb_maillist', print_r($comment, TRUE));
     watchdog('gb_maillist', 'comment update & insert');
     
     if (!_is_forum_comment($comment)) {
@@ -349,7 +337,7 @@
       }
     }
     
-    $batch = isset($_SESSION['g3incomingmail']);
+    $batch = TRUE;
     $comment_body = $comment->comment_body[LANGUAGE_NONE][0];
     //$plain = ($comment_body['format'] === 'plain_text');
     $plain = FALSE;
