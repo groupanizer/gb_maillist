@@ -217,6 +217,7 @@
 
   function _post_comment_to_topic($nid, $user, $email) {
     watchdog('gb_maillist', 'post comment to topic');
+    watchdog('gb_maillist', $nid);
     try {
       // Create & save comment obj
       $comment = new stdClass();
@@ -268,7 +269,7 @@
               ->fieldCondition('taxonomy_forums', 'tid', $inreplyto_tid)
               ->execute();
           if ($result && count($result)) {
-            return _post_comment_to_topic($nid, $user, $email); 
+            return _post_comment_to_topic($inreplyto_nid, $user, $email); 
           }
         }
       }
@@ -284,8 +285,8 @@
         ->propertyCondition('title', $subject)
         ->fieldCondition('taxonomy_forums', 'tid', $tid)
         ->execute();
-    if ($result) {
-      $node = array_shift($result); // take the first match
+    if ($result && count($result)) {
+      $node = reset($result['node']); // take the first match
       return _post_comment_to_topic($node->nid, $user, $email);
     }    
    
