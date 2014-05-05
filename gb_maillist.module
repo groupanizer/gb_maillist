@@ -265,7 +265,6 @@
   }
 
   function _node_update_and_insert($node) {
-    watchdog('gb_maillist', print_r($node, TRUE));
     watchdog('gb_maillist', 'node update & insert');
     
     if (!_is_forum_topic($node)) {
@@ -305,7 +304,6 @@
   }
   
   function _comment_update_and_insert($comment) {
-    watchdog('gb_maillist', print_r($comment, TRUE));
     watchdog('gb_maillist', 'comment update & insert');
     
     if (!_is_forum_comment($comment)) {
