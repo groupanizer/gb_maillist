@@ -12,10 +12,11 @@
       return FALSE;
     }
     
-    // Is this coming from the forum post topic form that we've hooked?
-    // Or Drush?
-    if ($node->form_id != 'forum_node_form' && !isset($node->from_cli)) {
-      return FALSE;
+    if (php_sapi_name() != 'cli') {
+      // Is this coming from the forum post topic form that we've hooked?
+      if ($node->form_id != 'forum_node_form' && !isset($node->from_cli)) {
+        return FALSE;
+      }
     }
     
     return TRUE;
@@ -26,9 +27,11 @@
       return FALSE;
     }
     
-    // Is this coming from the forum post comment form?
-    if ($comment->form_id !== 'comment_node_forum_form') {
-      return FALSE;
+    if (php_sapi_name() != 'cli') {
+      // Is this coming from the forum post comment form?
+      if ($comment->form_id !== 'comment_node_forum_form') {
+        return FALSE;
+      }
     }
     
     return TRUE;
