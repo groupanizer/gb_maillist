@@ -153,6 +153,7 @@
   }
 
   function _post_new_topic($tid, $user, $email) {
+    watchdog('gb_maillist', 'post new topic');
     try {
       // Create & save node object
       $node = new stdClass();
@@ -186,11 +187,13 @@
       node_save($node);
       watchdog('gb_maillist', 'posted new node');
     } catch (Exception $e) {
+      watchdog('gb_maillist', $e->getMessage());
       watchdog_exception('gb_maillist', $e);
     }
   }
 
   function _post_comment_to_topic($nid, $user, $email) {
+    watchdog('gb_maillist', 'post comment to topic');
     try {
       // Create & save comment obj
       $comment = new stdClass();
