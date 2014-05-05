@@ -13,7 +13,8 @@
     }
     
     // Is this coming from the forum post topic form that we've hooked?
-    if ($node->form_id !== 'forum_node_form') {
+    // Or Drush?
+    if ($node->form_id != 'forum_node_form' && !isset($node->from_cli)) {
       return FALSE;
     }
     

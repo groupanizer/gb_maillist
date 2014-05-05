@@ -183,6 +183,8 @@
         $node->field_attachment[LANGUAGE_NONE][$i] = $file_fields[$i];
       }
       // Re-save
+      // Let mailer know this post is from us
+      $node->from_cli = TRUE;
       node_save($node);
     } catch (Exception $e) {
       watchdog_exception('gb_maillist', $e);
