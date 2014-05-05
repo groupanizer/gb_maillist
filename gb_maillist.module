@@ -118,7 +118,7 @@
   }
   
   function _dispatch_emails_for_post($nid, $metadata, $subject, $body, 
-      $update, $plain, $attachment_fids, $batch) {
+      $update, $plain, $attachment_fids) {
     $tid = $metadata['tid'];
     $list_type = $metadata['list_type'];
     $reply_to_type = $metadata['reply_to_type'];
@@ -288,19 +288,19 @@
     
      watchdog('gb_maillist', 'got meta');
     
-    
-    $batch = TRUE;
     $update = !$node->is_new;
     $body = $node->body[LANGUAGE_NONE][0]['value'];
     //$plain = ($node->body[LANGUAGE_NONE][0]['format'] === 'plain_text');
     $plain = FALSE; // always send HTML
     $subject = $node->title;
     $fids = array();
-    foreach ($node->field_attachment[LANGUAGE_NONE] as $attachment) {
-      $fids[] = $attachment['fid'];
+    if (isset($node->field_attachment[LANGUAGE_NONE])) {
+      foreach ($node->field_attachment[LANGUAGE_NONE] as $attachment) {
+        $fids[] = $attachment['fid'];
+      }
     }
     _dispatch_emails_for_post($node->nid, $metadata, $subject, $body, 
-        $update, $plain, $fids, $batch); 
+        $update, $plain, $fids); 
   }
   
   function _comment_update_and_insert($comment) {
@@ -335,18 +335,19 @@
       }
     }
     
-    $batch = TRUE;
     $comment_body = $comment->comment_body[LANGUAGE_NONE][0];
     //$plain = ($comment_body['format'] === 'plain_text');
     $plain = FALSE;
     $body = $comment_body['value'];
     $subject = $comment->subject;
     $fids = array();
-    foreach ($comment->field_attachment[LANGUAGE_NONE] as $attachment) {
-      $fids[] = $attachment['fid'];
+    if (isset($comment->field_attachment[LANGUAGE_NONE])) {
+      foreach ($comment->field_attachment[LANGUAGE_NONE] as $attachment) {
+        $fids[] = $attachment['fid'];
+      }
     }
     _dispatch_emails_for_post($node->nid, $metadata, $subject, $body, 
-        $update, $plain, $fids, $batch);
+        $update, $plain, $fids);
   }
 
   function _extract_values_with_keys_that_match_pattern($values, $pattern) {
@@ -1295,7 +1296,11 @@
    * Implements hook_node_insert()
    */
   function gb_maillist_node_insert($node) {
-    _node_update_and_insert($node);
+    // Drush incoming mail command has to save the node twice
+    // so, ignore inserts from the cli
+    if (php_sapi_name() != 'cli') {
+      _node_update_and_insert($node);
+    }
   }
   
   /**
