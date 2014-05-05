@@ -187,7 +187,7 @@
       
       watchdog('gb_maillist', 'delta');
       
-      watchdog('gb_maillist', $node);
+      watchdog('gb_maillist', print_r($node, TRUE));
       
       node_save($node);
       
@@ -200,17 +200,18 @@
       for ($i = 0; $i < count($file_fields); $i++) {
         $node->field_attachment[LANGUAGE_NONE][$i] = $file_fields[$i];
       }
+      watchdog('gb_maillist', 'omega?');
       // Re-save
       node_save($node);
       watchdog('gb_maillist', 'omega!');
     } catch (Exception $e) {
-      $e = $e;
+      $new_e = $e;
       watchdog('gb_maillist', $e->getMessage());
       watchdog_exception('gb_maillist', $e);
     }
     
-    if (isset($e)) {
-      watchdog_exception($e);
+    if (isset($new_e)) {
+      watchdog_exception('gb_maillist', $new_e);
     }
   }
 
