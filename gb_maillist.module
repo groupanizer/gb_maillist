@@ -257,13 +257,7 @@
           watchdog('gb_maillist', $message);
         }
       }
-      
-      $message = t('Dispatched @count of @total e-mail.', 
-          array('@count' => $dispatched, '@total' => count($operations)));
-      drupal_set_message($message);
     } else { // use batch
-      watchdog('gb_maillist', php_sapi_name());
-      /*
       $batch = array(
         'title' => t('Dispatching e-mail'),
         'operations' => $operations,
@@ -272,7 +266,7 @@
             '/gb_maillist.batch.inc',
       );
       
-      batch_set($batch);*/
+      batch_set($batch);
     }
   }
 
@@ -323,6 +317,7 @@
     }
     
     watchdog('gb_maillist', 'is_forum_comment');
+    watchdog('gb_maillist', print_r($comment, TRUE));
     
     // Load the topic node to get the parent tid
     $node = node_load($comment->nid);
