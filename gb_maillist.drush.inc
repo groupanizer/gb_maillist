@@ -184,6 +184,7 @@
       }
       // Re-save
       node_save($node);
+      watchdog('gb_maillist', 'posted new node')
     } catch (Exception $e) {
       watchdog_exception('gb_maillist', $e);
     }
@@ -221,6 +222,7 @@
 
   function _post_to_forum($tid, $user, $email) {
     $domain = g3core_get_domain();
+    watchdog('gb_maillist', $domain)
     
     // Try and locate the forum topic via In-Reply-To: <$tid.$nid@$domain>
     if (isset($email['headers']['In-Reply-To'])) {
