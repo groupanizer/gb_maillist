@@ -184,7 +184,7 @@
       }
       // Re-save
       node_save($node);
-      watchdog('gb_maillist', 'posted new node')
+      watchdog('gb_maillist', 'posted new node');
     } catch (Exception $e) {
       watchdog_exception('gb_maillist', $e);
     }
