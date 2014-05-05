@@ -124,8 +124,7 @@
     $reply_to_type = $metadata['reply_to_type'];
     $reply_to_email = $metadata['reply_to_email'];
     
-   watchdog('gb_maillist', '_dispatch');
-   return;
+    watchdog('gb_maillist', '_dispatch');
     
     $items = _fetch_list_items_for_tid($tid);
     if (empty($items)) {
@@ -246,22 +245,32 @@
       $operations[] = array('_dispatch_email', array($dispatcher, $email));
     }
 
-    // Create a batch operation to send the e-mails
-    $batch = array(
-      'title' => t('Dispatching e-mail'),
-      'operations' => $operations,
-      'finished' => '_dispatch_email_finished',
-      'file' => drupal_get_path('module', 'gb_maillist') . 
-          '/gb_maillist.batch.inc',
-    );
-    
-    batch_set($batch);
-    
-    watchdog('gb_maillist', php_sapi_name());
-    
-    // Run the batch if we've been invoked via drush
+    // Don't use batch if we've been called from Drush
     if (php_sapi_name() == 'cli') {
-      drush_backend_batch_process();
+      $dispatched = 0;
+      foreach ($operations as $operation) {
+        $result = $operations[1][0]->dispatch($operations[1][1]);
+        
+        if (!$result) {
+          $message = t('Failed to send e-mail to %to.', 
+              array('%to' => $result['to']));
+          watchdog('gb_maillist', $message);
+        }
+      }
+      
+      $message = t('Dispatched @count of @total e-mail.', 
+          array('@count' => $dispatched, '@total' => count($operations)));
+      drupal_set_message($message);
+    } else { // use batch
+      $batch = array(
+        'title' => t('Dispatching e-mail'),
+        'operations' => $operations,
+        'finished' => '_dispatch_email_finished',
+        'file' => drupal_get_path('module', 'gb_maillist') . 
+            '/gb_maillist.batch.inc',
+      );
+      
+      batch_set($batch);
     }
   }
 
