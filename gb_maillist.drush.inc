@@ -155,11 +155,16 @@
   function _post_new_topic($tid, $user, $email) {
     watchdog('gb_maillist', 'post new topic');
     try {
+      watchdog('gb_maillist', 'alpha');
+      
       // Create & save node object
       $node = new stdClass();
       $node->is_new = TRUE;
       $node->type = 'forum';
       node_object_prepare($node);         // sets some defaults & calls hooks
+      
+            watchdog('gb_maillist', 'beta');
+            
       $node->uid = $user->uid;
       $node->name = $user->name;
       $node->picture = $user->picture;
@@ -176,6 +181,9 @@
       $node->body[LANGUAGE_NONE][0]['value'] = $email['html'];
       node_submit($node);
       node_save($node);
+      
+            watchdog('gb_maillist', 'cappa');
+            
       // Now we have a node id and can write the attachments
       // into the proper directory structure
       $file_fields = _save_attachments_and_generate_file_fields(
@@ -185,7 +193,7 @@
       }
       // Re-save
       node_save($node);
-      watchdog('gb_maillist', 'posted new node');
+      watchdog('gb_maillist', 'gamma');
     } catch (Exception $e) {
       watchdog('gb_maillist', $e->getMessage());
       watchdog_exception('gb_maillist', $e);
