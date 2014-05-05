@@ -1,5 +1,7 @@
 <?php
 
+  module_load_include('inc', 'g3core', 'g3core.utils');
+  
   module_load_include('inc', 'gb_maillist', 'gb_maillist.gfeature');  
   module_load_include('inc', 'gb_maillist', 'gb_maillist.constants');
   module_load_include('inc', 'gb_maillist', 'gb_maillist.queries');
@@ -111,16 +113,6 @@
     return $base_url;
   }
   
-  function _get_user() {
-    global $user;
-    return $user;
-  }
-  
-  function _get_domain() {
-    global $base_url;
-    return preg_replace('/^www\./', '', parse_url($base_url, PHP_URL_HOST));
-  }
-  
   function _dispatch_emails_for_post($nid, $metadata, $subject, $body, 
       $update, $plain, $attachment_fids, $batch) {
     $tid = $metadata['tid'];
@@ -143,8 +135,8 @@
     
     // Get some globals
     $base_url = _get_base_url();
-    $user = _get_user();
-    $domain = _get_domain();
+    $user = g3core_get_user();
+    $domain = g3core_get_domain();
     $alias = '';
     
     // global $user is not a complete object, no fields
@@ -287,7 +279,7 @@
       return; // There is no mailing list attached to this forum
     }
     
-    $batch = !isset($node->no_batch);
+    $batch = isset($_SESSION['g3incomingmail']);
     $update = !$node->is_new;
     $body = $node->body[LANGUAGE_NONE][0]['value'];
     //$plain = ($node->body[LANGUAGE_NONE][0]['format'] === 'plain_text');
@@ -329,7 +321,7 @@
       }
     }
     
-    $batch = !isset($comment->no_batch);
+    $batch = isset($_SESSION['g3incomingmail']);
     $comment_body = $comment->comment_body[LANGUAGE_NONE][0];
     //$plain = ($comment_body['format'] === 'plain_text');
     $plain = FALSE;
@@ -1057,7 +1049,7 @@
    */
   function gb_maillist_forum_confirm_delete_submit($form, &$form_state) {
     // Is a user logged in and authenticated?
-    $user = _get_user();
+    $user = g3core_get_user();
     if (!(isset($user->uid)) || $user->uid === 0) {
       drupal_access_denied();
     }
@@ -1082,7 +1074,7 @@
    */
   function gb_maillist_forum_form_submit($form, &$form_state) {
     // Is a user logged in and authenticated?
-    $user = _get_user();
+    $user = g3core_get_user();
     if (!(isset($user->uid)) || $user->uid === 0) {
       drupal_access_denied();
     }

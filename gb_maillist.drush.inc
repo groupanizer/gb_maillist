@@ -1,5 +1,7 @@
 <?php
 
+  module_load_include('inc', 'g3core', 'g3core.utils');
+
   /**
    * Incoming mail handling for the site using MimeMail
    */
@@ -154,7 +156,6 @@
     try {
       // Create & save node object
       $node = new stdClass();
-      $node->no_batch = TRUE; // turn off batch for Drush
       $node->is_new = TRUE;
       $node->type = 'forum';
       node_object_prepare($node);         // sets some defaults & calls hooks
@@ -192,7 +193,6 @@
     try {
       // Create & save comment obj
       $comment = new stdClass();
-      $comment->no_batch = TRUE; // turn off batch for Drush
       $comment->nid = $nid;
       $comment->node_type = 'comment_node_forum';
       $comment->cid = 0;
@@ -220,7 +220,10 @@
   }
 
   function _post_to_forum($tid, $user, $email) {
-    $domain = _get_domain();
+    // Let the mailer know we're in Drush
+    $_SESSION['g3incomingmail'] = TRUE;
+    
+    $domain = g3core_get_domain();
     
     // Try and locate the forum topic via In-Reply-To: <$tid.$nid@$domain>
     if (isset($email['headers']['In-Reply-To'])) {

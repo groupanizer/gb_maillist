@@ -1,5 +1,7 @@
 <?php
 
+  module_load_include('inc', 'g3core', 'g3core.utils');
+
   /** Page to show the emails of a list to the admin */   
   function gb_maillist_view_list_page($tid) {
     if (!is_numeric($tid)) {
@@ -100,9 +102,9 @@
   
   /** Page to see forum hierarchy and details */
   function gb_maillist_forums_page() {
-    $user = _get_user();
+    $user = g3core_get_user();
     $base = _get_base_url();
-    $domain = _get_domain();
+    $domain = g3core_get_domain();
     
     $is_admin = FALSE;
     if (in_array('Communications', $user->roles) ||
