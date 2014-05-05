@@ -163,7 +163,7 @@
       $node->type = 'forum';
       node_object_prepare($node);         // sets some defaults & calls hooks
       
-            watchdog('gb_maillist', 'beta');
+      watchdog('gb_maillist', 'beta');
             
       $node->uid = $user->uid;
       $node->name = $user->name;
@@ -176,13 +176,20 @@
       $node->body[LANGUAGE_NONE][0]['format'] = variable_get(
           'gb_maillist_filter_format');
       $node->body[LANGUAGE_NONE][0]['summary'] = '';
+             
       // MimeMail creates the element html even for plaintext e-mails
       // and wraps the text in <p> tags.
       $node->body[LANGUAGE_NONE][0]['value'] = $email['html'];
+      
+      watchdog('gb_maillist', 'cappa');
+      
       node_submit($node);
+      
+      watchdog('gb_maillist', 'delta');
+      
       node_save($node);
       
-            watchdog('gb_maillist', 'cappa');
+      watchdog('gb_maillist', 'gamma');
             
       // Now we have a node id and can write the attachments
       // into the proper directory structure
@@ -193,7 +200,7 @@
       }
       // Re-save
       node_save($node);
-      watchdog('gb_maillist', 'gamma');
+      watchdog('gb_maillist', 'omega!');
     } catch (Exception $e) {
       watchdog('gb_maillist', $e->getMessage());
       watchdog_exception('gb_maillist', $e);
