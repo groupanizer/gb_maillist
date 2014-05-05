@@ -183,8 +183,6 @@
         $node->field_attachment[LANGUAGE_NONE][$i] = $file_fields[$i];
       }
       // Re-save
-      // Let mailer know this post is from us
-      $node->from_cli = TRUE;
       node_save($node);
     } catch (Exception $e) {
       watchdog_exception('gb_maillist', $e);
@@ -276,6 +274,8 @@
     if (!module_exists('gb_maillist')) {
       exit(EX_SOFTWARE);
     }
+    
+    watchdog('gb_maillist', php_sapi_name());
     
     module_load_include('inc', 'mimemail', 'includes/mimemail.incoming');
     
