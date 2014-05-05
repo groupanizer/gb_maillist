@@ -221,7 +221,7 @@
 
   function _post_to_forum($tid, $user, $email) {
     // Let the mailer know we're in Drush
-    $_SESSION['g3incomingmail'] = TRUE;
+    //$_SESSION['g3incomingmail'] = TRUE;
     
     $domain = g3core_get_domain();
     
