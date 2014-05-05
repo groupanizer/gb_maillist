@@ -125,6 +125,7 @@
     $reply_to_email = $metadata['reply_to_email'];
     
    watchdog('gb_maillist', '_dispatch');
+   return;
     
     $items = _fetch_list_items_for_tid($tid);
     if (empty($items)) {
