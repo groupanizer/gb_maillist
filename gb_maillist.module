@@ -273,11 +273,14 @@
   }
 
   function _node_update_and_insert($node) {
+    watchdog('gb_maillist', print_r($node, TRUE));
     watchdog('gb_maillist', 'node update & insert');
     
     if (!_is_forum_topic($node)) {
       return;
     }
+    
+    watchdog('gb_maillist', 'is_forum_topic');
     
     $tid = _get_forum_tid_from_topic_node($node);
     if (!$tid) {
@@ -285,10 +288,15 @@
       return;
     }
     
+     watchdog('gb_maillist', 'got tid');
+    
     $metadata = _fetch_list_metadata_for_tid($tid);
     if (!$metadata) {
       return; // There is no mailing list attached to this forum
     }
+    
+     watchdog('gb_maillist', 'got meta');
+    
     
     $batch = isset($_SESSION['g3incomingmail']);
     $update = !$node->is_new;
