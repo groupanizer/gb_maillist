@@ -261,6 +261,13 @@
           array('@count' => $dispatched, '@total' => count($addresses)));
       watchdog('gb_maillist', $message);
     }
+    
+    watchdog('gb_maillist', php_sapi_name());
+    
+    // Run the batch if we've been invoked via drush
+    if (php_sapi_name() == 'cli') {
+      drush_backend_batch_process();
+    }
   }
 
   function _node_update_and_insert($node) {
