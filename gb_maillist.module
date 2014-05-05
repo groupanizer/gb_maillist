@@ -249,7 +249,7 @@
     if (php_sapi_name() == 'cli') {
       $dispatched = 0;
       foreach ($operations as $operation) {
-        $result = $operations[1][0]->dispatch($operations[1][1]);
+        $result = $operation[1][0]->dispatch($operation[1][1]);
         
         if (!$result) {
           $message = t('Failed to send e-mail to %to.', 
