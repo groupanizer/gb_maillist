@@ -183,9 +183,11 @@
       
       watchdog('gb_maillist', 'cappa');
       
-      node_submit($node);
+      $node->validated = TRUE;
       
       watchdog('gb_maillist', 'delta');
+      
+      watchdog('gb_maillist', $node);
       
       node_save($node);
       
@@ -202,8 +204,13 @@
       node_save($node);
       watchdog('gb_maillist', 'omega!');
     } catch (Exception $e) {
+      $e = $e;
       watchdog('gb_maillist', $e->getMessage());
       watchdog_exception('gb_maillist', $e);
+    }
+    
+    if (isset($e)) {
+      watchdog_exception($e);
     }
   }
 
