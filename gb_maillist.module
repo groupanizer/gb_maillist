@@ -120,6 +120,8 @@
     $reply_to_type = $metadata['reply_to_type'];
     $reply_to_email = $metadata['reply_to_email'];
     
+   watchdog('gb_maillist', '_dispatch');
+    
     $items = _fetch_list_items_for_tid($tid);
     if (empty($items)) {
       // We should always have items attached to a mailing list
@@ -271,6 +273,8 @@
   }
 
   function _node_update_and_insert($node) {
+    watchdog('gb_maillist', 'node update & insert');
+    
     if (!_is_forum_topic($node)) {
       return;
     }
