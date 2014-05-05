@@ -317,9 +317,14 @@
   }
   
   function _comment_update_and_insert($comment) {
+    watchdog('gb_maillist', print_r($node, TRUE));
+    watchdog('gb_maillist', 'comment update & insert');
+    
     if (!_is_forum_comment($comment)) {
       return;
     }
+    
+    watchdog('gb_maillist', 'is_forum_comment');
     
     // Load the topic node to get the parent tid
     $node = node_load($comment->nid);
