@@ -1,6 +1,6 @@
 <?php
-
-  module_load_include('inc', 'g3core', 'g3core.utils');
+  
+  require_once DRUPAL_ROOT . '/sites/all/modules/g3/g3core/g3core.utils.inc';
 
   /**
    * Incoming mail handling for the site using MimeMail
