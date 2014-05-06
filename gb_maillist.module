@@ -1,5 +1,7 @@
 <?php
 
+  module_load_include('inc', 'g3core', 'g3core.utils');
+  
   module_load_include('inc', 'gb_maillist', 'gb_maillist.gfeature');  
   module_load_include('inc', 'gb_maillist', 'gb_maillist.constants');
   module_load_include('inc', 'gb_maillist', 'gb_maillist.queries');
@@ -10,9 +12,11 @@
       return FALSE;
     }
     
-    // Is this coming from the forum post topic form that we've hooked?
-    if ($node->form_id !== 'forum_node_form') {
-      return FALSE;
+    if (php_sapi_name() != 'cli') {
+      // Is this coming from the forum post topic form that we've hooked?
+      if ($node->form_id != 'forum_node_form' && !isset($node->from_cli)) {
+        return FALSE;
+      }
     }
     
     return TRUE;
@@ -23,9 +27,11 @@
       return FALSE;
     }
     
-    // Is this coming from the forum post comment form?
-    if ($comment->form_id !== 'comment_node_forum_form') {
-      return FALSE;
+    if (php_sapi_name() != 'cli') {
+      // Is this coming from the forum post comment form?
+      if ($comment->form_id !== 'comment_node_forum_form') {
+        return FALSE;
+      }
     }
     
     return TRUE;
@@ -111,16 +117,6 @@
     return $base_url;
   }
   
-  function _get_user() {
-    global $user;
-    return $user;
-  }
-  
-  function _get_domain() {
-    global $base_url;
-    return preg_replace('/^www\./', '', parse_url($base_url, PHP_URL_HOST));
-  }
-  
   function _dispatch_emails_for_post($nid, $metadata, $subject, $body, 
       $update, $plain, $attachment_fids) {
     $tid = $metadata['tid'];
@@ -143,8 +139,8 @@
     
     // Get some globals
     $base_url = _get_base_url();
-    $user = _get_user();
-    $domain = _get_domain();
+    $user = g3core_get_user();
+    $domain = g3core_get_domain();
     $alias = '';
     
     // global $user is not a complete object, no fields
@@ -206,8 +202,6 @@
     $bounces = "bounces@{$domain}";
     
     $dispatcher = new EmailDispatcher($sender, $bounces, TRUE);
-    
-    // Construct an array of batch operations
     $operations = array();
     
     foreach ($addresses as $address) {
@@ -248,19 +242,30 @@
     
       $operations[] = array('_dispatch_email', array($dispatcher, $email));
     }
-    
-    // Create a batch operation to send the e-mails
-    $batch = array(
-      'title' => t('Dispatching e-mail'),
-      'operations' => $operations,
-      'finished' => '_dispatch_email_finished',
-      'file' => drupal_get_path('module', 'gb_maillist') . 
-          '/gb_maillist.batch.inc',
-    );
-    
-    batch_set($batch);
 
-    // _MAILING_LIST_TYPE_ STANDARD|BROADCAST
+    // Don't use batch if we've been called from Drush
+    if (php_sapi_name() == 'cli') {
+      $dispatched = 0;
+      foreach ($operations as $operation) {
+        $result = $operation[1][0]->dispatch($operation[1][1]);
+        
+        if (!$result) {
+          $message = t('Failed to send e-mail to %to.', 
+              array('%to' => $result['to']));
+          watchdog('gb_maillist', $message);
+        }
+      }
+    } else { // use batch
+      $batch = array(
+        'title' => t('Dispatching e-mail'),
+        'operations' => $operations,
+        'finished' => '_dispatch_email_finished',
+        'file' => drupal_get_path('module', 'gb_maillist') . 
+            '/gb_maillist.batch.inc',
+      );
+      
+      batch_set($batch);
+    }
   }
 
   function _node_update_and_insert($node) {
@@ -285,8 +290,10 @@
     $plain = FALSE; // always send HTML
     $subject = $node->title;
     $fids = array();
-    foreach ($node->field_attachment[LANGUAGE_NONE] as $attachment) {
-      $fids[] = $attachment['fid'];
+    if (isset($node->field_attachment[LANGUAGE_NONE])) {
+      foreach ($node->field_attachment[LANGUAGE_NONE] as $attachment) {
+        $fids[] = $attachment['fid'];
+      }
     }
     _dispatch_emails_for_post($node->nid, $metadata, $subject, $body, 
         $update, $plain, $fids); 
@@ -326,8 +333,10 @@
     $body = $comment_body['value'];
     $subject = $comment->subject;
     $fids = array();
-    foreach ($comment->field_attachment[LANGUAGE_NONE] as $attachment) {
-      $fids[] = $attachment['fid'];
+    if (isset($comment->field_attachment[LANGUAGE_NONE])) {
+      foreach ($comment->field_attachment[LANGUAGE_NONE] as $attachment) {
+        $fids[] = $attachment['fid'];
+      }
     }
     _dispatch_emails_for_post($node->nid, $metadata, $subject, $body, 
         $update, $plain, $fids);
@@ -1047,7 +1056,7 @@
    */
   function gb_maillist_forum_confirm_delete_submit($form, &$form_state) {
     // Is a user logged in and authenticated?
-    $user = _get_user();
+    $user = g3core_get_user();
     if (!(isset($user->uid)) || $user->uid === 0) {
       drupal_access_denied();
     }
@@ -1072,7 +1081,7 @@
    */
   function gb_maillist_forum_form_submit($form, &$form_state) {
     // Is a user logged in and authenticated?
-    $user = _get_user();
+    $user = g3core_get_user();
     if (!(isset($user->uid)) || $user->uid === 0) {
       drupal_access_denied();
     }
@@ -1279,7 +1288,11 @@
    * Implements hook_node_insert()
    */
   function gb_maillist_node_insert($node) {
-    _node_update_and_insert($node);
+    // Drush incoming mail command has to save the node twice
+    // so, ignore inserts from the cli
+    if (php_sapi_name() != 'cli') {
+      _node_update_and_insert($node);
+    }
   }
   
   /**

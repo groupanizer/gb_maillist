@@ -23,9 +23,10 @@
         }
       }
       
-      $message = t('Dispatched @count e-mails.', 
-          array('@count' => $dispatched));
+      $message = t('Dispatched @count of @total e-mail.', 
+          array('@count' => $dispatched, '@total' => count($results)));
       drupal_set_message($message);
+      watchdog('gb_maillist', $message);
     } else {
       // An error occurred.
       // $operations contains the operations that remained unprocessed.
