@@ -95,7 +95,7 @@
     );
   }
   
-  function _save_attachments_and_generate_file_fields($nid, $user, $email) {
+  function _save_attachments_and_generate_file_fields($nid, $account, $email) {
     $file_fields = array();
     
     for ($i = 0; $i < count($email['attachments']); $i++) {
@@ -125,7 +125,7 @@
         $file->uri = $uri;
         $file->filename = $filename;
         $file->filemime = $attachment['filemime'];
-        $file->uid = $user->uid;
+        $file->uid = $account->uid;
         $file->status = FILE_STATUS_PERMANENT;
     
         $file = file_save($file);
@@ -134,7 +134,7 @@
           'fid' => $file->fid,
           'display' => 1, /** @todo investigate */
           'description' => '',
-          'uid' => $user->uid,
+          'uid' => $account->uid,
           'uri' => $file->uri,
           'filename' => $file->filename,
           'filemime' => $file->filemime,
@@ -152,7 +152,7 @@
     return $file_fields;
   }
 
-  function _post_new_topic($tid, $user, $email) {
+  function _post_new_topic($tid, $account, $email) {
     try {
       // Create & save node object
       $node = new stdClass();
@@ -160,9 +160,9 @@
       $node->type = 'forum';
       node_object_prepare($node);         // sets some defaults & calls hooks
             
-      $node->uid = $user->uid;
-      $node->name = $user->name;
-      $node->picture = $user->picture;
+      $node->uid = $account->uid;
+      $node->name = $account->name;
+      $node->picture = $account->picture;
       $node->comment = 2;                 // 0 = disabled, 1 = RO, 2 = R/W
       $node->title = $email['headers']['Subject'];
       $node->status = NODE_PUBLISHED;     // 0 = unpublished, 1 = published
@@ -179,7 +179,7 @@
       // Now we have a node id and can write the attachments
       // into the proper directory structure
       $file_fields = _save_attachments_and_generate_file_fields(
-          $node->nid, $user, $email);
+          $node->nid, $account, $email);
       for ($i = 0; $i < count($file_fields); $i++) {
         $node->field_attachment[LANGUAGE_NONE][$i] = $file_fields[$i];
       }
@@ -190,7 +190,7 @@
     }
   }
 
-  function _post_comment_to_topic($nid, $user, $email) {
+  function _post_comment_to_topic($nid, $account, $email) {
     try {
       // Create & save comment obj
       $comment = new stdClass();
@@ -198,9 +198,9 @@
       $comment->node_type = 'comment_node_forum';
       $comment->cid = 0;
       $comment->pid = 0;
-      $comment->uid = $user->uid;
-      $comment->name = $user->name;
-      $comment->picture = $user->picture;
+      $comment->uid = $account->uid;
+      $comment->name = $account->name;
+      $comment->picture = $account->picture;
       $comment->is_anonymous = 0; /** @todo change when actually anonymous? */
       $comment->status = COMMENT_PUBLISHED;
       //$comment->language = LANGUAGE_NONE
@@ -209,7 +209,7 @@
           'gb_maillist_filter_format');
       $comment->comment_body[LANGUAGE_NONE][0]['value'] = $email['html'];
       $file_fields = _save_attachments_and_generate_file_fields(
-          $nid, $user, $email);
+          $nid, $account, $email);
       for ($i = 0; $i < count($file_fields); $i++) {
         $comment->field_attachment[LANGUAGE_NONE][$i] = $file_fields[$i];
       }
@@ -220,7 +220,7 @@
     } 
   }
 
-  function _post_to_forum($tid, $user, $email) {
+  function _post_to_forum($tid, $account, $email) {
     $domain = g3core_get_domain();
     
     // Try and locate the forum topic via In-Reply-To: <$tid.$nid@$domain>
@@ -241,7 +241,7 @@
               ->fieldCondition('taxonomy_forums', 'tid', $inreplyto_tid)
               ->execute();
           if ($result && count($result)) {
-            return _post_comment_to_topic($inreplyto_nid, $user, $email); 
+            return _post_comment_to_topic($inreplyto_nid, $account, $email); 
           }
         }
       }
@@ -259,11 +259,11 @@
         ->execute();
     if ($result && count($result)) {
       $node = reset($result['node']); // take the first match
-      return _post_comment_to_topic($node->nid, $user, $email);
+      return _post_comment_to_topic($node->nid, $account, $email);
     }    
    
     // Couldn't find the topic!
-    _post_new_topic($tid, $user, $email);
+    _post_new_topic($tid, $account, $email);
   }
   
   /** @todo check multi email */
@@ -301,17 +301,21 @@
     $tid = $record->tid;
     
     // Does the user exist?
-    $user = user_load_by_mail($sender);
-    if (!$user) {           // no, so we'll try and proceed as anoynmous
-      $user = user_load(0); // anonymous
+    $account = user_load_by_mail($sender);
+    if (!$account) {           // no, so we'll try and proceed as anoynmous
+      $account = user_load(0); // anonymous
     }
     
     // Check for posting permission
-    if (!forum_access_access('create', $tid, $user)) {
+    if (!forum_access_access('create', $tid, $account)) {
       exit(EX_NOPERM);
     }
 
-    _post_to_forum($tid, $user, $email);
+    // Maillist depends on the global $user object
+    global $user;
+    $user = $account;
+    
+    _post_to_forum($tid, $account, $email);
   }
 
   function drush_gb_maillist_setup_boards() {
