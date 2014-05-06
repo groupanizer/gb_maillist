@@ -153,17 +153,12 @@
   }
 
   function _post_new_topic($tid, $user, $email) {
-    watchdog('gb_maillist', 'post new topic');
     try {
-      watchdog('gb_maillist', 'alpha');
-      
       // Create & save node object
       $node = new stdClass();
       $node->is_new = TRUE;
       $node->type = 'forum';
       node_object_prepare($node);         // sets some defaults & calls hooks
-      
-      watchdog('gb_maillist', 'beta');
             
       $node->uid = $user->uid;
       $node->name = $user->name;
@@ -176,23 +171,11 @@
       $node->body[LANGUAGE_NONE][0]['format'] = variable_get(
           'gb_maillist_filter_format');
       $node->body[LANGUAGE_NONE][0]['summary'] = '';
-             
       // MimeMail creates the element html even for plaintext e-mails
       // and wraps the text in <p> tags.
       $node->body[LANGUAGE_NONE][0]['value'] = $email['html'];
-      
-      watchdog('gb_maillist', 'cappa');
-      
       $node->validated = TRUE;
-      
-      watchdog('gb_maillist', 'delta');
-      
-      watchdog('gb_maillist', print_r($node, TRUE));
-      
       node_save($node);
-      
-      watchdog('gb_maillist', 'gamma');
-            
       // Now we have a node id and can write the attachments
       // into the proper directory structure
       $file_fields = _save_attachments_and_generate_file_fields(
@@ -200,24 +183,14 @@
       for ($i = 0; $i < count($file_fields); $i++) {
         $node->field_attachment[LANGUAGE_NONE][$i] = $file_fields[$i];
       }
-      watchdog('gb_maillist', 'omega?');
       // Re-save
       node_save($node);
-      watchdog('gb_maillist', 'omega!');
     } catch (Exception $e) {
-      $new_e = $e;
-      watchdog('gb_maillist', $e->getMessage());
       watchdog_exception('gb_maillist', $e);
-    }
-    
-    if (isset($new_e)) {
-      watchdog_exception('gb_maillist', $new_e);
     }
   }
 
   function _post_comment_to_topic($nid, $user, $email) {
-    watchdog('gb_maillist', 'post comment to topic');
-    watchdog('gb_maillist', $nid);
     try {
       // Create & save comment obj
       $comment = new stdClass();
@@ -249,7 +222,6 @@
 
   function _post_to_forum($tid, $user, $email) {
     $domain = g3core_get_domain();
-    watchdog('gb_maillist', $domain);
     
     // Try and locate the forum topic via In-Reply-To: <$tid.$nid@$domain>
     if (isset($email['headers']['In-Reply-To'])) {
@@ -328,22 +300,16 @@
     }
     $tid = $record->tid;
     
-    watchdog('gb_maillist', 'got forum');
-    
     // Does the user exist?
     $user = user_load_by_mail($sender);
     if (!$user) {           // no, so we'll try and proceed as anoynmous
       $user = user_load(0); // anonymous
     }
     
-    watchdog('gb_maillist', 'use exists');
-    
     // Check for posting permission
     if (!forum_access_access('create', $tid, $user)) {
       exit(EX_NOPERM);
     }
-    
-    watchdog('gb_maillist', 'access');
 
     _post_to_forum($tid, $user, $email);
   }
