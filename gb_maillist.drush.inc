@@ -109,7 +109,9 @@
         $filename = $matches[2];
       } else {
         $filename = $attachment['filename'];
-      }
+      }*/
+      
+      $filename = $attachment['filename'];
       
       // Save file data
       $destination = "private://attachments/{$nid}/";
