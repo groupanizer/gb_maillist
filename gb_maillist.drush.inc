@@ -55,6 +55,8 @@
     $matches = array();
     $body = $email['html'];
     
+    watchdog('gb_maillist', var_export($email, TRUE));
+    
     if (preg_match("/Content-Type: multipart\/alternative;[\s]+boundary=\"?" . 
         "([\w'()+,\-.\/\?=:]+)\"?\r?\n/ms", $body, $matches)) {
       watchdog('gb_maillist', 'boundary present');
