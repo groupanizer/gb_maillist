@@ -291,6 +291,8 @@
 
     watchdog('gb_maillist', 
         "Incoming {$from} -> {$to}:\n{$email['html']}", NULL);
+    watchdog('gb_maillist', var_export($email, TRUE));
+    watchdog('gb_maillist', php_sapi_name());
     
     // Parse the alias & from
     $parsed_to = _parse_string_for_emails($to);
