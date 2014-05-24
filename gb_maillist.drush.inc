@@ -55,7 +55,7 @@
     $matches = array();
     $body = $email['html'];
     
-    watchdog('gb_maillist', var_export($email, TRUE));
+    watchdog('gb_maillist', 'preg match pre');
     
     if (preg_match("/Content-Type: multipart\/alternative;[\s]+boundary=\"?" . 
         "([\w'()+,\-.\/\?=:]+)\"?\r?\n/ms", $body, $matches)) {
@@ -79,6 +79,7 @@
       $body = isset($textparts['html']) ? 
           $textparts['html'] : $textparts['plain'];
     } else {
+      watchdog('gb_maillist', 'else');
       $body = $email['html']; // mimemail parsed the e-mail properly
     }
     
