@@ -52,12 +52,12 @@
      * 
      *  @todo Why does it fail? Multiple boundaries?
      */
-    /*
     $matches = array();
     $body = $email['html'];
     
     if (preg_match("/Content-Type: multipart\/alternative;[\s]+boundary=\"?" . 
         "([\w'()+,\-.\/\?=:]+)\"?\r?\n/ms", $body, $matches)) {
+      watchdog('gb_maillist', 'boundary present');
       $boundary = $matches[1];
       preg_match_all("/Content-Type: text\/(html|plain); [\w\"\-=]+\s?\s". 
           "(Content-Transfer-Encoding: [\w\"\-]+\s?\s)?\s?\s(.*?)\s" . 
@@ -80,9 +80,7 @@
       $body = $email['html']; // mimemail parsed the e-mail properly
     }
     
-    return $body;*/
-    
-    return $email['html'];
+    return $body;
   }
   
   // Extract only the e-mails from any RFC compliant header
