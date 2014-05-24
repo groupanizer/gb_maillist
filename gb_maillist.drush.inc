@@ -52,6 +52,7 @@
      * 
      *  @todo Why does it fail? Multiple boundaries?
      */
+    /*
     $matches = array();
     $body = $email['html'];
     
@@ -79,7 +80,9 @@
       $body = $email['html']; // mimemail parsed the e-mail properly
     }
     
-    return $body;    
+    return $body;*/
+    
+    return $email['html'];
   }
   
   // Extract only the e-mails from any RFC compliant header
@@ -101,6 +104,7 @@
     for ($i = 0; $i < count($email['attachments']); $i++) {
       $attachment = $email['attachments'][$i];
       
+      /*
       // MimeMail doesn't parse some filenames correctly, so we'll adjust
       $matches = array();
       if (preg_match(
