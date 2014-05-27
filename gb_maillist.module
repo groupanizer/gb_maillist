@@ -216,7 +216,7 @@
       );
       $email = new EmailMimeEmail($key, $tokens);
       $email->set_paths($address, $from, $reply_to);
-      $email->set_subject($subject);
+      $email->set_subject("[{$alias}] {$subject}");
       $email->set_main_body($body, $plain);
       if (!$plain) {
         $alt_body = 'To view this e-mail you need an HTML compatible client.';
