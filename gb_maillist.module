@@ -1185,6 +1185,10 @@
    */
   function gb_maillist_form_comment_node_forum_form_alter(&$form, &$form_state, 
       $form_id) {
+    // Hide subject & set value
+    $form['subject']['#access'] = FALSE;
+    $form['subject']['#default_value'] = 'RE: ' . $form['#node']->title;
+    
     $form['#validate'][] = 'gb_maillist_form_comment_node_forum_form_validate'; 
   }   
       
