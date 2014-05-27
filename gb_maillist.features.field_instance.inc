@@ -92,7 +92,7 @@ function gb_maillist_field_default_field_instances() {
     'settings' => array(
       'description_field' => 0,
       'file_directory' => 'attachments',
-      'file_extensions' => 'txt rtf pdf jpg jpeg png bmp doc docx ppt pptx',
+      'file_extensions' => 'txt rtf pdf jpg jpeg png bmp doc docx ppt pptx xls xlsx odt mp3',
       'filefield_paths' => array(
         'active_updating' => 0,
         'file_name' => array(
