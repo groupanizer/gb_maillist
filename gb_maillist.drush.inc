@@ -55,8 +55,11 @@
     $matches = array();
     $body = $email['html'];
     
+    watchdog('gb_maillist', 'preg match pre');
+    
     if (preg_match("/Content-Type: multipart\/alternative;[\s]+boundary=\"?" . 
         "([\w'()+,\-.\/\?=:]+)\"?\r?\n/ms", $body, $matches)) {
+      watchdog('gb_maillist', 'boundary present');
       $boundary = $matches[1];
       preg_match_all("/Content-Type: text\/(html|plain); [\w\"\-=]+\s?\s". 
           "(Content-Transfer-Encoding: [\w\"\-]+\s?\s)?\s?\s(.*?)\s" . 
@@ -76,10 +79,11 @@
       $body = isset($textparts['html']) ? 
           $textparts['html'] : $textparts['plain'];
     } else {
+      watchdog('gb_maillist', 'else');
       $body = $email['html']; // mimemail parsed the e-mail properly
     }
     
-    return $body;    
+    return $body;
   }
   
   // Extract only the e-mails from any RFC compliant header
@@ -101,6 +105,7 @@
     for ($i = 0; $i < count($email['attachments']); $i++) {
       $attachment = $email['attachments'][$i];
       
+      /*
       // MimeMail doesn't parse some filenames correctly, so we'll adjust
       $matches = array();
       if (preg_match(
@@ -109,7 +114,9 @@
         $filename = $matches[2];
       } else {
         $filename = $attachment['filename'];
-      }
+      }*/
+      
+      $filename = $attachment['filename'];
       
       // Save file data
       $destination = "private://attachments/{$nid}/";
@@ -285,6 +292,8 @@
 
     watchdog('gb_maillist', 
         "Incoming {$from} -> {$to}:\n{$email['html']}", NULL);
+    watchdog('gb_maillist', var_export($email, TRUE));
+    watchdog('gb_maillist', php_sapi_name());
     
     // Parse the alias & from
     $parsed_to = _parse_string_for_emails($to);
