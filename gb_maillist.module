@@ -213,6 +213,7 @@
         'nid' => $nid,
         'reply_to' => $reply_to,
         'user' => $user,
+        'alias' => $alias,
       );
       $email = new EmailMimeEmail($key, $tokens);
       $email->set_paths($address, $from, $reply_to);
