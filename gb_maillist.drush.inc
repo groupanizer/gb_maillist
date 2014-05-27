@@ -55,11 +55,8 @@
     $matches = array();
     $body = $email['html'];
     
-    watchdog('gb_maillist', 'preg match pre');
-    
     if (preg_match("/Content-Type: multipart\/alternative;[\s]+boundary=\"?" . 
         "([\w'()+,\-.\/\?=:]+)\"?\r?\n/ms", $body, $matches)) {
-      watchdog('gb_maillist', 'boundary present');
       $boundary = $matches[1];
       preg_match_all("/Content-Type: text\/(html|plain); [\w\"\-=]+\s?\s". 
           "(Content-Transfer-Encoding: [\w\"\-]+\s?\s)?\s?\s(.*?)\s" . 
@@ -285,15 +282,13 @@
     $email = stream_get_contents(STDIN);            // read encoded raw e-mail
     $email = base64_decode($email);                 // decode e-mail
     $email = mimemail_parse($email);                // parse e-mail into array
-    $email['html'] = _parse_email_for_body($email); // re-parse to fix bugs
+    // $email['html'] = _parse_email_for_body($email); // re-parse to fix bugs
     
     $to = $email['headers']['To']; /** @todo 'Delivered-To' ? */
     $from = $email['headers']['From'];
 
     watchdog('gb_maillist', 
         "Incoming {$from} -> {$to}:\n{$email['html']}", NULL);
-    watchdog('gb_maillist', var_export($email, TRUE));
-    watchdog('gb_maillist', php_sapi_name());
     
     // Parse the alias & from
     $parsed_to = _parse_string_for_emails($to);
