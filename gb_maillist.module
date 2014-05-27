@@ -1158,12 +1158,19 @@
    */
   function gb_maillist_form_forum_node_form_alter(&$form, 
       &$form_state, $form_id) {
-    // Hide the element that lets the user choose which forum to post to
-    // IF a forum has already been chosen via the URL.
-    // Don't hide it if it's through Content -> Add Content
-    $requested_forum_id = arg(3);
-    if (is_numeric($requested_forum_id)) {
-      $form['taxonomy_forums'][LANGUAGE_NONE]['#access'] = FALSE;
+    if (current_path() == 'node/add/forum') {
+      // Content->Add Content, do nothing
+    } else {
+      $tid = arg(3);
+      if (is_numeric($tid) && $tid > 0) {
+        // node/add/forum/%, hide element
+        $form['taxonomy_forums'][LANGUAGE_NONE]['#access'] = FALSE;
+      } else {
+        // ajax, fill default value
+        $complete_form = $form_state['complete form'];
+        $form['taxonomy_forums'][LANGUAGE_NONE]['#default_value'] =
+            $complete_form['taxonomy_forums'][LANGUAGE_NONE]['#default_value'];
+      }
     }
     
     $form['#validate'][] = 'gb_maillist_forum_node_form_validate';
