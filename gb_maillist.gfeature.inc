@@ -29,7 +29,7 @@
         ),
         'help' => array(
           'title' => t('Maillist help'), 
-          'href' => 'http://support.groupanizer.com',
+          'href' => 'http://support.groupanizer.com/portal/groupanizersupport/ShowEntityInfo.do?id=f37c3547653878901872027b66938f3342acf79f93f757e8&module=Solutions&showpage=DetailsView&isload=true',
         ),
       ),
     );
