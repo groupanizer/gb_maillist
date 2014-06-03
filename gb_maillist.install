@@ -45,18 +45,8 @@
     $permissions['view forums'] = array(
       'name' => 'view forums',
       'roles' => array(
-        'Candidate' => 'Candidate',
-        'Communications' => 'Communications',
-        'Events' => 'Events',
-        'Executive' => 'Executive',
-        'Librarian' => 'Librarian',
         'Member' => 'Member',
-        'Member Inactive' => 'Member Inactive',
-        'Membership' => 'Membership',
-        'Music' => 'Music',
-        'Parent' => 'Parent',
         'Site Admin' => 'Site Admin',
-        'Supporter' => 'Supporter',
       ),
       'module' => 'gb_maillist',
     );
@@ -65,10 +55,7 @@
     $permissions['create forum content'] = array(
       'name' => 'create forum content',
       'roles' => array(
-        'Communications' => 'Communications',
-        'Executive' => 'Executive',
         'Member' => 'Member',
-        'Parent' => 'Parent',
         'Site Admin' => 'Site Admin',
       ),
       'module' => 'node',
@@ -78,8 +65,7 @@
     $permissions['delete any forum content'] = array(
       'name' => 'delete any forum content',
       'roles' => array(
-        'Communications' => 'Communications',
-        'Executive' => 'Executive',
+        'Forum Admin' => 'Forum Admin',
         'Site Admin' => 'Site Admin',
       ),
       'module' => 'node',
@@ -89,10 +75,7 @@
     $permissions['delete own forum content'] = array(
       'name' => 'delete own forum content',
       'roles' => array(
-        'Communications' => 'Communications',
-        'Executive' => 'Executive',
-        'Member' => 'Member',
-        'Parent' => 'Parent',
+        'Forum Admin' => 'Forum Admin',
         'Site Admin' => 'Site Admin',
       ),
       'module' => 'node',
@@ -102,8 +85,7 @@
     $permissions['edit any forum content'] = array(
       'name' => 'edit any forum content',
       'roles' => array(
-        'Communications' => 'Communications',
-        'Executive' => 'Executive',
+        'Forum Admin' => 'Forum Admin',
         'Site Admin' => 'Site Admin',
       ),
       'module' => 'node',
@@ -113,10 +95,7 @@
     $permissions['edit own forum content'] = array(
       'name' => 'edit own forum content',
       'roles' => array(
-        'Communications' => 'Communications',
-        'Executive' => 'Executive',
         'Member' => 'Member',
-        'Parent' => 'Parent',
         'Site Admin' => 'Site Admin',
       ),
       'module' => 'node',
@@ -141,8 +120,7 @@
     $permissions['administer forums'] = array(
       'name' => 'administer forums',
       'roles' => array(
-        'Communications' => 'Communications',
-        'Executive' => 'Executive',
+        'Forum Admin' => 'Forum Admin',
         'Site Admin' => 'Site Admin',
       ),
       'module' => 'forum',
@@ -152,18 +130,8 @@
     $permissions['send arbitrary files'] = array(
       'name' => 'send arbitrary files',
       'roles' => array(
-        'Candidate' => 'Candidate',
-        'Communications' => 'Communications',
-        'Events' => 'Events',
-        'Executive' => 'Executive',
-        'Librarian' => 'Librarian',
         'Member' => 'Member',
-        'Member Inactive' => 'Member Inactive',
-        'Membership' => 'Membership',
-        'Music' => 'Music',
-        'Parent' => 'Parent',
         'Site Admin' => 'Site Admin',
-        'Supporter' => 'Supporter',
       ),
       'module' => 'mimemail'
     );

@@ -19,3 +19,4 @@ features[field_instance][] = comment-comment_node_forum-field_attachment
 features[field_instance][] = node-forum-field_attachment
 features[field_instance][] = comment-comment_node_forum-comment_body
 features[field_instance][] = node-forum-body
+features[user_role][] = Forum Admin
