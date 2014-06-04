@@ -13,7 +13,7 @@ function gb_maillist_user_default_roles() {
   // Exported role: Forum Admin.
   $roles['Forum Admin'] = array(
     'name' => 'Forum Admin',
-    'weight' => 6,
+    'weight' => 9,
     'machine_name' => 'forum_admin',
   );
 
