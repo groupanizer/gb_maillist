@@ -45,6 +45,7 @@
     //
   }
   
+  /** Deprecated */
   function _parse_email_for_body($email) {
     /** If a boundary is present then mimemail has failed in its parsing
      *  and ['html'] contains the conents of the e-mail that lay between the
@@ -55,11 +56,8 @@
     $matches = array();
     $body = $email['html'];
     
-    watchdog('gb_maillist', 'preg match pre');
-    
     if (preg_match("/Content-Type: multipart\/alternative;[\s]+boundary=\"?" . 
         "([\w'()+,\-.\/\?=:]+)\"?\r?\n/ms", $body, $matches)) {
-      watchdog('gb_maillist', 'boundary present');
       $boundary = $matches[1];
       preg_match_all("/Content-Type: text\/(html|plain); [\w\"\-=]+\s?\s". 
           "(Content-Transfer-Encoding: [\w\"\-]+\s?\s)?\s?\s(.*?)\s" . 
@@ -99,7 +97,7 @@
     );
   }
   
-  function _save_attachments_and_generate_file_fields($nid, $account, $email) {
+  function _save_attachments_and_generate_file_fields($nid, $email, $account) {
     $file_fields = array();
     
     for ($i = 0; $i < count($email['attachments']); $i++) {
@@ -159,7 +157,7 @@
     return $file_fields;
   }
 
-  function _post_new_topic($tid, $account, $email) {
+  function _post_new_topic($tid, $email, $account) {
     try {
       // Create & save node object
       $node = new stdClass();
@@ -186,7 +184,7 @@
       // Now we have a node id and can write the attachments
       // into the proper directory structure
       $file_fields = _save_attachments_and_generate_file_fields(
-          $node->nid, $account, $email);
+          $node->nid, $email, $account);
       for ($i = 0; $i < count($file_fields); $i++) {
         $node->field_attachment[LANGUAGE_NONE][$i] = $file_fields[$i];
       }
@@ -197,7 +195,7 @@
     }
   }
 
-  function _post_comment_to_topic($nid, $account, $email) {
+  function _post_comment_to_topic($nid, $email, $account) {
     try {
       // Create & save comment obj
       $comment = new stdClass();
@@ -216,7 +214,7 @@
           'gb_maillist_filter_format');
       $comment->comment_body[LANGUAGE_NONE][0]['value'] = $email['html'];
       $file_fields = _save_attachments_and_generate_file_fields(
-          $nid, $account, $email);
+          $nid, $email, $account);
       for ($i = 0; $i < count($file_fields); $i++) {
         $comment->field_attachment[LANGUAGE_NONE][$i] = $file_fields[$i];
       }
@@ -227,7 +225,7 @@
     } 
   }
 
-  function _post_to_forum($tid, $account, $email) {
+  function _post_to_forum($tid, $alias, $email, $account) {
     $domain = g3core_get_domain();
     
     // Try and locate the forum topic via In-Reply-To: <$tid.$nid@$domain>
@@ -248,7 +246,7 @@
               ->fieldCondition('taxonomy_forums', 'tid', $inreplyto_tid)
               ->execute();
           if ($result && count($result)) {
-            return _post_comment_to_topic($inreplyto_nid, $account, $email); 
+            return _post_comment_to_topic($inreplyto_nid, $email, $account); 
           }
         }
       }
@@ -256,7 +254,8 @@
           
     // Try and locate the forum topic via the subject
     $subject = $email['headers']['Subject'];
-    $subject = preg_replace("/^(RE:|FWD:)\s?/i", '', $subject);
+    $subject = preg_replace("/^(\[{$alias}\]\s)?(RE:\s|FWD:\s)?/i", 
+        '', $subject);
     
     $query = new EntityFieldQuery();
     $result = $query->entityCondition('entity_type', 'node')
@@ -266,11 +265,11 @@
         ->execute();
     if ($result && count($result)) {
       $node = reset($result['node']); // take the first match
-      return _post_comment_to_topic($node->nid, $account, $email);
+      return _post_comment_to_topic($node->nid, $email, $account);
     }    
    
     // Couldn't find the topic!
-    _post_new_topic($tid, $account, $email);
+    _post_new_topic($tid, $email, $account);
   }
   
   /** @todo check multi email */
@@ -285,15 +284,13 @@
     $email = stream_get_contents(STDIN);            // read encoded raw e-mail
     $email = base64_decode($email);                 // decode e-mail
     $email = mimemail_parse($email);                // parse e-mail into array
-    $email['html'] = _parse_email_for_body($email); // re-parse to fix bugs
+    // $email['html'] = _parse_email_for_body($email); // re-parse to fix bugs
     
     $to = $email['headers']['To']; /** @todo 'Delivered-To' ? */
     $from = $email['headers']['From'];
 
     watchdog('gb_maillist', 
         "Incoming {$from} -> {$to}:\n{$email['html']}", NULL);
-    watchdog('gb_maillist', var_export($email, TRUE));
-    watchdog('gb_maillist', php_sapi_name());
     
     // Parse the alias & from
     $parsed_to = _parse_string_for_emails($to);
@@ -324,7 +321,7 @@
     global $user;
     $user = $account;
     
-    _post_to_forum($tid, $account, $email);
+    _post_to_forum($tid, $alias, $email, $account);
   }
 
   function drush_gb_maillist_setup_boards() {
