@@ -3,20 +3,6 @@
   module_load_include('inc', 'gb_maillist', 'gb_maillist.constants');
   
   /**
-   * Implements hook_enable().
-   */
-  function gb_maillist_enable() {
-    //
-  }
-  
-  /**
-   * Implements hook_disable().
-   */
-  function gb_maillist_disable() {
-    //
-  }
-  
-  /**
    * Implements hook_install()
    */
   function gb_maillist_install() {
