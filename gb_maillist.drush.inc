@@ -410,13 +410,13 @@
       'item' => 'gb_member_role_member',
     ));
     
-    $create_board(t('Music Team'), t('musicteam'), $roles['music_team'], array(
+    $create_board(t('Music Team'), t('musicteam'), $roles['music_team_member'], array(
       'module' => 'gb_member',
       'class' => 'gb_member_roles',
       'item' => 'gb_member_role_music_team',
     ));
     
-    $create_board(t('Board/Executives'), t('board'), $roles['executive'], array(
+    $create_board(t('Board Members'), t('board'), $roles['board_member'], array(
       'module' => 'gb_member',
       'class' => 'gb_member_roles',
       'item' => 'gb_member_role_executive',
