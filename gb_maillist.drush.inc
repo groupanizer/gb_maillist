@@ -382,7 +382,7 @@
       ))
       ->values(array(
         'tid' => $tid,
-        'rid' => $roles['communications']->rid,
+        'rid' => $roles['forum_admin']->rid,
         'grant_view'   => 1,
         'grant_update' => 1,
         'grant_delete' => 1,
