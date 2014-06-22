@@ -33,6 +33,8 @@
       'roles' => array(
         'Member' => 'Member',
         'Site Admin' => 'Site Admin',
+        'Board Member' => 'Board Member',
+        'Director' => 'Director',
       ),
       'module' => 'gb_maillist',
     );
@@ -43,6 +45,8 @@
       'roles' => array(
         'Member' => 'Member',
         'Site Admin' => 'Site Admin',
+        'Board Member' => 'Board Member',
+        'Director' => 'Director',
       ),
       'module' => 'node',
     );
@@ -83,6 +87,8 @@
       'roles' => array(
         'Member' => 'Member',
         'Site Admin' => 'Site Admin',
+        'Board Member' => 'Board Member',
+        'Director' => 'Director',
       ),
       'module' => 'node',
     );
@@ -118,6 +124,8 @@
       'roles' => array(
         'Member' => 'Member',
         'Site Admin' => 'Site Admin',
+        'Board Member' => 'Board Member',
+        'Director' => 'Director',
       ),
       'module' => 'mimemail'
     );
