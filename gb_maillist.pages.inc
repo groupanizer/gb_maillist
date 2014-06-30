@@ -236,7 +236,7 @@
             array(
               'data' => $forum->name,
               'header' => TRUE,
-              'colspan' => 4,
+              'colspan' => 5,
             ),
           ),
         );
