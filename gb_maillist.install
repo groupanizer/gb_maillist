@@ -36,6 +36,7 @@
         'Board Member' => 'Board Member',
         'Music Team Member' => 'Music Team Member',
         'Director' => 'Director',
+        'Inactive Member' => 'Inactive Member',
       ),
       'module' => 'gb_maillist',
     );
