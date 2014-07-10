@@ -449,7 +449,7 @@
         'attributes' => array(),
         'caption' => t("Aliases used to e-mail this list." .
             " Format: <em>alias</em>@domain" . 
-            " (don't include the domain). Valid characters are lowercase" .
+            " (don't include the @domain). Valid characters are lowercase" .
             " letters and underscores."),
         'colgroups' => array(),
         'sticky' => FALSE,
