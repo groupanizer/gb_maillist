@@ -106,13 +106,7 @@
     $base = _get_base_url();
     $domain = g3core_get_domain();
     
-    $is_admin = FALSE;
-    if (in_array('Communications', $user->roles) ||
-        in_array('Site Admin', $user->roles) ||
-        in_array('Executive', $user->roles) ||
-        $user->uid == 1) {
-      $is_admin = TRUE;
-    }
+    $is_admin = user_access('administer forums');
         
     if ($is_admin) {
       $mxhosts = array();
