@@ -291,6 +291,7 @@
 
     watchdog('gb_maillist', 
         "Incoming {$from} -> {$to}:\n{$email['html']}", NULL);
+    watchdog('gb_maillist', 'Verbose: ' . print_r($email, TRUE));
     
     // Parse the alias & from
     $parsed_to = _parse_string_for_emails($to);
@@ -302,6 +303,7 @@
     // Does a forum with alias $alias exist?
     $record = _check_for_alias_record($alias);
     if (!$record) {
+      watchdog('gb_maillist', "Mail rejected: forum does not exist {$alias}");
       exit(EX_NOUSER);
     }
     $tid = $record->tid;
@@ -314,6 +316,7 @@
     
     // Check for posting permission
     if (!forum_access_access('create', $tid, $account)) {
+      watchdog('gb_maillist', "Mail rejected: user does not have permission {$sender}, {$account->uid}");
       exit(EX_NOPERM);
     }
 
