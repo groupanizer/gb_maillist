@@ -88,7 +88,7 @@
   // e.g. Smith, John <(john@cox.net)>
   function _parse_string_for_emails($string) {
     $matches = array();
-    preg_match_all("/([\w\$\?\^\+\{\}\|\-\*\.\/!#%&'=~]+)@[\w\-]+\.[a-z]+(.[a-z]+)?/",
+    preg_match_all("/([\w\$\?\^\+\{\}\|\-\*\.\/!#%&'=~]+)@[\w\-]+(\.[a-z]+)+/",
         $string, $matches);
     return array(
       'emails' => $matches[0],
