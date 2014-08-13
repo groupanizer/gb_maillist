@@ -37,7 +37,7 @@
     
     $output = "<br /><p>{$count_text}</p>";
     $output .= theme_table($variables) . "\r\n"; // theme('table', $variables);
-    $output .= "<a href =\"{$base}/g/comm/maillist/export/{$tid}\">" . 
+    $output .= "<br /><a href =\"{$base}/g/comm/maillist/export/{$tid}\">" . 
         "{$export_text}</a>";
     return $output;
   }
