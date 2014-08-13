@@ -230,7 +230,7 @@
             array(
               'data' => $forum->name,
               'header' => TRUE,
-              'colspan' => 5,
+              'colspan' => $is_admin ? 4 : 5,
             ),
           ),
         );
