@@ -293,6 +293,13 @@
         "Incoming {$from} -> {$to}:\n{$email['html']}", NULL);
     watchdog('gb_maillist', 'Verbose: ' . print_r($email, TRUE));
     
+    // If the e-mail is from our own domain, there is an erroneous loop
+    $domain = g3core_get_domain();
+    if (substr($from, -strlen($domain)) == $domain) {
+      watchdog('gb_maillist', 'Terminated potential infinite loop');
+      return; // Don't bounce nor reply
+    }
+    
     // Parse the alias & from
     $parsed_to = _parse_string_for_emails($to);
     $alias = $parsed_to['aliases'][0];
