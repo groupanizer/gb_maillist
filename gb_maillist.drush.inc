@@ -88,11 +88,14 @@
   // e.g. Smith, John <(john@cox.net)>
   function _parse_string_for_emails($string) {
     $matches = array();
-    preg_match_all("/([\w\$\?\^\+\{\}\|\-\*\.\/!#%&'=~]+)@[\w\-]+(\.[a-z]+)+/",
+    preg_match_all("/([\w\$\?\^\+\{\}\|\-\*\.\/!#%&'=~]+)@([\w\-]+(\.[a-z]+)+)/",
         $string, $matches);
+    print_r($matches);
     return array(
       'emails' => $matches[0],
       'aliases' => $matches[1],
+      'domain names' => $matches[2],
+      'top-level domains' => $matches[3],
       'count' => count($matches[1]),
     );
   }
@@ -288,17 +291,11 @@
     
     $to = $email['headers']['To']; /** @todo 'Delivered-To' ? */
     $from = $email['headers']['From'];
+    $reply_to = $email['headers']['Reply-To'];
 
     watchdog('gb_maillist', 
         "Incoming {$from} -> {$to}:\n{$email['html']}", NULL);
     watchdog('gb_maillist', 'Verbose: ' . print_r($email, TRUE));
-    
-    // If the e-mail is from our own domain, there is an erroneous loop
-    $domain = g3core_get_domain();
-    if (substr($from, -strlen($domain)) == $domain) {
-      watchdog('gb_maillist', 'Terminated potential infinite loop');
-      return; // Don't bounce nor reply
-    }
     
     // Parse the alias & from
     $parsed_to = _parse_string_for_emails($to);
@@ -306,6 +303,17 @@
     
     $parsed_from = _parse_string_for_emails($from);
     $sender = $parsed_from['emails'][0];
+    
+    $parsed_reply_to = _parse_string_for_emails($reply_to);
+    $reply_to = $parsed_reply_to['emails'][0];
+    
+    // If the e-mail is from our own domain, there is an erroneous loop
+    $domain = g3core_get_domain();
+    if ($parsed_from['domain names'][0] == $domain ||
+        $parsed_reply_to['domain names'][0] == $domain) {
+      watchdog('gb_maillist', 'Terminated potential infinite loop');
+      return; // Don't bounce nor reply
+    }
     
     // Does a forum with alias $alias exist?
     $record = _check_for_alias_record($alias);
