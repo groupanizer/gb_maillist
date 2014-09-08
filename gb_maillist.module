@@ -141,7 +141,6 @@
     $base_url = _get_base_url();
     $user = g3core_get_user();
     $domain = g3core_get_domain();
-    $alias = '';
     
     // global $user is not a complete object, no fields
     $user = user_load($user->uid);
@@ -157,7 +156,12 @@
       $username = $user->name;
     }
     
-    // Generate the reply-to e-mail
+    $alias = '';
+    
+    // Generate the reply-to e-mail based on the list typea
+    // Generate the sender based on the list type
+    // Get the alias for standard lists
+    // Modify the subject for standard lists
     if ($list_type == _MAILING_LIST_TYPE_BROADCAST) {
       if ($reply_to_type == _BROADCAST_REPLY_TO_TYPE_POSTERS_EMAIL) {
         $reply_to = "\"{$username}\" <{$user->mail}>";
@@ -166,15 +170,21 @@
       } elseif ($reply_to_type == _BROADCAST_REPLY_TO_TYPE_USER_DEFINED) {
         $reply_to = $reply_to_email;
       }
+      
+      $sender =  "broadcast@{$domain}";
     } else { // _MAILING_LIST_TYPE_STANDARD
+      $aliases = _fetch_list_aliases_for_tid($tid);
+      if (empty($aliases)) {
+        drupal_set_message(t('Failed to retrieve any aliases for the list'),
+            'error');
+        return;
+      }
+
+      $alias = $aliases[0]['alias'];      
+      $subject = "[{$alias}] {$subject}";
+      $sender = "{$alias}@{$domain}";
+      
       if ($reply_to_type == _STANDARD_REPLY_TO_TYPE_MAILING_LIST) {
-        $aliases = _fetch_list_aliases_for_tid($tid);
-        if (empty($aliases)) {
-          drupal_set_message(t('Failed to retrieve any aliases for the list'),
-              'error');
-          return;
-        }
-        $alias = $aliases[0]['alias'];
         $reply_to = "{$alias}@{$domain}";
         $from = "\"{$username}\" <{$reply_to}>"; // override from
       } elseif ($reply_to_type == _STANDARD_REPLY_TO_TYPE_POSTERS_EMAIL) {
@@ -193,14 +203,8 @@
           $reply_to : $metadata['from_email'];
     }
         
-    // Set the sender and bounce handler
-    // We'll use the alias for a standard list and the generic 'broadcast'
-    // local address for broadcast lists, since we don't typically handle
-    // incoming mail for them
-    $sender = ($list_type == _MAILING_LIST_TYPE_STANDARD) ? 
-        "{$alias}@{$domain}" : "broadcast@{$domain}";
+
     $bounces = "bounces@{$domain}";
-    
     $dispatcher = new EmailDispatcher($sender, $bounces, TRUE);
     $operations = array();
     
@@ -980,14 +984,20 @@
      
     if ($values['broadcast_reply_to_type'] == 
         _BROADCAST_REPLY_TO_TYPE_USER_DEFINED) {
+      $domain = g3core_get_domain();
+      
       if (empty($values['reply_to_email'])) {
         $title = $list_options['reply_to_email']['#title'];
         form_set_error('reply_to_email', t("{$title} is required."));
+      } elseif (substr($values['reply_to_email'], -strlen($domain)) == $domain) {
+        $email = $values['reply_to_email'];
+        form_set_error('reply_to_email', 
+            t("'{$email}' is not a valid e-mail address."));
       } elseif (!filter_var($values['reply_to_email'], FILTER_VALIDATE_EMAIL)) {
         $email = $values['reply_to_email'];
         form_set_error('reply_to_email', 
             t("'{$email}' is not a valid e-mail address."));
-      }
+      } 
     }
     
     if ($values['user_defined_from'] === 1) {

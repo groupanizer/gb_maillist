@@ -90,7 +90,6 @@
     $matches = array();
     preg_match_all("/([\w\$\?\^\+\{\}\|\-\*\.\/!#%&'=~]+)@([\w\-]+(\.[a-z]+)+)/",
         $string, $matches);
-    print_r($matches);
     return array(
       'emails' => $matches[0],
       'aliases' => $matches[1],
