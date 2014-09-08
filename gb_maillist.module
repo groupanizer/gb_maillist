@@ -989,7 +989,7 @@
       if (empty($values['reply_to_email'])) {
         $title = $list_options['reply_to_email']['#title'];
         form_set_error('reply_to_email', t("{$title} is required."));
-      } elseif (substr($values['reply_to_email'], -strlen($domain)) == $domain) {
+      } elseif (substr($values['reply_to_email'], -(strlen($domain) + 1)) == "@{$domain}") {
         $email = $values['reply_to_email'];
         form_set_error('reply_to_email', 
             t("'{$email}' is not a valid e-mail address."));
