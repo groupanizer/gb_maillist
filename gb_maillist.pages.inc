@@ -116,6 +116,7 @@
             " this site. Contact your DNS provider/host for assistance."), 
             'warning');
       } else if (array_search('vps605.getcadre.com', $mxhosts) === FALSE) {
+        dpm($mxhosts);
         drupal_set_message(t("No MX records were found for {$domain}" .
             " that point to the Groupanizer server." .
             " Until this is resolved you will be unable to receive e-mail to" . 
