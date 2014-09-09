@@ -115,6 +115,8 @@
             " Until this is resolved you will be unable to receive e-mail to" . 
             " this site. Contact your DNS provider/host for assistance."), 
             'warning');
+      } else {
+        dpm($mxhosts);
       }
     }
     
