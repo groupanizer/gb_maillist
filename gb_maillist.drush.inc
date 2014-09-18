@@ -211,7 +211,8 @@
       $comment->is_anonymous = 0; /** @todo change when actually anonymous? */
       $comment->status = COMMENT_PUBLISHED;
       //$comment->language = LANGUAGE_NONE
-      $comment->subject = $email['headers']['Subject'];
+      $comment->subject = db_query('SELECT title FROM {node} WHERE nid = :nid', 
+          array(':nid' => $nid))->fetchField();
       $comment->comment_body[LANGUAGE_NONE][0]['format'] = variable_get(
           'gb_maillist_filter_format');
       $comment->comment_body[LANGUAGE_NONE][0]['value'] = $email['html'];

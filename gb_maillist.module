@@ -7,12 +7,20 @@
   module_load_include('inc', 'gb_maillist', 'gb_maillist.queries');
   module_load_include('inc', 'gb_maillist', 'gb_maillist.api');
   
+  function _in_cli() {
+    if (php_sapi_name() != 'cli') {
+      return FALSE;
+    }
+    
+    return TRUE;
+  }
+  
   function _is_forum_topic($node) {
     if ($node->type !== 'forum') {
       return FALSE;
     }
     
-    if (php_sapi_name() != 'cli') {
+    if (!_in_cli()) {
       // Is this coming from the forum post topic form that we've hooked?
       if ($node->form_id != 'forum_node_form' && !isset($node->from_cli)) {
         return FALSE;
@@ -27,7 +35,7 @@
       return FALSE;
     }
     
-    if (php_sapi_name() != 'cli') {
+    if (!_in_cli()) {
       // Is this coming from the forum post comment form?
       if ($comment->form_id !== 'comment_node_forum_form') {
         return FALSE;
@@ -187,8 +195,18 @@
       }
 
       $alias = $aliases[0]['alias'];    
-      $subject = "[{$alias}] {$subject}";
-      if ($in_reply) { $subject = 'RE: ' . $subject; }
+
+      // Append the alias to the subject [board]
+      // if it's a new post or if it's a comment from the forum directly
+      if (!$in_reply || ($in_reply && !in_cli())) {
+        $subject = "[{$alias}] {$subject}";
+      }
+      
+      // Append 'RE: ' if it's an outgoing comment
+      if ($in_reply) {
+         $subject = "RE: {$subject}"; 
+      }
+      
       $sender = "{$alias}@{$domain}";
       
       if ($reply_to_type == _STANDARD_REPLY_TO_TYPE_MAILING_LIST) {
@@ -256,7 +274,7 @@
     }
 
     // Don't use batch if we've been called from Drush
-    if (php_sapi_name() == 'cli') {
+    if (_in_cli()) {
       $dispatched = 0;
       foreach ($operations as $operation) {
         $result = $operation[1][0]->dispatch($operation[1][1]);
@@ -1205,7 +1223,7 @@
       $form_id) {
     // Hide subject & set value
     $form['subject']['#access'] = FALSE;
-    $form['subject']['#default_value'] = 'RE: ' . $form['#node']->title;
+    $form['subject']['#default_value'] = $form['#node']->title;
     
     $form['#validate'][] = 'gb_maillist_form_comment_node_forum_form_validate'; 
   }   
