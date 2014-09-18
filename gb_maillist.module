@@ -82,6 +82,12 @@
     // Remove any blacklisted e-mails
     $result = array_diff($result, $blacklisted);
     
+    // Remove the current user's e-mail (who is sending this e-mail)
+    global $user;
+    if ($user->mail) {
+      $result = array_diff($result, array($user->mail));
+    }
+    
     // Give other modules a chance to alter the emails
     drupal_alter('outgoing_email_addresses', $result);
     
