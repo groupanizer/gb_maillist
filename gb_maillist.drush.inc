@@ -236,10 +236,11 @@
       watchdog('gb_maillist', 'inreplyto: ' . $inreplyto);
       
       $matches = array();
+      // nid.tid@domain
       if (preg_match("/^<([\d]+).([\d]+)@{$domain}>.*$/", 
           $inreplyto, $matches)) {
-        $inreplyto_tid = $matches[1];
-        $inreplyto_nid = $matches[2];
+        $inreplyto_nid = $matches[1];
+        $inreplyto_tid = $matches[2];
         watchdog('gb_maillist', '_tid: ' . $inreplyto_tid . ' _nid: ' . $inreplyto_nid);
         watchdog('gb_maillist', 'passed tid: ' . $tid);
         if ($inreplyto_tid == $tid) { // this check is to prevent spoofing
