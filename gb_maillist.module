@@ -198,7 +198,7 @@
 
       // Append the alias to the subject [board]
       // if it's a new post or if it's a comment from the forum directly
-      if (!$in_reply || ($in_reply && !in_cli())) {
+      if (!$in_reply || ($in_reply && !_in_cli())) {
         $subject = "[{$alias}] {$subject}";
       }
       
