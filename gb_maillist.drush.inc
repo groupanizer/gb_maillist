@@ -233,15 +233,17 @@
     // Try and locate the forum topic via In-Reply-To: <$tid.$nid@$domain>
     if (isset($email['headers']['In-Reply-To'])) {
       $inreplyto = $email['headers']['In-Reply-To'];
-      watchdog('gb_maillist', $inreplyto);
+      watchdog('gb_maillist', 'inreplyto: ' . $inreplyto);
       
       $matches = array();
       if (preg_match("/^<([\d]+).([\d]+)@{$domain}>.*$/", 
           $inreplyto, $matches)) {
         $inreplyto_tid = $matches[1];
         $inreplyto_nid = $matches[2];
-        
+        watchdog('gb_maillist', '_tid: ' . $inreplyto_tid . ' _nid: ' . $inreplyto_nid);
+        watchdog('gb_maillist', 'passed tid: ' . $tid);
         if ($inreplyto_tid == $tid) { // this check is to prevent spoofing
+        watchdog('gb_maillist', 'tid matches');
           $query = new EntityFieldQuery();
           $result = $query->entityCondition('entity_type', 'node')
               ->entityCondition('bundle', 'forum')
@@ -258,7 +260,7 @@
           
     // Try and locate the forum topic via the subject
     $subject = $email['headers']['Subject'];
-    $subject = preg_replace("/^(\[{$alias}\]\s)?(RE:\s|FWD:\s)?/i", 
+    $subject = preg_replace("/^(RE:\s|FWD:\s)?(\[{$alias}\]\s)?/i", 
         '', $subject);
     watchdog('gb_maillist', 'preg replace subject: ' . $subject);
     
