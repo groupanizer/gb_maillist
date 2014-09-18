@@ -118,7 +118,7 @@
   }
   
   function _dispatch_emails_for_post($nid, $metadata, $subject, $body, 
-      $update, $plain, $attachment_fids) {
+      $update, $plain, $attachment_fids, $in_reply = FALSE) {
     $tid = $metadata['tid'];
     $list_type = $metadata['list_type'];
     $reply_to_type = $metadata['reply_to_type'];
@@ -180,8 +180,9 @@
         return;
       }
 
-      $alias = $aliases[0]['alias'];      
+      $alias = $aliases[0]['alias'];    
       $subject = "[{$alias}] {$subject}";
+      if ($in_reply) { $subject = 'RE: ' . $subject; }
       $sender = "{$alias}@{$domain}";
       
       if ($reply_to_type == _STANDARD_REPLY_TO_TYPE_MAILING_LIST) {
@@ -344,7 +345,7 @@
       }
     }
     _dispatch_emails_for_post($node->nid, $metadata, $subject, $body, 
-        $update, $plain, $fids);
+        $update, $plain, $fids, TRUE);
   }
 
   function _extract_values_with_keys_that_match_pattern($values, $pattern) {

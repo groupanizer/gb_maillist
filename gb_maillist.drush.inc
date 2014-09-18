@@ -233,6 +233,7 @@
     // Try and locate the forum topic via In-Reply-To: <$tid.$nid@$domain>
     if (isset($email['headers']['In-Reply-To'])) {
       $inreplyto = $email['headers']['In-Reply-To'];
+      watchdog('gb_maillist', $inreplyto);
       
       $matches = array();
       if (preg_match("/^<([\d]+).([\d]+)@{$domain}>.*$/", 
@@ -248,6 +249,7 @@
               ->fieldCondition('taxonomy_forums', 'tid', $inreplyto_tid)
               ->execute();
           if ($result && count($result)) {
+            watchdog('gb_maillist', 'post comment in reply to');
             return _post_comment_to_topic($inreplyto_nid, $email, $account); 
           }
         }
@@ -258,6 +260,7 @@
     $subject = $email['headers']['Subject'];
     $subject = preg_replace("/^(\[{$alias}\]\s)?(RE:\s|FWD:\s)?/i", 
         '', $subject);
+    watchdog('gb_maillist', 'preg replace subject: ' . $subject);
     
     $query = new EntityFieldQuery();
     $result = $query->entityCondition('entity_type', 'node')
@@ -266,6 +269,7 @@
         ->fieldCondition('taxonomy_forums', 'tid', $tid)
         ->execute();
     if ($result && count($result)) {
+      watchdog('gb_maillist', 'post comment subject');
       $node = reset($result['node']); // take the first match
       return _post_comment_to_topic($node->nid, $email, $account);
     }    
