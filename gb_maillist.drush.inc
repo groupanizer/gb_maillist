@@ -162,7 +162,6 @@
   function _post_new_topic($tid, $email, $account) {
     try {
       watchdog('gb_maillist', 'post new topic');
-      watchdog('gb_maillist', print_r($email, TRUE));
       
       // Create & save node object
       $node = new stdClass();
