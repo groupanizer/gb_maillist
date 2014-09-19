@@ -1334,7 +1334,6 @@
     // Drush incoming mail command has to save the node twice
     // in order to attach files in the correct directory
     // so, ignore inserts from the CLI and just use updates
-
     if (!_in_cli()) {
       watchdog('gb_maillist', "insert outside cli");
       _node_update_and_insert($node);
