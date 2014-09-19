@@ -105,7 +105,6 @@
     for ($i = 0; $i < count($email['attachments']); $i++) {
       $attachment = $email['attachments'][$i];
       
-      /*
       // MimeMail doesn't parse some filenames correctly, so we'll adjust
       $matches = array();
       if (preg_match(
@@ -114,9 +113,9 @@
         $filename = $matches[2];
       } else {
         $filename = $attachment['filename'];
-      }*/
+      }
       
-      $filename = $attachment['filename'];
+      // $filename = $attachment['filename'];
       
       // Save file data
       $destination = "private://attachments/{$nid}/";
