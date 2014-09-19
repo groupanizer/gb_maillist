@@ -162,6 +162,8 @@
   function _post_new_topic($tid, $email, $account) {
     try {
       watchdog('gb_maillist', 'post new topic');
+      watchdog('gb_maillist', $email);
+      
       // Create & save node object
       $node = new stdClass();
       $node->is_new = TRUE;
@@ -188,6 +190,7 @@
       // Now we have a node id and can write the attachments
       // into the proper directory structure
       $node = node_load($node->nid);
+      watchdog('gb_maillist', $node);
       $file_fields = _save_attachments_and_generate_file_fields(
           $node->nid, $email, $account);
       for ($i = 0; $i < count($file_fields); $i++) {
