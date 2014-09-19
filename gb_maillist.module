@@ -1333,7 +1333,8 @@
   function gb_maillist_node_insert($node) {
     // Drush incoming mail command has to save the node twice
     // so, ignore inserts from the cli
-    if (php_sapi_name() != 'cli') {
+    watchdog('gb_maillist', 'node insert');
+    if (!_in_cli()) {
       _node_update_and_insert($node);
     }
   }
@@ -1342,6 +1343,7 @@
    * Implements hook_node_update()
    */
   function gb_maillist_node_update($node) {
+    watchdog('gb_maillist', 'node update');
     _node_update_and_insert($node);
   }
   

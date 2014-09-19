@@ -185,6 +185,7 @@
       node_save($node);
       // Now we have a node id and can write the attachments
       // into the proper directory structure
+      $node = node_load($node->nid);
       $file_fields = _save_attachments_and_generate_file_fields(
           $node->nid, $email, $account);
       for ($i = 0; $i < count($file_fields); $i++) {
