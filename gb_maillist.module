@@ -1335,7 +1335,10 @@
     // so, ignore updates from the cli
     watchdog('gb_maillist', 'node insert');
     if (!_in_cli()) {
+      dpm("insert in cli");
       _node_update_and_insert($node);
+    } else {
+      dpm("insert outside cli");
     }
   }
   
@@ -1348,7 +1351,10 @@
     // so, ignore updates from the cli
     watchdog('gb_maillist', 'node insert');
     if (!_in_cli()) {
+      dpm("update in cli");
       _node_update_and_insert($node);
+    } else {
+      dpm("update outside cli");
     }
   }
   
