@@ -77,7 +77,6 @@
       $body = isset($textparts['html']) ? 
           $textparts['html'] : $textparts['plain'];
     } else {
-      watchdog('gb_maillist', 'else');
       $body = $email['html']; // mimemail parsed the e-mail properly
     }
     
@@ -104,17 +103,6 @@
     
     for ($i = 0; $i < count($email['attachments']); $i++) {
       $attachment = $email['attachments'][$i];
-      
-      /*
-      // MimeMail doesn't parse some filenames correctly, so we'll adjust
-      $matches = array();
-      if (preg_match(
-          '/Content-Disposition: attachment; (filename|name)="?([^";]+)"?/',
-          $email['parts'][$i], $matches)) {
-        $filename = $matches[2];
-      } else {
-        $filename = $attachment['filename'];
-      }*/
       
       $filename = $attachment['filename'];
       
@@ -185,6 +173,7 @@
       node_save($node);
       // Now we have a node id and can write the attachments
       // into the proper directory structure
+      $node = node_load($node->nid);
       $file_fields = _save_attachments_and_generate_file_fields(
           $node->nid, $email, $account);
       for ($i = 0; $i < count($file_fields); $i++) {
@@ -211,7 +200,8 @@
       $comment->is_anonymous = 0; /** @todo change when actually anonymous? */
       $comment->status = COMMENT_PUBLISHED;
       //$comment->language = LANGUAGE_NONE
-      $comment->subject = $email['headers']['Subject'];
+      $comment->subject = db_query('SELECT title FROM {node} WHERE nid = :nid', 
+          array(':nid' => $nid))->fetchField();
       $comment->comment_body[LANGUAGE_NONE][0]['format'] = variable_get(
           'gb_maillist_filter_format');
       $comment->comment_body[LANGUAGE_NONE][0]['value'] = $email['html'];
@@ -235,11 +225,11 @@
       $inreplyto = $email['headers']['In-Reply-To'];
       
       $matches = array();
+      // nid.tid@domain
       if (preg_match("/^<([\d]+).([\d]+)@{$domain}>.*$/", 
           $inreplyto, $matches)) {
-        $inreplyto_tid = $matches[1];
-        $inreplyto_nid = $matches[2];
-        
+        $inreplyto_nid = $matches[1];
+        $inreplyto_tid = $matches[2];
         if ($inreplyto_tid == $tid) { // this check is to prevent spoofing
           $query = new EntityFieldQuery();
           $result = $query->entityCondition('entity_type', 'node')
@@ -256,7 +246,7 @@
           
     // Try and locate the forum topic via the subject
     $subject = $email['headers']['Subject'];
-    $subject = preg_replace("/^(\[{$alias}\]\s)?(RE:\s|FWD:\s)?/i", 
+    $subject = preg_replace("/^(RE:\s|FWD:\s)?(\[{$alias}\]\s)?/i", 
         '', $subject);
     
     $query = new EntityFieldQuery();
@@ -292,9 +282,7 @@
     $from = $email['headers']['From'];
     $reply_to = $email['headers']['Reply-To'];
 
-    watchdog('gb_maillist', 
-        "Incoming {$from} -> {$to}:\n{$email['html']}", NULL);
-    watchdog('gb_maillist', 'Verbose: ' . print_r($email, TRUE));
+    watchdog('gb_maillist', "Incoming {$from} -> {$to}");
     
     // Parse the alias & from
     $parsed_to = _parse_string_for_emails($to);

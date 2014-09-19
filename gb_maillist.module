@@ -7,12 +7,20 @@
   module_load_include('inc', 'gb_maillist', 'gb_maillist.queries');
   module_load_include('inc', 'gb_maillist', 'gb_maillist.api');
   
+  function _in_cli() {
+    if (php_sapi_name() != 'cli') {
+      return FALSE;
+    }
+    
+    return TRUE;
+  }
+  
   function _is_forum_topic($node) {
     if ($node->type !== 'forum') {
       return FALSE;
     }
     
-    if (php_sapi_name() != 'cli') {
+    if (!_in_cli()) {
       // Is this coming from the forum post topic form that we've hooked?
       if ($node->form_id != 'forum_node_form' && !isset($node->from_cli)) {
         return FALSE;
@@ -27,7 +35,7 @@
       return FALSE;
     }
     
-    if (php_sapi_name() != 'cli') {
+    if (!_in_cli()) {
       // Is this coming from the forum post comment form?
       if ($comment->form_id !== 'comment_node_forum_form') {
         return FALSE;
@@ -82,6 +90,12 @@
     // Remove any blacklisted e-mails
     $result = array_diff($result, $blacklisted);
     
+    // Remove the current user's e-mail (who is sending this e-mail)
+    global $user;
+    if ($user->mail) {
+      $result = array_diff($result, array($user->mail));
+    }
+    
     // Give other modules a chance to alter the emails
     drupal_alter('outgoing_email_addresses', $result);
     
@@ -118,7 +132,7 @@
   }
   
   function _dispatch_emails_for_post($nid, $metadata, $subject, $body, 
-      $update, $plain, $attachment_fids) {
+      $update, $plain, $attachment_fids, $in_reply) {
     $tid = $metadata['tid'];
     $list_type = $metadata['list_type'];
     $reply_to_type = $metadata['reply_to_type'];
@@ -180,8 +194,16 @@
         return;
       }
 
-      $alias = $aliases[0]['alias'];      
+      $alias = $aliases[0]['alias'];    
+      
+      // Append the alias to the subject e.g. [board]
       $subject = "[{$alias}] {$subject}";
+      
+      // Append 'RE: ' if it's an outgoing comment
+      if ($in_reply) {
+         $subject = "RE: {$subject}"; 
+      }
+      
       $sender = "{$alias}@{$domain}";
       
       if ($reply_to_type == _STANDARD_REPLY_TO_TYPE_MAILING_LIST) {
@@ -202,7 +224,6 @@
       $from = is_null($metadata['from_email']) ? 
           $reply_to : $metadata['from_email'];
     }
-        
 
     $bounces = "bounces@{$domain}";
     $dispatcher = new EmailDispatcher($sender, $bounces, TRUE);
@@ -249,7 +270,7 @@
     }
 
     // Don't use batch if we've been called from Drush
-    if (php_sapi_name() == 'cli') {
+    if (_in_cli()) {
       $dispatched = 0;
       foreach ($operations as $operation) {
         $result = $operation[1][0]->dispatch($operation[1][1]);
@@ -301,7 +322,7 @@
       }
     }
     _dispatch_emails_for_post($node->nid, $metadata, $subject, $body, 
-        $update, $plain, $fids); 
+        $update, $plain, $fids, FALSE); 
   }
   
   function _comment_update_and_insert($comment) {
@@ -344,7 +365,7 @@
       }
     }
     _dispatch_emails_for_post($node->nid, $metadata, $subject, $body, 
-        $update, $plain, $fids);
+        $update, $plain, $fids, TRUE);
   }
 
   function _extract_values_with_keys_that_match_pattern($values, $pattern) {
@@ -1198,7 +1219,7 @@
       $form_id) {
     // Hide subject & set value
     $form['subject']['#access'] = FALSE;
-    $form['subject']['#default_value'] = 'RE: ' . $form['#node']->title;
+    $form['subject']['#default_value'] = $form['#node']->title;
     
     $form['#validate'][] = 'gb_maillist_form_comment_node_forum_form_validate'; 
   }   
@@ -1311,8 +1332,9 @@
    */
   function gb_maillist_node_insert($node) {
     // Drush incoming mail command has to save the node twice
-    // so, ignore inserts from the cli
-    if (php_sapi_name() != 'cli') {
+    // in order to attach files in the correct directory
+    // so, ignore inserts from the CLI and just use update
+    if (!_in_cli()) {
       _node_update_and_insert($node);
     }
   }
