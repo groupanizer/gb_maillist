@@ -1332,13 +1332,14 @@
    */
   function gb_maillist_node_insert($node) {
     // Drush incoming mail command has to save the node twice
-    // so, ignore updates from the cli
-    watchdog('gb_maillist', 'node insert');
+    // in order to attach files in the correct directory
+    // so, ignore inserts from the CLI and just use updates
+
     if (!_in_cli()) {
-      watchdog('gb_maillist', "insert in cli");
+      watchdog('gb_maillist', "insert outside cli");
       _node_update_and_insert($node);
     } else {
-      watchdog('gb_maillist', "insert outside cli");
+      watchdog('gb_maillist', "insert inside cli");
     }
   }
   
@@ -1346,15 +1347,12 @@
    * Implements hook_node_update()
    */
   function gb_maillist_node_update($node) {
-    watchdog('gb_maillist', 'node update');
-    // Drush incoming mail command has to save the node twice
-    // so, ignore updates from the cli
-    watchdog('gb_maillist', 'node insert');
-    if (!_in_cli()) {
-      watchdog('gb_maillist', "update in cli");
-      _node_update_and_insert($node);
-    } else {
+    _node_update_and_insert($node);
+    
+    if (_in_cli()) {
       watchdog('gb_maillist', "update outside cli");
+    } else {
+      watchdog('gb_maillist', "update inside cli");
     }
   }
   
