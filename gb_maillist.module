@@ -195,12 +195,9 @@
       }
 
       $alias = $aliases[0]['alias'];    
-
-      // Append the alias to the subject [board]
-      // if it's a new post or if it's a comment from the forum directly
-      if (!$in_reply || ($in_reply && !_in_cli())) {
-        $subject = "[{$alias}] {$subject}";
-      }
+      
+      // Append the alias to the subject e.g. [board]
+      $subject = "[{$alias}] {$subject}";
       
       // Append 'RE: ' if it's an outgoing comment
       if ($in_reply) {
@@ -227,7 +224,6 @@
       $from = is_null($metadata['from_email']) ? 
           $reply_to : $metadata['from_email'];
     }
-        
 
     $bounces = "bounces@{$domain}";
     $dispatcher = new EmailDispatcher($sender, $bounces, TRUE);
