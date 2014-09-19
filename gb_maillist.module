@@ -1337,12 +1337,6 @@
     if (!_in_cli()) {
       _node_update_and_insert($node);
     }
-    
-    if (_in_cli()) {
-      watchdog('gb_maillist', "insert inside cli");
-    } else {
-      watchdog('gb_maillist', "insert outside cli");
-    }
   }
   
   /**
@@ -1350,23 +1344,12 @@
    */
   function gb_maillist_node_update($node) {
     _node_update_and_insert($node);
-    
-    if (_in_cli()) {
-      watchdog('gb_maillist', "update inside cli");
-    } else {
-      watchdog('gb_maillist', "update outside cli");
-    }
   }
   
   /**
    * Implements hook_comment_insert()
    */
   function gb_maillist_comment_insert($comment) {
-    if (_in_cli()) {
-      watchdog('gb_maillist', "c insert inside cli");
-    } else {
-      watchdog('gb_maillist', "c insert outside cli");
-    }
     _comment_update_and_insert($comment);
   }
   
@@ -1374,12 +1357,6 @@
    * Implements hook_comment_update()
    */
   function gb_maillist_comment_update($comment) {
-    if (_in_cli()) {
-      watchdog('gb_maillist', "c update inside cli");
-    } else {
-      watchdog('gb_maillist', "c update outside cli");
-    }
-    
     _comment_update_and_insert($comment);
   }
   

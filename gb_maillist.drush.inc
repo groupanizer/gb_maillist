@@ -77,7 +77,6 @@
       $body = isset($textparts['html']) ? 
           $textparts['html'] : $textparts['plain'];
     } else {
-      watchdog('gb_maillist', 'else');
       $body = $email['html']; // mimemail parsed the e-mail properly
     }
     
@@ -150,8 +149,6 @@
 
   function _post_new_topic($tid, $email, $account) {
     try {
-      watchdog('gb_maillist', 'post new topic');
-      
       // Create & save node object
       $node = new stdClass();
       $node->is_new = TRUE;
@@ -173,19 +170,16 @@
       // and wraps the text in <p> tags.
       $node->body[LANGUAGE_NONE][0]['value'] = $email['html'];
       $node->validated = TRUE;
-            watchdog('gb_maillist', 'first save');
       node_save($node);
       // Now we have a node id and can write the attachments
       // into the proper directory structure
       $node = node_load($node->nid);
-      watchdog('gb_maillist', print_r($node, TRUE));
       $file_fields = _save_attachments_and_generate_file_fields(
           $node->nid, $email, $account);
       for ($i = 0; $i < count($file_fields); $i++) {
         $node->field_attachment[LANGUAGE_NONE][$i] = $file_fields[$i];
       }
       // Re-save
-      watchdog('gb_maillist', "second save: " .  count($file_fields));
       node_save($node);
     } catch (Exception $e) {
       watchdog_exception('gb_maillist', $e);
@@ -229,7 +223,6 @@
     // Try and locate the forum topic via In-Reply-To: <$tid.$nid@$domain>
     if (isset($email['headers']['In-Reply-To'])) {
       $inreplyto = $email['headers']['In-Reply-To'];
-      watchdog('gb_maillist', 'inreplyto: ' . $inreplyto);
       
       $matches = array();
       // nid.tid@domain
@@ -237,10 +230,7 @@
           $inreplyto, $matches)) {
         $inreplyto_nid = $matches[1];
         $inreplyto_tid = $matches[2];
-        watchdog('gb_maillist', '_tid: ' . $inreplyto_tid . ' _nid: ' . $inreplyto_nid);
-        watchdog('gb_maillist', 'passed tid: ' . $tid);
         if ($inreplyto_tid == $tid) { // this check is to prevent spoofing
-        watchdog('gb_maillist', 'tid matches');
           $query = new EntityFieldQuery();
           $result = $query->entityCondition('entity_type', 'node')
               ->entityCondition('bundle', 'forum')
@@ -248,7 +238,6 @@
               ->fieldCondition('taxonomy_forums', 'tid', $inreplyto_tid)
               ->execute();
           if ($result && count($result)) {
-            watchdog('gb_maillist', 'post comment in reply to');
             return _post_comment_to_topic($inreplyto_nid, $email, $account); 
           }
         }
@@ -259,7 +248,6 @@
     $subject = $email['headers']['Subject'];
     $subject = preg_replace("/^(RE:\s|FWD:\s)?(\[{$alias}\]\s)?/i", 
         '', $subject);
-    watchdog('gb_maillist', 'preg replace subject: ' . $subject);
     
     $query = new EntityFieldQuery();
     $result = $query->entityCondition('entity_type', 'node')
@@ -268,7 +256,6 @@
         ->fieldCondition('taxonomy_forums', 'tid', $tid)
         ->execute();
     if ($result && count($result)) {
-      watchdog('gb_maillist', 'post comment subject');
       $node = reset($result['node']); // take the first match
       return _post_comment_to_topic($node->nid, $email, $account);
     }    
