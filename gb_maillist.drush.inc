@@ -183,6 +183,7 @@
       // and wraps the text in <p> tags.
       $node->body[LANGUAGE_NONE][0]['value'] = $email['html'];
       $node->validated = TRUE;
+            watchdog('gb_maillist', 'first save');
       node_save($node);
       // Now we have a node id and can write the attachments
       // into the proper directory structure
@@ -193,6 +194,7 @@
         $node->field_attachment[LANGUAGE_NONE][$i] = $file_fields[$i];
       }
       // Re-save
+            watchdog('gb_maillist', 'second save');
       node_save($node);
     } catch (Exception $e) {
       watchdog_exception('gb_maillist', $e);
