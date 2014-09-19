@@ -194,8 +194,10 @@
         $node->field_attachment[LANGUAGE_NONE][$i] = $file_fields[$i];
       }
       // Re-save
-            watchdog('gb_maillist', 'second save');
-      node_save($node);
+      if (count($file_fields)) {
+        watchdog('gb_maillist', "second save: " .  count($file_fields));
+        node_save($node);
+      }
     } catch (Exception $e) {
       watchdog_exception('gb_maillist', $e);
     }

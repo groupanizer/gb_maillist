@@ -1350,9 +1350,9 @@
     _node_update_and_insert($node);
     
     if (_in_cli()) {
-      watchdog('gb_maillist', "update outside cli");
-    } else {
       watchdog('gb_maillist', "update inside cli");
+    } else {
+      watchdog('gb_maillist', "update outside cli");
     }
   }
   
