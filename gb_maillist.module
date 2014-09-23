@@ -1087,22 +1087,15 @@
    * @param array $form_state 
    */
   function gb_maillist_forum_confirm_delete_submit($form, &$form_state) {
-    // Is a user logged in and authenticated?
-    $user = g3core_get_user();
-    if (!(isset($user->uid)) || $user->uid === 0) {
-      drupal_access_denied();
-    }
-    
-    // Do we have the right form id?
-    if ($form_state['build_info']['form_id'] != 'forum_confirm_delete') {
-      return;
-    }
-    
+    /*
+    // DEPRECATED
+ 
     $result = _delete_all_list_records_for_tid($form_state['values']['tid']);
     if (!$result) {
       drupal_set_message(t('Failed to query the database'), 'error');
       $form_state['rebuild'] = TRUE;
     }
+    */
   }
   
   /**
@@ -1112,17 +1105,6 @@
    * @param array $form_state 
    */
   function gb_maillist_forum_form_submit($form, &$form_state) {
-    // Is a user logged in and authenticated?
-    $user = g3core_get_user();
-    if (!(isset($user->uid)) || $user->uid === 0) {
-      drupal_access_denied();
-    }
-    
-    // Do we have the right form id?
-    if ($form_state['build_info']['form_id'] != 'forum_form_forum') {
-      return;
-    }
-    
     $values = &$form_state['values'];
     $attach = $values['attach_list'];
     $tid = $values['tid'];
@@ -1383,3 +1365,13 @@
     );
   }
   
+  /**
+   * Implements hook_taxonomy_term_delete()
+   */
+  function gb_maillist_taxonomy_term_delete($term) {
+    if ($term->vocabulary_machine_name == 'forums') {
+      if (!_delete_all_list_records_for_tid($term->tid)) {
+        drupal_set_message(t('Failed to query the database'), 'error');
+      }
+    }
+  }
