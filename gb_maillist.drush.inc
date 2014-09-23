@@ -160,7 +160,7 @@
       $node->picture = $account->picture;
       $node->comment = 2;                 // 0 = disabled, 1 = RO, 2 = R/W
       $node->title = $email['headers']['Subject'];
-      $node->status = NODE_PUBLISHED;     // 0 = unpublished, 1 = published
+      $node->status = 0;   // 0 = unpublished, 1 = published
       //$node->language = LANGUAGE_NONE
       $node->taxonomy_forums[LANGUAGE_NONE][0]['tid'] = $tid;
       $node->body[LANGUAGE_NONE][0]['format'] = variable_get(
@@ -180,7 +180,16 @@
         $node->field_attachment[LANGUAGE_NONE][$i] = $file_fields[$i];
       }
       // Re-save
+      $node->status = NODE_PUBLISHED; // publish the node
       node_save($node);
+      if (count($file_fields) > 0) {
+        // Because we're updating a field and updating the forum node
+        // hook_pre_storage_field_update is getting called again in forum.module
+        // which is inserting the forum_index row twice
+        // TODO: report, fix, etc       
+        db_query('ALTER IGNORE TABLE forum_index ADD UNIQUE INDEX dupidx (nid, tid, created)');
+        db_query('ALTER TABLE forum_index DROP INDEX dupidx');
+      }
     } catch (Exception $e) {
       watchdog_exception('gb_maillist', $e);
     }
