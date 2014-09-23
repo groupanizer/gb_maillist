@@ -280,6 +280,10 @@
       exit(EX_SOFTWARE);
     }
     
+    if (variable_get('gb_maillist_incoming_disabled', FALSE)) {
+      exit(EX_NOPERM);
+    }
+    
     module_load_include('inc', 'mimemail', 'includes/mimemail.incoming');
     
     $email = stream_get_contents(STDIN);            // read encoded raw e-mail
