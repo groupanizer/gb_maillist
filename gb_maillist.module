@@ -846,13 +846,13 @@
       'gb_maillist_outgoing_disabled' => array(
         '#type' => 'checkbox',
         '#title' => t('Disable outgoing e-mail'),
-        '#description' => t('If set the discussion boards will not send mail'),
+        '#description' => t('If set the mailing lists will not send e-mail'),
         '#default_value' => variable_get('gb_maillist_outgoing_disabled'),
       ),
       'gb_maillist_incoming_disabled' => array(
         '#type' => 'checkbox',
         '#title' => t('Disable incoming e-mail'),
-        '#description' => t('If set the site will not receive outside mail'),
+        '#description' => t('If set the mailing lists will not accept incoming e-mail'),
         '#default_value' => variable_get('gb_maillist_outgoing_disabled'),
       ),
     );
