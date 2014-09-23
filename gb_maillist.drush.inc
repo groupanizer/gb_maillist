@@ -327,11 +327,20 @@
     $account = user_load_by_mail($sender);
     if (!$account) {           // no, so we'll try and proceed as anoynmous
       $account = user_load(0); // anonymous
+      
+      // Since the user is anonymous lets append something to the e-mail body
+      // to let people know who this e-mail came from
+      $encoded_subject = rawurlencode('RE: ' . $email['headers']['Subject']);
+      $mailto = "<a href=\"mailto:{$sender}?subject={$encoded_subject}\"". 
+          ">{$sender}</a>";
+      $email['html'] = "{$mailto} (anonymous user) sent:</strong><br /><br />" .
+          $email['html'];
     }
     
     // Check for posting permission
     if (!forum_access_access('create', $tid, $account)) {
-      watchdog('gb_maillist', "Mail rejected: user does not have permission {$sender}, {$account->uid}");
+      watchdog('gb_maillist', "Mail rejected: user does not have permission " .
+          "{$sender}, {$account->uid}");
       exit(EX_NOPERM);
     }
 
