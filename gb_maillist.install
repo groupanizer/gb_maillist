@@ -269,4 +269,22 @@
   function gb_maillist_update_7103(&$sandbox) {
     db_query('UPDATE {gb_maillist_metadata} SET from_email = NULL WHERE from_email IS NOT NULL');
   }
+  
+  /**
+   * Implements hook_default_permissions()
+   */
+  function gb_maillist_default_permissions() {
+    $permissions = array();
+  
+    // Exported permission: 'administer mail list settings'.
+    $permissions['administer mail list settings'] = array(
+      'name' => 'administer mail list settings',
+      'roles' => array(
+        'Site Admin' => 'Site Admin',
+      ),
+      'module' => 'gb_maillist',
+    );
+  
+    return $permissions;
+  }
  

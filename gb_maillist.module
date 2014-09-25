@@ -1278,7 +1278,7 @@
         'title' => t('Mailing lists'),
         'page callback' => 'drupal_get_form',
         'page arguments' => array('gb_maillist_settings_form'),
-        'access arguments' => array('administer forums'),
+        'access arguments' => array('administer mail list settings'),
         'type' => MENU_NORMAL_ITEM,
       ),
     );
@@ -1389,6 +1389,11 @@
         'title' => t('View the forums'),
         'description' => t('This is a top-level permission that allows users' .
             ' to view the forums'),
+      ),
+      'administer mail list settings' => array(
+        'title' => t('Administer mail list settings'),
+        'description' => t('This permission allows users to change the mail' .
+            ' list settings'),
       ),
     );
   }
