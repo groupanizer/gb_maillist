@@ -11,6 +11,8 @@
     variable_set('gb_maillist_reserved_aliases', array('bounces'));
     variable_set('gb_maillist_incoming_disabled', FALSE);
     variable_set('gb_maillist_outgoing_disabled', FALSE);
+    variable_set('gb_maillist_log_incoming', FALSE);
+    variable_set('gb_maillist_log_outgoing', FALSE);
     
     // Re-build permissions for forum_access
     node_access_rebuild();
@@ -25,6 +27,8 @@
     variable_del('gb_maillist_reserved_aliases');
     variable_del('gb_maillist_incoming_disabled');
     variable_del('gb_maillist_outgoing_disabled');
+    variable_del('gb_maillist_log_incoming');
+    variable_del('gb_maillist_log_outgoing');
   }
   
   /**

@@ -6,6 +6,7 @@
   module_load_include('inc', 'gb_maillist', 'gb_maillist.constants');
   module_load_include('inc', 'gb_maillist', 'gb_maillist.queries');
   module_load_include('inc', 'gb_maillist', 'gb_maillist.api');
+  module_load_include('inc', 'gb_maillist', 'gb_maillist.incoming');
   
   function _in_cli() {
     if (php_sapi_name() != 'cli') {
