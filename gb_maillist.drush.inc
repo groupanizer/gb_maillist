@@ -277,8 +277,12 @@
   /** @todo send multi email, in spreadsheet/requirements*/
   function drush_gb_maillist_incoming_mail() {
     if (variable_get('gb_maillist_incoming_disabled', FALSE)) {
+      watchdog('gb_maillist', 'Rejecting incoming mail because incoming' .
+          ' mail is disabled');
       exit(EX_NOPERM);
     }
+    
+    watchdog('gb_maillist', 'Accepting ncoming e-mail!');
     
     module_load_include('inc', 'mimemail', 'includes/mimemail.incoming');
     
