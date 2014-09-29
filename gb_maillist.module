@@ -847,13 +847,13 @@
         '#type' => 'checkbox',
         '#title' => t('Disable outgoing e-mail'),
         '#description' => t('If set the mailing lists will not send e-mail'),
-        '#default_value' => variable_get('gb_maillist_outgoing_disabled'),
+        '#default_value' => variable_get('gb_maillist_outgoing_disabled', FALSE),
       ),
       'gb_maillist_incoming_disabled' => array(
         '#type' => 'checkbox',
         '#title' => t('Disable incoming e-mail'),
         '#description' => t('If set the mailing lists will not accept incoming e-mail'),
-        '#default_value' => variable_get('gb_maillist_outgoing_disabled'),
+        '#default_value' => variable_get('gb_maillist_incoming_disabled', FALSE),
       ),
     );
     

@@ -276,10 +276,6 @@
   /** @todo check multi email */
   /** @todo send multi email, in spreadsheet/requirements*/
   function drush_gb_maillist_incoming_mail() {
-    if (!module_exists('gb_maillist')) {
-      exit(EX_SOFTWARE);
-    }
-    
     if (variable_get('gb_maillist_incoming_disabled', FALSE)) {
       exit(EX_NOPERM);
     }
