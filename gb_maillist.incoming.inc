@@ -232,10 +232,6 @@
   
   /** Implements hook_incoming_mail */
   function gb_maillist_incoming_mail(&$email, $raw) {
-    if (variable_get('gb_maillist_incoming_disabled', FALSE)) {
-      return MAIL_ERROR_PERMISSION_DENIED;
-    }
-    
     $logging_enabled = variable_get('gb_maillist_log_incoming', FALSE);
     $conditional_log = function($message) use ($logging_enabled) {
       if ($logging_enabled) {
@@ -247,7 +243,12 @@
     $from = $email['headers']['From'];
     $reply_to = $email['headers']['Reply-To'];
     
-    $conditional_log("New incoming {$from} -> {$to}"); 
+    $conditional_log("New incoming {$from} -> {$to}");
+    
+    if (variable_get('gb_maillist_incoming_disabled', FALSE)) {
+      $conditional_log('Rejected e-mail due to policy');
+      return MAIL_ERROR_PERMISSION_DENIED;
+    } 
     
     // Parse the alias & from
     $parsed_to = _parse_string_for_emails($to);
