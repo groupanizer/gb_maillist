@@ -247,7 +247,7 @@
     $from = $email['headers']['From'];
     $reply_to = $email['headers']['Reply-To'];
     
-    $conditional_log("Mail lists: new incoming {$from} -> {$to}"); 
+    $conditional_log("New incoming {$from} -> {$to}"); 
     
     // Parse the alias & from
     $parsed_to = _parse_string_for_emails($to);
@@ -262,7 +262,7 @@
     // Does a forum with alias $alias exist?
     $record = _check_for_alias_record($alias);
     if (!$record) {
-      $conditional_log("Mail lists: mail rejected, forum does not exist {$alias}");
+      $conditional_log("E-mail rejected, forum does not exist {$alias}");
       return MAIL_ERROR_USER_NOT_FOUND;
     }
     $tid = $record->tid;
@@ -283,7 +283,7 @@
     
     // Check for posting permission
     if (!forum_access_access('create', $tid, $account)) {
-      $conditional_log("Mail lists: mail rejected, user does not have" .
+      $conditional_log("E-mail rejected, user does not have" .
           " permission ({$sender}, {$account->uid})");
       return MAIL_ERROR_PERMISSION_DENIED;
     }
