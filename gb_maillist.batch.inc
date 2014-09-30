@@ -13,11 +13,8 @@
     $log = variable_get('gb_maillist_log_outgoing', FALSE);
 
     if ($success) {
-      // Count successful dispatches and aggregate e-mails
       $dispatched = 0;
       $recepients = array('succeeded' => array(), 'failed' => array());
-      
-      $results[] = array('result' => FALSE, 'to' => 'fuckyou');
       
       foreach ($results as $result) {
         if ($result['result']) {
