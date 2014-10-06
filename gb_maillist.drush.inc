@@ -45,44 +45,6 @@
     //
   }
   
-  /** Deprecated */
-  function _parse_email_for_body($email) {
-    /** If a boundary is present then mimemail has failed in its parsing
-     *  and ['html'] contains the conents of the e-mail that lay between the
-     *  the multipart/mixed boundary. 
-     * 
-     *  @todo Why does it fail? Multiple boundaries?
-     */
-    $matches = array();
-    $body = $email['html'];
-    
-    if (preg_match("/Content-Type: multipart\/alternative;[\s]+boundary=\"?" . 
-        "([\w'()+,\-.\/\?=:]+)\"?\r?\n/ms", $body, $matches)) {
-      $boundary = $matches[1];
-      preg_match_all("/Content-Type: text\/(html|plain); [\w\"\-=]+\s?\s". 
-          "(Content-Transfer-Encoding: [\w\"\-]+\s?\s)?\s?\s(.*?)\s" . 
-          "\-{2,}{$boundary}/ms", $body, $matches);
-      $keys = $matches[1];
-      $text = $matches[3];
-      // Concatenate like parts
-      $types = array_unique($keys);
-      foreach ($types as $type) {
-        foreach ($keys as $index => $key) {
-          if ($key === $type) {
-            $textparts[$key] .= $text[$index];
-          }
-        }
-      }
-      
-      $body = isset($textparts['html']) ? 
-          $textparts['html'] : $textparts['plain'];
-    } else {
-      $body = $email['html']; // mimemail parsed the e-mail properly
-    }
-    
-    return $body;
-  }
-  
   // Extract only the e-mails from any RFC compliant header
   // e.g. Smith, John <(john@cox.net)>
   function _parse_string_for_emails($string) {
@@ -284,13 +246,11 @@
     
     watchdog('gb_maillist', 'Accepting incoming e-mail!');
     
+    // Read filename from STDIN as it was piped in
+    $email = file_get_contents(stream_get_contents(STDIN));
     module_load_include('inc', 'mimemail', 'includes/mimemail.incoming');
-    
-    $email = stream_get_contents(STDIN);            // read encoded raw e-mail
-    $email = base64_decode($email);                 // decode e-mail
-    $email = mimemail_parse($email);                // parse e-mail into array
-    // $email['html'] = _parse_email_for_body($email); // re-parse to fix bugs
-    
+    $email = mimemail_parse($email); // parse e-mail into array
+
     $to = $email['headers']['To']; /** @todo 'Delivered-To' ? */
     $from = $email['headers']['From'];
     $reply_to = $email['headers']['Reply-To'];
