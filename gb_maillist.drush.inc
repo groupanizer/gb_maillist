@@ -282,7 +282,7 @@
       exit(EX_NOPERM);
     }
     
-    watchdog('gb_maillist', 'Accepting ncoming e-mail!');
+    watchdog('gb_maillist', 'Accepting incoming e-mail!');
     
     module_load_include('inc', 'mimemail', 'includes/mimemail.incoming');
     
