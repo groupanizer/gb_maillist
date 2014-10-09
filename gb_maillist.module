@@ -1345,7 +1345,7 @@
         'type' => MENU_CALLBACK,
       ),
       'g/comm/maillist/board' => array(
-        'title' => t('Discussion Boards'),
+        'title' => t('Discussion Boards / Mailing Lists'),
         'page callback' => 'gb_maillist_forums_page',
         'page arguments' => array(),
         'access arguments' => array('view forums'),
