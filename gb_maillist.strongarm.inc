@@ -16,10 +16,12 @@ function gb_maillist_strongarm() {
   $strongarm->name = 'content_access_forum';
   $strongarm->value = array(
     'view_own' => array(
-      0 => 36427370,
+      0 => 57539251,
+      1 => 36427370,
     ),
     'view' => array(
-      0 => 36427370,
+      0 => 57539251,
+      1 => 36427370,
     ),
   );
   $export['content_access_forum'] = $strongarm;
