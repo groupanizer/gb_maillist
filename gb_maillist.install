@@ -279,7 +279,7 @@
         ' WHERE m.list_type = 1');
     foreach ($result->fetchCol() as $tid) {
       db_query("INSERT into {gb_maillist_aliases} (tid, alias) VALUES" .
-          "(:tid, 'change.me.{$tid}@mailnull.com')", array(':tid' => $tid,));
+          "(:tid, 'change_me_{$tid}')", array(':tid' => $tid,));
     }
     
     // Remove any from addresses that may have been set
