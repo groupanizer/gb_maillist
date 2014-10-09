@@ -35,6 +35,8 @@
    */
   function gb_maillist_default_permissions() {
     $permissions = array();
+    
+    print("INSIDE DEFAULT PERMS\r\n");
   
     // Exported permission: 'view forums'.
     $permissions['view forums'] = array(
