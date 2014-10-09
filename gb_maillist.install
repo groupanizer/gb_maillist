@@ -6,6 +6,9 @@
    * Implements hook_install()
    */
   function gb_maillist_install() {
+    // Has to be after forum access, so we can edit their form modifications
+    db_query("UPDATE system SET weight = 3 WHERE type = 'module' AND name = 'gb_maillist'");
+
     variable_set('gb_maillist_filter_format', 'advanced');
     variable_set('gb_maillist_email_max_size', 10 * 1024 * 1024); // 10 MB
     variable_set('gb_maillist_reserved_aliases', array('bounces'));
@@ -165,7 +168,7 @@
             'size' => 'tiny',
           ),
           'reply_to_type' => array(
-            'description' => t('The type of reply-to for a broadcast list'),
+            'description' => t('The type of reply-to for a list'),
             'type' => 'int',
             'not null' => TRUE,
             'size' => 'tiny'
@@ -264,9 +267,36 @@
   }
 
   /**
-   * Remove any 'FROM' addresses that may have been set.
+   * Multiple updates for the new GUI & functionality overhaul.
    */
-  function gb_maillist_update_7103(&$sandbox) {
-    db_query('UPDATE {gb_maillist_metadata} SET from_email = NULL WHERE from_email IS NOT NULL');
+  function gb_maillist_update_7105(&$sandbox) {
+    // Has to be after forum access, so we can edit their form modifications
+    db_query("UPDATE {system} s SET s.weight = 3" .
+        " WHERE s.type = 'module' AND  s.name = 'gb_maillist'");
+        
+    // Add aliases for all the former broadcast lists
+    $result = db_query('SELECT m.tid FROM {gb_maillist_metadata} m' .
+        ' WHERE m.list_type = 1');
+    foreach ($result->fetchCol() as $tid) {
+      db_query("INSERT into {gb_maillist_aliases} (tid, alias) VALUES" .
+          "(:tid, 'change_me_{$tid}')", array(':tid' => $tid,));
+    }
+    
+    // Remove any from addresses that may have been set
+    db_query('UPDATE {gb_maillist_metadata} m SET m.from_email = NULL' . 
+        ' WHERE m.from_email IS NOT NULL');
+        
+    // Remove any reply-to addresses thay may have been set
+    db_query('UPDATE {gb_maillist_metadata} m SET m.reply_to_email = NULL' . 
+        ' WHERE m.reply_to_email IS NOT NULL');
+        
+    // Change all list types to standard
+    db_query('UPDATE {gb_maillist_metadata} m SET m.list_type = 0' . 
+        ' WHERE m.list_type <> 0');
+        
+    // Change all reply-to types to list address
+    db_query('UPDATE {gb_maillist_metadata} m SET m.reply_to_type = 1' . 
+        ' WHERE m.reply_to_type <> 1}');
   }
+  
  
