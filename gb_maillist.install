@@ -269,7 +269,7 @@
   /**
    * Multiple updates for the new GUI & functionality overhaul.
    */
-  function gb_maillist_update_7104(&$sandbox) {
+  function gb_maillist_update_7105(&$sandbox) {
     // Has to be after forum access, so we can edit their form modifications
     db_query("UPDATE {system} s SET s.weight = 3" .
         " WHERE s.type = 'module' AND  s.name = 'gb_maillist'");
