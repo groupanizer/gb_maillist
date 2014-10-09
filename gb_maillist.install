@@ -6,6 +6,9 @@
    * Implements hook_install()
    */
   function gb_maillist_install() {
+    // Has to be after forum access, so we can edit their form modifications
+    db_query("UPDATE system SET weight = 3 WHERE type = 'module' AND name = 'gb_maillist'");
+
     variable_set('gb_maillist_filter_format', 'advanced');
     variable_set('gb_maillist_email_max_size', 10 * 1024 * 1024); // 10 MB
     variable_set('gb_maillist_reserved_aliases', array('bounces'));
@@ -165,7 +168,7 @@
             'size' => 'tiny',
           ),
           'reply_to_type' => array(
-            'description' => t('The type of reply-to for a broadcast list'),
+            'description' => t('The type of reply-to for a list'),
             'type' => 'int',
             'not null' => TRUE,
             'size' => 'tiny'
@@ -264,9 +267,18 @@
   }
 
   /**
-   * Remove any 'FROM' addresses that may have been set.
+   * Multiple updates for the new overhaul.
    */
-  function gb_maillist_update_7103(&$sandbox) {
+  function gb_maillist_update_7104(&$sandbox) {
+    // Has to be after forum access, so we can edit their form modifications
+    db_query("UPDATE {system} SET weight = 3 WHERE type = 'module' AND name = 'gb_maillist'");
+    // Remove any from addresses that may have been set
     db_query('UPDATE {gb_maillist_metadata} SET from_email = NULL WHERE from_email IS NOT NULL');
+    // Remove any reply-to addresses thay may have been set
+    db_query('UPDATE {gb_maillist_metadata} SET reply_to_email = NULL WHERE reply_to_email IS NOT NULL');
+    // Change all list types to standard
+    db_query('UPDATE {gb_maillist_metadta} SET list_type = 0 WHERE list_type <> 0');
+    // Change all reply-to types to list address
+    db_query('UPDATE {gb_maillist_metadata SET reply_to_type = 1 WHERE reply_to_type <> 1}');
   }
  

@@ -246,8 +246,14 @@
     
     watchdog('gb_maillist', 'Accepting incoming e-mail!');
     
+    $file_uri = stream_get_contents(STDIN);
+    // Hack.. OSX 'echo' utility claims to support -n and '\c' but annoyingly
+    // it supports neither...
+    if (substr($file_uri, -2) == "\x03\n") {
+      $file_uri = substr($file_uri, 0, strlen($file_uri) - 2);
+    }
     // Read filename from STDIN as it was piped in
-    $email = file_get_contents(stream_get_contents(STDIN));
+    $email = file_get_contents($file_uri);
     module_load_include('inc', 'mimemail', 'includes/mimemail.incoming');
     $email = mimemail_parse($email); // parse e-mail into array
 

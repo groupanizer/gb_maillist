@@ -393,9 +393,9 @@
   function _fetch_forum_form_default_values($tid) {
     $defaults = array(
         'attach_list' => 0,
-        'list_type' => _MAILING_LIST_TYPE_BROADCAST,
+        'list_type' => _MAILING_LIST_TYPE_STANDARD,
         'broadcast_reply_to_type' => _BROADCAST_REPLY_TO_TYPE_POSTERS_EMAIL,
-        'standard_reply_to_type' => _STANDARD_REPLY_TO_TYPE_POSTERS_EMAIL,
+        'standard_reply_to_type' => _STANDARD_REPLY_TO_TYPE_MAILING_LIST,
         'reply_to_email' => NULL,
         'from_email' => NULL,
         'user_defined_from' => NULL,
@@ -462,12 +462,12 @@
 
   /** Callback to replace the 'aliases' elements */
   function ajax_gb_maillist_add_alias($form, $form_state) {
-    return $form['mailing_list_setup']['list_options']['aliases'];
+    return $form['mailing_list']['list_options']['aliases'];
   }
   
   /** Callback to replace the 'aliases' element */
   function ajax_gb_maillist_delete_alias($form, $form_state) {
-    return $form['mailing_list_setup']['list_options']['aliases'];
+    return $form['mailing_list']['list_options']['aliases'];
   }
   
   /** Callback function to theme the 'aliases' */
@@ -477,13 +477,10 @@
     if (isset($elements['num_aliases']) && $elements['num_aliases'] > 0) {
       $variables = array(
         'header' => array(t('Aliases'), t('Delete')),
-        'empty' => t("No aliases."),
+        'empty' => t('No aliases'),
         'rows' => array(),
         'attributes' => array(),
-        'caption' => t("Aliases used to e-mail this list." .
-            " Format: <em>alias</em>@domain" . 
-            " (don't include the @domain). Valid characters are lowercase" .
-            " letters and underscores."),
+        'caption' => '',
         'colgroups' => array(),
         'sticky' => FALSE,
       );
@@ -493,7 +490,7 @@
         $variables['rows'][$i][] = drupal_render($elements["alias_{$i}"]);
         $variables['rows'][$i][] = drupal_render($elements["del_alias_{$i}"]);
       }
-      
+    
       return theme_table($variables);
     }
   }
@@ -542,18 +539,19 @@
   function _insert_mailing_list_elements(&$form, &$form_state, 
       $descriptors, $defaults) {
     // Create the mailing list fieldset
-    $form['mailing_list_setup'] = array(
+    $form['mailing_list'] = array(
       '#type' => 'fieldset',
       '#title' => 'Mailing list',
       '#collapsible' => TRUE,
     );
-    $fieldset = &$form['mailing_list_setup'];
+    $fieldset = &$form['mailing_list'];
     
     // Checkbox whether or not to attach a mailing list
     $fieldset['attach_list'] = array(
       '#type' => 'checkbox',
-      '#title' => t('Attach Mailing list'),
-      '#decription' => t('Whether to include a mailing list'),
+      '#title' => t('Create a mailing list'),
+      '#description' => t('Create a mailing list that is'
+          . ' associated with this board.'),
       '#return_value' => 1, 
       '#default_value' => $defaults['attach_list'], 
     );
@@ -561,7 +559,7 @@
     // Group of elements to set the list options 
     $fieldset['list_options'] = array(
       '#type' => 'fieldset',
-      '#title' => t('List options'),
+      '#title' => t('Options'),
       //'#collapsible' => TRUE,
       //'#collapsed' => $collapsed,
       '#states' => array(
@@ -571,14 +569,20 @@
         ),
       ),
     );
+    
+    $fieldset['list_options']['summary'] = array(
+      '#markup' => '<br />' . t('A mailing list allows you to send to and' . 
+          ' receive e-mail from a list of recepients.'),
+    );
     $options = array(
-      _MAILING_LIST_TYPE_STANDARD => t('Standard mailing list (Two-way)'),
-      _MAILING_LIST_TYPE_BROADCAST => t('Broadcast only list (One-way)'),
+      _MAILING_LIST_TYPE_STANDARD => t('Standard mailing list'),
+     // removed for now
+     // _MAILING_LIST_TYPE_BROADCAST => t('Broadcast only list (One-way)'),
     );
     $fieldset['list_options']['list_type'] = array(
       '#type' => 'radios',
       '#title' => t('List type'),
-      '#description' => t('The type of Mailing List to create.'),
+      '#description' => t('The type of mailing list to create.'),
       '#options' => $options,
       '#default_value' => $defaults['list_type'],
       '#states' => array(
@@ -589,7 +593,7 @@
       ),
     );
     $fieldset['list_options']['user_defined_from'] = array(
-      '#access' => FALSE, // hide for now, clients think we're spoofing
+      '#access' => FALSE, // hide for now
       '#type' => 'checkbox',
       '#title' => t('User-defined \'from\' in emails'),
       '#description' => t('Whether to include a custom from e-mail ' . 
@@ -604,7 +608,7 @@
       ),
     );
     $fieldset['list_options']['from_email'] = array(
-      '#access' => FALSE, // hide for now, clients think we're spoofing
+      '#access' => FALSE, // hide for now
       '#type' => 'textfield',
       '#title' => t('From'),
       '#default_value' => $defaults['from_email'],
@@ -629,6 +633,7 @@
       _BROADCAST_REPLY_TO_TYPE_USER_DEFINED => t('User-defined'),
     );
     $fieldset['list_options']['broadcast_reply_to_type'] = array(
+      '#access' => FALSE, // hide for now
       '#type' => 'radios',
       '#title' => t('Broadcast list reply-to type'),
       '#description' => t('How a broadcast list sets the reply-to e-mail ' . 
@@ -645,6 +650,7 @@
       ),
     );
     $fieldset['list_options']['reply_to_email'] = array(
+      '#access' => FALSE, // hide for now
       '#type' => 'textfield',
       '#title' => t('Reply-to'),
       '#description' => t('The address that list recipients can reply to'),
@@ -681,6 +687,7 @@
       _STANDARD_REPLY_TO_TYPE_MAILING_LIST => t("List's e-mail address"),
     );
     $fieldset['list_options']['standard_reply_to_type'] = array(
+      '#access' => FALSE, // hide for now
       '#type' => 'radios',
       '#title' => t('Standard list reply-to type'),
       '#description' => t('How a standard list sets the reply-to e-mail ' . 
@@ -702,6 +709,10 @@
     // Handle the alias ajax logic before we render the elements
     _aliases_ajax_logic($form, $form_state, $descriptors, $defaults);
     
+    // Strip potential HTML
+    $translated = t('List aliases (e-mail addresses)');
+    $translated = drupal_html_to_text($translated);
+    
     // We wrap the markup element in a container because a markup element
     // has no id and therefore #states doesn't work on it as expected
     $fieldset['list_options']['aliases_label'] = array(
@@ -717,7 +728,9 @@
         ),
       ), 
       'markup' => array(
-        '#markup' => t('<label><p>Standard list e-mail aliases</p></label>'),
+        '#markup' => $translated,
+        '#prefix' => '<label>',
+        '#suffix' => '</label>',
       ),
     );
     $fieldset['list_options']['aliases'] = array(
@@ -747,8 +760,8 @@
       $fieldset['list_options']['aliases']["alias_$i"] = array(
         '#type' => 'textfield',
         '#title' => t('Alias'),
-        //'#description' => t('Must be unique. ' .
-        //    'Valid characters include lower case letters and underscores.'),
+        '#description' => t('Must be unique. ' .
+            'Valid characters include lowercase letters and underscores only.'),
         '#maxlength' => _ALIAS_MAX_LENGTH,
         '#default_value' => isset($defaults["alias_{$i}"]) ? 
               $defaults["alias_{$i}"] : "",
@@ -794,11 +807,26 @@
         'prevent' => 'submit click mousedown',
       ),
     );
+    // Description for aliases table
+    // Strip potential HTML from a translated description
+    $t = array_map('drupal_html_to_text', array(
+      t('Aliases are used to e-mail a mailing list'),
+      t('Format'),
+      t('alias'),
+      t("don't include the"),
+    ));
+    $translated = "{$t[0]}.<br />{$t[1]}: <em>{$t[2]}</em>@yourchorus.com" .
+        " ({$t[3]} @yourchorus.com).";
+    $fieldset['list_options']['alias_description'] = array(
+      '#markup' => $translated,
+      '#prefix' => '<div class="form-item"><div class="description">',
+      '#suffix' => '</div></div>',
+    );
     
     // Elements to set which items are included in the list
     $fieldset['items'] = array(
       '#type' => 'fieldset',
-      '#title' => t('List items'),
+      '#title' => t('Recepients'),
       //'#collapsible' => TRUE,
       //'#collapsed' => $collapsed,
       '#states' => array(
@@ -1029,7 +1057,7 @@
      * @todo bug report or determine if the #states code isn't correct
      */
     $values = &$form_state['values'];
-    $list_options = &$form['mailing_list_setup']['list_options'];
+    $list_options = &$form['mailing_list']['list_options'];
      
     if ($values['broadcast_reply_to_type'] == 
         _BROADCAST_REPLY_TO_TYPE_USER_DEFINED) {
@@ -1171,6 +1199,37 @@
    */
   function gb_maillist_form_forum_form_forum_alter(&$form, 
       &$form_state, $form_id) {
+
+    // Change title
+    drupal_set_title(t('Discussion boards'));
+    
+    // Alter some form elements to change forum -> board
+    $form['name']['#title'] = t('Board name');
+    $form['description']['#description'] = t('Description and guidelines for' .
+        ' discussions within this board.');
+    $form['parent'][0]['#description'] = t('Boards may be placed at the top' .
+        ' (root) level, or inside another container or board');
+    $form['weight']['#description'] = t('Boards are displayed in ascending' . 
+        ' order by weight (baords with equal weights are displayed' .
+        ' alphabetically).');
+        
+    // Do the same for forum_access elements
+    $form['forum_access']['template']['taxonomy'][1]['#title'] = 
+        t('Template board');
+    $form['forum_access']['template']['taxonomy'][1]['#description'] = 
+        t('Select a board and click [Load] to retrieve that baords\'s' .
+        ' settings as a starting point for this baord or container.');
+    $form['forum_access']['template']['load_for_new']['#title'] = t('Use the' .
+        ' selected forum\'s settings as defaults for new forums and' .
+        ' containers.');
+    $form['forum_access']['grants']['col_ids']['view']['#markup'] = 
+        t('View this board');
+    $form['forum_access']['grants']['col_ids']['create']['#markup'] = 
+        t('Post / e-mail to this board');
+    $form['forum_access']['interference']['#access'] = FALSE;  
+    $form['forum_access']['troubleshooting']['#access'] = FALSE;
+    
+    // Insert our form elements
     $descriptors = _fetch_mailing_list_descriptors();
     // Typically NULL for new forms, fill to current values in db on edit
     $defaults = _fetch_forum_form_default_values(
@@ -1179,6 +1238,25 @@
     
     $form['#submit'][] = 'gb_maillist_forum_form_submit';
     $form['#validate'][] = 'gb_maillist_forum_form_validate';
+    
+    // Reorder the element weights
+    $form['name']['#weight'] = 0;
+    $form['description']['#weight'] = 1;
+    $form['parent']['#weight'] = 2;
+    $form['weight']['#weight'] = 3;
+    $form['mailing_list']['#weight'] = 4;
+    $form['forum_access']['#weight'] = 5;
+    $form['actions']['#weight'] = 6;
+  }
+
+  /** Implements hook_page_alter()
+   * @param array $page array of elements that comprise the page
+   */
+  function gb_maillist_page_alter(&$page) {
+    if (stristr(current_path(), 'admin/structure/forum/add/forum')) {
+      $page['help']['system_help']['#markup'] = t('A discussion board holds' . 
+          ' related board topics and may optionally contain a mailing list.');
+    }
   }
 
   /**
