@@ -240,11 +240,11 @@
   function drush_gb_maillist_incoming_mail() {
     if (variable_get('gb_maillist_incoming_disabled', FALSE)) {
       watchdog('gb_maillist', 'Rejecting incoming mail because incoming' .
-          ' mail is disabled');
+          ' mail is disabled.');
       exit(EX_NOPERM);
     }
     
-    watchdog('gb_maillist', 'Accepting incoming e-mail!');
+    watchdog('gb_maillist', 'Accepting incoming e-mail.');
     
     $file_uri = stream_get_contents(STDIN);
     // Hack.. OSX 'echo' utility claims to support -n and '\c' but annoyingly
@@ -261,7 +261,7 @@
     $from = $email['headers']['From'];
     $reply_to = $email['headers']['Reply-To'];
 
-    watchdog('gb_maillist', "Incoming {$from} -> {$to}");
+    watchdog('gb_maillist', "Incoming {$from} -> {$to}.");
     
     // Parse the alias & from
     $parsed_to = _parse_string_for_emails($to);
@@ -277,25 +277,36 @@
     $domain = g3core_get_domain();
     if ($parsed_from['domain names'][0] == $domain ||
         $parsed_reply_to['domain names'][0] == $domain) {
-      watchdog('gb_maillist', 'Terminated potential infinite loop');
+      watchdog('gb_maillist', 'Terminated potential infinite loop.');
       return; // Don't bounce nor reply
     }
     
     // Does a forum with alias $alias exist?
     $record = _check_for_alias_record($alias);
     if (!$record) {
-      watchdog('gb_maillist', "Mail rejected: forum does not exist {$alias}");
+      watchdog('gb_maillist', "Mail rejected: forum does not exist {$alias}.");
       exit(EX_NOUSER);
     }
     $tid = $record->tid;
     
     // Does the user exist?
+    $anonymous = FALSE;
     $account = user_load_by_mail($sender);
     if (!$account) {           // no, so we'll try and proceed as anoynmous
       $account = user_load(0); // anonymous
-      
-      // Since the user is anonymous lets append something to the e-mail body
-      // to let people know who this e-mail came from
+      $anonymous = TRUE;
+    }
+    
+    // Check for posting permission
+    if (!forum_access_access('create', $tid, $account)) {
+      watchdog('gb_maillist', "Mail rejected: user does not have permission " .
+          "{$sender}, {$account->uid}.");
+      exit(EX_NOPERM);
+    }
+    
+    // Since the user is anonymous lets append something to the e-mail body
+    // to let people know who this e-mail came from
+    if ($anonymous) {
       $encoded_subject = rawurlencode('RE: ' . $email['headers']['Subject']);
       $mailto = "<a href=\"mailto:{$sender}?subject={$encoded_subject}\"". 
           ">{$sender}</a>";
@@ -303,17 +314,11 @@
           $email['html'];
     }
     
-    // Check for posting permission
-    if (!forum_access_access('create', $tid, $account)) {
-      watchdog('gb_maillist', "Mail rejected: user does not have permission " .
-          "{$sender}, {$account->uid}");
-      exit(EX_NOPERM);
-    }
-
     // Maillist depends on the global $user object
     global $user;
     $user = $account;
     
+    // Post it 
     _post_to_forum($tid, $alias, $email, $account);
   }
 

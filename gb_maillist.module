@@ -121,11 +121,6 @@
     return $descriptors;
   }
   
-  /** Implements hook_TYPE_alter() */  
-  function gb_maillist_email_alter(&$email) {
-    // dpm($email);
-  }
-  
   function _get_base_url() {
     global $base_url;
     return $base_url;
@@ -270,17 +265,24 @@
     }
 
     // Don't use batch if we've been called from Drush
+    // TODO: Batch with 'progressive' => FALSE??
     if (_in_cli()) {
       $dispatched = 0;
       foreach ($operations as $operation) {
         $result = $operation[1][0]->dispatch($operation[1][1]);
         
-        if (!$result) {
+        if ($result) {
+          $dispatched += 1;
+        } else {
           $message = t('Failed to send e-mail to %to.', 
               array('%to' => $result['to']));
           watchdog('gb_maillist', $message);
         }
       }
+      
+      $message = t('Dispatched @count of @total e-mail.', 
+          array('@count' => $dispatched, '@total' => count($operations)));
+      watchdog('gb_maillist', $message);
     } else { // use batch
       $batch = array(
         'title' => t('Dispatching e-mail'),
