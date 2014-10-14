@@ -288,13 +288,18 @@
       exit(EX_NOUSER);
     }
     $tid = $record->tid;
-    
-    // Does the user exist?
-    $anonymous = FALSE;
+   
+    // Try and load a user from the sender's e-mail
     $account = user_load_by_mail($sender);
-    if (!$account) {           // no, so we'll try and proceed as anoynmous
-      $account = user_load(0); // anonymous
-      $anonymous = TRUE;
+    if (!$account) {
+      $uid = db_query('SELECT m.uid FROM {multiple_email} m' .
+          ' WHERE m.email = :email', array(':email' => $sender))->fetchField();
+      if ($uid) {
+        $account = user_load($uid); // try and load from alt e-mail
+      } 
+      if (!$account) { // give up and load anonymous user
+        $account = user_load(0);
+      }
     }
     
     // Check for posting permission
@@ -306,7 +311,7 @@
     
     // Since the user is anonymous lets append something to the e-mail body
     // to let people know who this e-mail came from
-    if ($anonymous) {
+    if ($account->uid == 0) {
       $encoded_subject = rawurlencode('RE: ' . $email['headers']['Subject']);
       $mailto = "<a href=\"mailto:{$sender}?subject={$encoded_subject}\"". 
           ">{$sender}</a>";
