@@ -257,14 +257,17 @@
     module_load_include('inc', 'mimemail', 'includes/mimemail.incoming');
     $email = mimemail_parse($email); // parse e-mail into array
 
-    $to = $email['headers']['To']; /** @todo 'Delivered-To' ? */
+    $to = isset($email['headers']['Delivered-To']) ? 
+        $email['headers']['Delivered-To'] : 
+        $email['headers']['To'];
     $from = $email['headers']['From'];
     $reply_to = $email['headers']['Reply-To'];
 
     watchdog('gb_maillist', "Incoming {$from} -> {$to}.");
-    watchdog('gb_maillist', print_r($email['headers'], TRUE));
+    //watchdog('gb_maillist', print_r($email['headers'], TRUE));
     
     // Parse the alias & from
+    // TODO: need to loop and choose the right one for multiple 'To' e-mail
     $parsed_to = _parse_string_for_emails($to);
     $alias = $parsed_to['aliases'][0];
     
