@@ -262,7 +262,7 @@
     $reply_to = $email['headers']['Reply-To'];
 
     watchdog('gb_maillist', "Incoming {$from} -> {$to}.");
-    watchdog('gb_maillist', $email['headers']);
+    watchdog('gb_maillist', print_r($email['headers'], TRUE));
     
     // Parse the alias & from
     $parsed_to = _parse_string_for_emails($to);
