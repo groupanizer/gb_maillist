@@ -49,6 +49,7 @@
         'Music Team Member' => 'Music Team Member',
         'Director' => 'Director',
         'Inactive Member' => 'Inactive Member',
+        'Associate Member' => 'Associate Member',
       ),
       'module' => 'gb_maillist',
     );
@@ -64,6 +65,7 @@
         'Music Team Member' => 'Music Team Member',
         'Director' => 'Director',
         'Inactive Member' => 'Inactive Member',
+        'Associate Member' => 'Associate Member',
       ),
       'module' => 'node',
     );
@@ -143,6 +145,8 @@
         'Board Member' => 'Board Member',
         'Music Team Member' => 'Music Team Member',
         'Director' => 'Director',
+        'Inactive Member' => 'Inactive Member',
+        'Associate Member' => 'Associate Member',
       ),
       'module' => 'mimemail'
     );
