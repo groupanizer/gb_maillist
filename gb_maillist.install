@@ -14,6 +14,7 @@
     variable_set('gb_maillist_reserved_aliases', array('bounces'));
     variable_set('gb_maillist_incoming_disabled', FALSE);
     variable_set('gb_maillist_outgoing_disabled', FALSE);
+    variable_set('gb_maillist_send_copy_to_sender', FALSE);
     
     // Re-build permissions for forum_access
     node_access_rebuild();
@@ -28,6 +29,7 @@
     variable_del('gb_maillist_reserved_aliases');
     variable_del('gb_maillist_incoming_disabled');
     variable_del('gb_maillist_outgoing_disabled');
+    variable_del('gb_maillist_send_copy_to_sender');
   }
   
   /**
@@ -55,8 +57,13 @@
     $permissions['create forum content'] = array(
       'name' => 'create forum content',
       'roles' => array(
+        'Member' => 'Member',
         'Forum Admin' => 'Forum Admin',
         'Site Admin' => 'Site Admin',
+        'Board Member' => 'Board Member',
+        'Music Team Member' => 'Music Team Member',
+        'Director' => 'Director',
+        'Inactive Member' => 'Inactive Member',
       ),
       'module' => 'node',
     );
