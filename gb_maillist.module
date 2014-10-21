@@ -204,7 +204,7 @@
       $sender = "{$alias}@{$domain}";
       
       if ($reply_to_type == _STANDARD_REPLY_TO_TYPE_MAILING_LIST) {
-        $reply_to = "{$alias}@{$domain}";
+        $reply_to = "\"{$alias}\" {$alias}@{$domain}";
         $from = "\"{$username} via {$alias}\" <{$reply_to}>"; // override from
       } elseif ($reply_to_type == _STANDARD_REPLY_TO_TYPE_POSTERS_EMAIL) {
         $reply_to = "\"{$username}\" <{$user->mail}>";
