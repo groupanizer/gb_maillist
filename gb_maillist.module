@@ -216,11 +216,13 @@
       return;
     }       
     
+    /** DEPRECATED */
+    /*
     // Set from to the reply-to or the user-defined variable
     if (!isset($from)) {
       $from = is_null($metadata['from_email']) ? 
           $reply_to : $metadata['from_email'];
-    }
+    }*/
 
     $bounces = "bounces@{$domain}";
     $dispatcher = new EmailDispatcher($sender, $bounces, TRUE);
