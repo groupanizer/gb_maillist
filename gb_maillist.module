@@ -204,8 +204,9 @@
       $sender = "{$alias}@{$domain}";
       
       if ($reply_to_type == _STANDARD_REPLY_TO_TYPE_MAILING_LIST) {
-        $reply_to = "{$alias}@{$domain}";
-        $from = "\"{$username}\" <{$reply_to}>"; // override from
+        $_mail = "{$alias}@{$domain}";
+        $reply_to = "\"{$alias}\" <{$_mail}>";
+        $from = "\"{$username} via {$alias}\" <{$_mail}>";
       } elseif ($reply_to_type == _STANDARD_REPLY_TO_TYPE_POSTERS_EMAIL) {
         $reply_to = "\"{$username}\" <{$user->mail}>";
       }
@@ -216,11 +217,13 @@
       return;
     }       
     
+    /** DEPRECATED */
+    /*
     // Set from to the reply-to or the user-defined variable
     if (!isset($from)) {
       $from = is_null($metadata['from_email']) ? 
           $reply_to : $metadata['from_email'];
-    }
+    }*/
 
     $bounces = "bounces@{$domain}";
     $dispatcher = new EmailDispatcher($sender, $bounces, TRUE);
