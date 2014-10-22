@@ -204,9 +204,8 @@
       $sender = "{$alias}@{$domain}";
       
       if ($reply_to_type == _STANDARD_REPLY_TO_TYPE_MAILING_LIST) {
-        $_mail = "{$alias}@{$domain}";
-        $reply_to = "\"{$alias}\" <{$_mail}>";
-        $from = "\"{$username} via {$alias}\" <{$_mail}>";
+        $reply_to = "\"{$alias}\" <{$sender}>";
+        $from = "\"{$username} via {$alias}\" <{$sender}>";
       } elseif ($reply_to_type == _STANDARD_REPLY_TO_TYPE_POSTERS_EMAIL) {
         $reply_to = "\"{$username}\" <{$user->mail}>";
       }
@@ -406,7 +405,7 @@
         'reply_to_email' => NULL,
         'from_email' => NULL,
         'user_defined_from' => NULL,
-        'num_aliases' => 0,
+        'aliases' => NULL,
      );
     
     if (!is_null($tid)) {
@@ -451,16 +450,12 @@
       }
       
       $aliases = _fetch_list_aliases_for_tid($tid);
-      if (empty($aliases)) {
-        $current['num_aliases'] = 0;
-      } else {
-        $n = count($aliases);
-        $current['num_aliases'] = $n;
-        while ($n-- > 0) {
-          $current["alias_{$n}"] = $aliases[$n]['alias'];
-        } 
-      }
-
+      $current['aliases'] = array_reduce($aliases, function ($carry, $item) {
+        if ($carry) $carry .= ', ';
+        $carry .= $item['alias'];
+        return $carry;
+      }); 
+      
       return $current;
     }
 
@@ -714,12 +709,28 @@
     );
     
     // Handle the alias ajax logic before we render the elements
-    _aliases_ajax_logic($form, $form_state, $descriptors, $defaults);
+    //_aliases_ajax_logic($form, $form_state, $descriptors, $defaults);
     
-    // Strip potential HTML
-    $translated = t('List aliases (e-mail addresses)');
-    $translated = drupal_html_to_text($translated);
+    $description = t('A list of aliases for this mailing list separated by' .
+        ' commas. These aliases are used to e-mail this mailing list.' .
+        ' For example, you could use the alias \'members\' if you wanted the' .
+        ' e-mail address for this mailing list to be' .
+        ' \'members@yourchorus.com\' or \'members, users\' if you wanted the' .
+        ' e-mail addresses \'members@yourchorus.com\' and' .
+        ' \'users@yourchorus.com\' to both point to this mailing list.' .
+        ' The only valid characters are lowercase letters and underscores.' .
+        ' Aliases must be unique.');
+    $fieldset['list_options']['aliases'] = array(
+      '#type' => 'textfield',
+      '#title' => t('List aliases'),
+      '#description' => $description,
+      '#default_value' => $defaults['aliases'],
+      '#maxlength' => 128,
+      '#size' => 32,
+      '#required' => TRUE,
+    );
     
+    /*
     // We wrap the markup element in a container because a markup element
     // has no id and therefore #states doesn't work on it as expected
     $fieldset['list_options']['aliases_label'] = array(
@@ -828,7 +839,7 @@
       '#markup' => $translated,
       '#prefix' => '<div class="form-item"><div class="description">',
       '#suffix' => '</div></div>',
-    );
+    );*/
     
     // Elements to set which items are included in the list
     $fieldset['items'] = array(
@@ -1108,38 +1119,39 @@
     }
     
     if ($values['list_type'] == _MAILING_LIST_TYPE_STANDARD) {
-      if ($form_state['storage']['num_aliases'] === 0) {
+      // A string of aliases separated by commas => an array of aliases
+      $aliases = $form_state['values']['aliases'];
+      $aliases = explode(',', $aliases);
+      array_walk($aliases, function(&$value) { $value = ltrim($value); });
+      
+      if (count($aliases) != count(array_unique($aliases))) { // has duplicates
         form_set_error('aliases', 
-          t('At least one alias is required for standard lists'));
+            t('Aliases must be unique and cannot be empty.'));
       }
-    
-      $aliases = _extract_values_with_keys_that_match_pattern(
-          $form_state['values']['aliases'], '/^alias_[0-5]$/');
-      $aliases_unique = array_unique($aliases); // filter duplicates
-      // Get the keys that are in $aliases but not in $aliases_unique. These
-      // are aliases with duplicate values.
-      $duplicates = array_diff_key($aliases, $aliases_unique);
-      foreach ($duplicates as $key => $value) {
-        form_set_error("aliases][{$key}", t('Aliases must be unique.'));
-      }
-      foreach ($aliases_unique as $key => $value) {
+      
+      // Check each alias for various cases
+      foreach ($aliases as $key => $value) {
         if (empty($value)) {
-          form_set_error("aliases][{$key}", t('Aliases cannot be empty.'));
+          form_set_error('aliases', 
+              t('Aliases must be unique and cannot be empty.'));
         } elseif (!preg_match('/^[a-z_]+$/', $value)) {
-          form_set_error("aliases][{$key}", 
+          form_set_error('aliases', 
               t("Alias '{$value}' contains illegal characters."));
-              $form_state['rebuild'] = TRUE;
         } else if (in_array($value, 
             variable_get('gb_maillist_reserved_aliases', array()))) {
-          form_set_error("aliases][{$key}", t("Alias '{$value}' is reserved."));
+          form_set_error('aliases', t("Alias '{$value}' is reserved."));
         } elseif (_check_for_alias_record($value, isset($values['tid']) ? 
             $values['tid'] : NULL)) {
-          form_set_error("aliases][{$key}", 
+          form_set_error('aliases', 
               t("Alias '{$value}' is already in use by another mailing list."));
-        }
+        }     
       }
+      
+      // Save the verified aliases in the form
+      $values['verified_aliases'] = $aliases;
     }
     
+    // TODO: Ugh...
     $a_list_item_is_checked = FALSE;
 
     $list_classes = _extract_values_with_keys_that_match_pattern(
@@ -1436,6 +1448,7 @@
   /** 
    * Implements hook_theme() 
    */
+  /* DEPRECATED
   function gb_maillist_theme($existing, $type, $theme, $path) {
     return array(
       'gb_maillist_aliases' => array(
@@ -1443,6 +1456,7 @@
       ),
     );
   }
+   */
   
   /**
    * Implements hook_node_insert()
