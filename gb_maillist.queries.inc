@@ -96,8 +96,7 @@
   function _each_alias_record($values, $tid) {
     $records = array();
     
-    $aliases = _extract_values_with_keys_that_match_pattern(
-        $values['aliases'], '/^alias_[0-5]$/');
+    $aliases = $values['verified_aliases'];
     foreach ($aliases as $alias) {
       $records[] = array('tid' => $tid, 'alias' => $alias);
     }
@@ -167,15 +166,13 @@
       }
       $query->execute();
       
-      // Aliases are optional
-      if ($values['aliases']['num_aliases'] > 0) {
-        $query = db_insert('gb_maillist_aliases')
-          ->fields(array('tid', 'alias'));
-        foreach (_each_alias_record($values, $tid) as $record) {
-          $query->values($record);
-        }
-        $query->execute();
+      // Insert aliases
+      $query = db_insert('gb_maillist_aliases')
+        ->fields(array('tid', 'alias'));
+      foreach (_each_alias_record($values, $tid) as $record) {
+        $query->values($record);
       }
+      $query->execute();
       
       return TRUE;
     });
