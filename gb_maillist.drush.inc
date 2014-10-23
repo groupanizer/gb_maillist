@@ -135,7 +135,7 @@
       $node->name = $account->name;
       $node->picture = $account->picture;
       $node->comment = 2;                 // 0 = disabled, 1 = RO, 2 = R/W
-      $node->title = $email['headers']['Subject'];
+      $node->title = $email['headers']['subject'];
       $node->status = 0;   // 0 = unpublished, 1 = published
       //$node->language = LANGUAGE_NONE
       $node->taxonomy_forums[LANGUAGE_NONE][0]['tid'] = $tid;
@@ -208,8 +208,8 @@
     $domain = g3core_get_domain();
     
     // Try and locate the forum topic via In-Reply-To: <$tid.$nid@$domain>
-    if (isset($email['headers']['In-Reply-To'])) {
-      $inreplyto = $email['headers']['In-Reply-To'];
+    if (isset($email['headers']['in-reply-to'])) {
+      $inreplyto = $email['headers']['in-reply-to'];
       
       $matches = array();
       // nid.tid@domain
@@ -232,7 +232,7 @@
     }
           
     // Try and locate the forum topic via the subject
-    $subject = $email['headers']['Subject'];
+    $subject = $email['headers']['subject'];
     $subject = preg_replace("/^(RE:\s|FWD:\s)?(\[{$alias}\]\s)?/i", 
         '', $subject);
     
@@ -273,11 +273,11 @@
     module_load_include('inc', 'mimemail', 'includes/mimemail.incoming');
     $email = mimemail_parse($email); // parse e-mail into array
 
-    $to = isset($email['headers']['Delivered-To']) ? 
-        $email['headers']['Delivered-To'] : 
-        $email['headers']['To'];
-    $from = $email['headers']['From'];
-    $reply_to = $email['headers']['Reply-To'];
+    $to = isset($email['headers']['delivered-to']) ? 
+        $email['headers']['delivered-to'] : 
+        $email['headers']['to'];
+    $from = $email['headers']['from'];
+    $reply_to = $email['headers']['reply-to'];
 
     watchdog('gb_maillist', "Incoming {$from} -> {$to}.");
     //watchdog('gb_maillist', print_r($email['headers'], TRUE));
@@ -332,7 +332,7 @@
     // Since the user is anonymous lets append something to the e-mail body
     // to let people know who this e-mail came from
     if ($account->uid == 0) {
-      $encoded_subject = rawurlencode('RE: ' . $email['headers']['Subject']);
+      $encoded_subject = rawurlencode('RE: ' . $email['headers']['subject']);
       $mailto = "<a href=\"mailto:{$sender}?subject={$encoded_subject}\"". 
           ">{$sender}</a>";
       $email['html'] = "{$mailto} (anonymous user) sent:</strong><br /><br />" .
