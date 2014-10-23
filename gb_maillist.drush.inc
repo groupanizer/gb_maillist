@@ -68,14 +68,9 @@
   function _save_attachments_and_parse_inline_images($nid, &$email, $account) {
     $file_fields = array();
     
-    watchdog('gb_maillist', count($email['attachments']));
-    
     for ($i = 0; $i < count($email['attachments']); $i++) {
       $attachment = $email['attachments'][$i];
-      
       $filename = $attachment['filename'];
-      
-      watchdog('gb_maillist', $filename);
       
       // Save file data
       $destination = "private://attachments/{$nid}/";
