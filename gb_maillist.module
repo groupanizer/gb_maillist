@@ -900,7 +900,7 @@
       'gb_maillist_outgoing_disabled' => array(
         '#type' => 'checkbox',
         '#title' => t('Disable outgoing e-mail'),
-        '#description' => t('If set the mailing lists will not send e-mail'.),
+        '#description' => t('If set the mailing lists will not send e-mail.'),
         '#default_value' => variable_get(
             'gb_maillist_outgoing_disabled', FALSE),
       ),
