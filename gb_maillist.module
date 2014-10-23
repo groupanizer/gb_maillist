@@ -900,7 +900,7 @@
       'gb_maillist_outgoing_disabled' => array(
         '#type' => 'checkbox',
         '#title' => t('Disable outgoing e-mail'),
-        '#description' => t('If set the mailing lists will not send e-mail'),
+        '#description' => t('If set the mailing lists will not send e-mail'.),
         '#default_value' => variable_get(
             'gb_maillist_outgoing_disabled', FALSE),
       ),
@@ -908,7 +908,7 @@
         '#type' => 'checkbox',
         '#title' => t('Disable incoming e-mail'),
         '#description' => t('If set the mailing lists will not accept' .
-            ' incoming e-mail'),
+            ' incoming e-mail.'),
         '#default_value' => variable_get(
             'gb_maillist_incoming_disabled', FALSE),
       ),
@@ -917,9 +917,18 @@
         '#title' => t('Send copy of outgoing e-mail to the original sender'),
         '#description' => t('If set the mailing lists will send a copy of all' .
             ' outgoing e-mail to the original sender, whether posted in the' .
-            ' boards or mailed in'),
+            ' boards or mailed in.'),
         '#default_value' => variable_get(
             'gb_maillist_send_copy_to_sender', FALSE),
+      ),
+      'gb_maillist_attach_email_source' => array(
+        '#type' => 'checkbox',
+        '#title' => t('Attach e-mail source to node/comment'),
+        '#description' => t('If set the mailing lists will attach a text file' .
+            'that contains the original e-mail source to its corresponding' . 
+            ' node/comment.'),
+        '#default_value' => variable_get(
+            'gb_maillist_attach_email_source', FALSE),
       ),
     );
     

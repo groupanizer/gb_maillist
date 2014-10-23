@@ -269,9 +269,18 @@
       $file_uri = substr($file_uri, 0, strlen($file_uri) - 2);
     }
     // Read filename from STDIN as it was piped in
-    $email = file_get_contents($file_uri);
+    $source = file_get_contents($file_uri);
     module_load_include('inc', 'mimemail', 'includes/mimemail.incoming');
-    $email = mimemail_parse($email); // parse e-mail into array
+    $email = mimemail_parse($source); // parse e-mail into array
+    
+    if (variable_get('gb_maillist_attach_email_source', FALSE)) {
+      $email['attachments'][] = array(
+        'filename' => 'source.txt',
+        'filemime' => 'text/plain',
+        'content'  => $source,
+        'cid'      => NULL,
+      );
+    }
 
     $to = isset($email['headers']['delivered-to']) ? 
         $email['headers']['delivered-to'] : 
@@ -280,10 +289,9 @@
     $reply_to = $email['headers']['reply-to'];
 
     watchdog('gb_maillist', "Incoming {$from} -> {$to}.");
-    //watchdog('gb_maillist', print_r($email['headers'], TRUE));
     
     // Parse the alias & from
-    // TODO: need to loop and choose the right one for multiple 'To' e-mail
+    // TODO: need to loop and choose the right one for multiple 'to' e-mail
     $parsed_to = _parse_string_for_emails($to);
     $alias = $parsed_to['aliases'][0];
     
