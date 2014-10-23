@@ -130,7 +130,8 @@
       $node->name = $account->name;
       $node->picture = $account->picture;
       $node->comment = 2;                 // 0 = disabled, 1 = RO, 2 = R/W
-      $node->title = $email['headers']['subject']) ?
+      watchdog('gb_maillist', "Subject: '{$email['headers']['subject']}'");
+      $node->title = $email['headers']['subject'] ?
           $email['headers']['subject'] : t('(no subject)');
       $node->status = 0;   // 0 = unpublished, 1 = published
       //$node->language = LANGUAGE_NONE
