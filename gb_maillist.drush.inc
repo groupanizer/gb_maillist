@@ -131,7 +131,7 @@
       $node->picture = $account->picture;
       $node->comment = 2;                 // 0 = disabled, 1 = RO, 2 = R/W
       $node->title = !empty($email['headers']['subject']) ?
-          $email['headers']['subject'] : t('(no subject))'
+          $email['headers']['subject'] : t('(no subject)');
       $node->status = 0;   // 0 = unpublished, 1 = published
       //$node->language = LANGUAGE_NONE
       $node->taxonomy_forums[LANGUAGE_NONE][0]['tid'] = $tid;
