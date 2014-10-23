@@ -1104,7 +1104,8 @@
       if (empty($values['reply_to_email'])) {
         $title = $list_options['reply_to_email']['#title'];
         form_set_error('reply_to_email', t("{$title} is required."));
-      } elseif (substr($values['reply_to_email'], -(strlen($domain) + 1)) == "@{$domain}") {
+      } elseif (substr($values['reply_to_email'], -(strlen($domain) + 1)) 
+          == "@{$domain}") {
         $email = $values['reply_to_email'];
         form_set_error('reply_to_email', 
             t("'{$email}' is not a valid e-mail address."));
@@ -1426,9 +1427,12 @@
           $rightmost = array_slice($variables['breadcrumb'], 2);
           
           $variables['breadcrumb'] = array();
-          $variables['breadcrumb'][0] = '<a href="/" id="&lt;front&gt;">Home</a>';
-          $variables['breadcrumb'][1] = '<a href="/g/comm" id="g-comm">Communicate</a>';
-          $variables['breadcrumb'][2] = '<a href="/g/comm/maillist/board" id="board">Discussion Boards</a>';
+          $variables['breadcrumb'][0] = '<a href="/" id="&lt;front&gt;">' .
+              'Home</a>';
+          $variables['breadcrumb'][1] = '<a href="/g/comm" id="g-comm">' .
+              'Communicate</a>';
+          $variables['breadcrumb'][2] = '<a href="/g/comm/maillist/board"' . 
+              ' id="board">Discussion Boards</a>';
           
           foreach ($rightmost as $breadcrumb) {
             $variables['breadcrumb'][] = $breadcrumb;

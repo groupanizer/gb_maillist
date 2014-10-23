@@ -49,7 +49,8 @@
   // e.g. Smith, John <(john@cox.net)>
   function _parse_string_for_emails($string) {
     $matches = array();
-    preg_match_all("/([\w\$\?\^\+\{\}\|\-\*\.\/!#%&'=~]+)@([\w\-]+(\.[a-z]+)+)/",
+    preg_match_all(
+        "/([\w\$\?\^\+\{\}\|\-\*\.\/!#%&'=~]+)@([\w\-]+(\.[a-z]+)+)/",
         $string, $matches);
     return array(
       'emails' => $matches[0],
@@ -149,7 +150,8 @@
         // hook_pre_storage_field_update is getting called again in forum.module
         // which is inserting the forum_index row twice
         // TODO: report, fix, etc       
-        db_query('ALTER IGNORE TABLE forum_index ADD UNIQUE INDEX dupidx (nid, tid, created)');
+        db_query('ALTER IGNORE TABLE forum_index' .
+            ' ADD UNIQUE INDEX dupidx (nid, tid, created)');
         db_query('ALTER TABLE forum_index DROP INDEX dupidx');
       }
     } catch (Exception $e) {
@@ -411,19 +413,22 @@
     };
     
     // Create a default set of forums
-    $create_board(t('Members'), t('members'), $roles['member'], array(
+    $create_board(t('Members'), t('members'), $roles['member'], 
+    array(
       'module' => 'gb_member',
       'class' => 'gb_member_roles',
       'item' => 'gb_member_role_member',
     ));
     
-    $create_board(t('Music Team'), t('musicteam'), $roles['music_team_member'], array(
+    $create_board(t('Music Team'), t('musicteam'), $roles['music_team_member'], 
+    array(
       'module' => 'gb_member',
       'class' => 'gb_member_roles',
       'item' => 'gb_member_role_music_team',
     ));
     
-    $create_board(t('Board Members'), t('board'), $roles['board_member'], array(
+    $create_board(t('Board Members'), t('board'), $roles['board_member'], 
+    array(
       'module' => 'gb_member',
       'class' => 'gb_member_roles',
       'item' => 'gb_member_role_board_member',

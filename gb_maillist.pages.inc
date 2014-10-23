@@ -174,7 +174,8 @@
           $class = $action['class'];
           $title = $action['title'];
             
-          $markup .= "<a href=\"{$base}/{$path}\" title=\"{$title}\" class=\"{$class}\"></a>";
+          $markup .= "<a href=\"{$base}/{$path}\" title=\"{$title}\"" .
+              " class=\"{$class}\"></a>";
           if ($i++ < $n) $markup .= '&nbsp;';
         }
             
@@ -249,7 +250,8 @@
           );
         }
       } else { // not a container
-        $name_markup = "<a href=\"{$base}/forum/{$tid}\"><strong>{$forum->name}</strong></a>";
+        $name_markup = "<a href=\"{$base}/forum/{$tid}\">" .
+            "<strong>{$forum->name}</strong></a>";
         
         $row = array(
           'no_striping' => FALSE,
