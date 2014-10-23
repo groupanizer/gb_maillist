@@ -49,7 +49,8 @@
   // e.g. Smith, John <(john@cox.net)>
   function _parse_string_for_emails($string) {
     $matches = array();
-    preg_match_all("/([\w\$\?\^\+\{\}\|\-\*\.\/!#%&'=~]+)@([\w\-]+(\.[a-z]+)+)/",
+    preg_match_all(
+        "/([\w\$\?\^\+\{\}\|\-\*\.\/!#%&'=~]+)@([\w\-]+(\.[a-z]+)+)/",
         $string, $matches);
     return array(
       'emails' => $matches[0],
@@ -60,12 +61,15 @@
     );
   }
   
-  function _save_attachments_and_generate_file_fields($nid, $email, $account) {
+  /**
+   * Saves the attachments in the e-mail to the file system and post parses
+   * the e-mail body to contain the corrected inline image paths if present.
+   */
+  function _save_attachments_and_parse_inline_images($nid, &$email, $account) {
     $file_fields = array();
     
     for ($i = 0; $i < count($email['attachments']); $i++) {
       $attachment = $email['attachments'][$i];
-      
       $filename = $attachment['filename'];
       
       // Save file data
@@ -86,7 +90,7 @@
         $file->status = FILE_STATUS_PERMANENT;
     
         $file = file_save($file);
-        
+                
         $file_fields[$i] = array(
           'fid' => $file->fid,
           'display' => 1, /** @todo investigate */
@@ -103,6 +107,11 @@
           'origname' => $filename,
           'rdf_mapping' => NULL,
         );
+        
+        if (stristr($file->filemime, 'image') && $attachment['cid'] != NULL) {
+          $email['html'] = str_replace("cid:{$attachment['cid']}", 
+              file_create_url($file->uri), $email['html']);
+        }
       }
     }
 
@@ -121,7 +130,8 @@
       $node->name = $account->name;
       $node->picture = $account->picture;
       $node->comment = 2;                 // 0 = disabled, 1 = RO, 2 = R/W
-      $node->title = $email['headers']['Subject'];
+      $node->title = $email['headers']['subject'] ?
+          $email['headers']['subject'] : t('(no subject)');
       $node->status = 0;   // 0 = unpublished, 1 = published
       //$node->language = LANGUAGE_NONE
       $node->taxonomy_forums[LANGUAGE_NONE][0]['tid'] = $tid;
@@ -136,12 +146,13 @@
       // Now we have a node id and can write the attachments
       // into the proper directory structure
       $node = node_load($node->nid);
-      $file_fields = _save_attachments_and_generate_file_fields(
+      $file_fields = _save_attachments_and_parse_inline_images(
           $node->nid, $email, $account);
       for ($i = 0; $i < count($file_fields); $i++) {
         $node->field_attachment[LANGUAGE_NONE][$i] = $file_fields[$i];
       }
       // Re-save
+      $node->body[LANGUAGE_NONE][0]['value'] = $email['html']; // Updated
       $node->status = NODE_PUBLISHED; // publish the node
       node_save($node);
       if (count($file_fields) > 0) {
@@ -149,7 +160,8 @@
         // hook_pre_storage_field_update is getting called again in forum.module
         // which is inserting the forum_index row twice
         // TODO: report, fix, etc       
-        db_query('ALTER IGNORE TABLE forum_index ADD UNIQUE INDEX dupidx (nid, tid, created)');
+        db_query('ALTER IGNORE TABLE forum_index' .
+            ' ADD UNIQUE INDEX dupidx (nid, tid, created)');
         db_query('ALTER TABLE forum_index DROP INDEX dupidx');
       }
     } catch (Exception $e) {
@@ -175,9 +187,9 @@
           array(':nid' => $nid))->fetchField();
       $comment->comment_body[LANGUAGE_NONE][0]['format'] = variable_get(
           'gb_maillist_filter_format');
-      $comment->comment_body[LANGUAGE_NONE][0]['value'] = $email['html'];
-      $file_fields = _save_attachments_and_generate_file_fields(
+      $file_fields = _save_attachments_and_parse_inline_images(
           $nid, $email, $account);
+      $comment->comment_body[LANGUAGE_NONE][0]['value'] = $email['html'];
       for ($i = 0; $i < count($file_fields); $i++) {
         $comment->field_attachment[LANGUAGE_NONE][$i] = $file_fields[$i];
       }
@@ -192,8 +204,8 @@
     $domain = g3core_get_domain();
     
     // Try and locate the forum topic via In-Reply-To: <$tid.$nid@$domain>
-    if (isset($email['headers']['In-Reply-To'])) {
-      $inreplyto = $email['headers']['In-Reply-To'];
+    if (isset($email['headers']['in-reply-to'])) {
+      $inreplyto = $email['headers']['in-reply-to'];
       
       $matches = array();
       // nid.tid@domain
@@ -216,7 +228,8 @@
     }
           
     // Try and locate the forum topic via the subject
-    $subject = $email['headers']['Subject'];
+    $subject = $email['headers']['subject'] ?
+          $email['headers']['subject'] : t('(no subject)');
     $subject = preg_replace("/^(RE:\s|FWD:\s)?(\[{$alias}\]\s)?/i", 
         '', $subject);
     
@@ -253,21 +266,29 @@
       $file_uri = substr($file_uri, 0, strlen($file_uri) - 2);
     }
     // Read filename from STDIN as it was piped in
-    $email = file_get_contents($file_uri);
+    $source = file_get_contents($file_uri);
     module_load_include('inc', 'mimemail', 'includes/mimemail.incoming');
-    $email = mimemail_parse($email); // parse e-mail into array
+    $email = mimemail_parse($source); // parse e-mail into array
+    
+    if (variable_get('gb_maillist_attach_email_source', FALSE)) {
+      $email['attachments'][] = array(
+        'filename' => 'source.txt',
+        'filemime' => 'text/plain',
+        'content'  => $source,
+        'cid'      => NULL,
+      );
+    }
 
-    $to = isset($email['headers']['Delivered-To']) ? 
-        $email['headers']['Delivered-To'] : 
-        $email['headers']['To'];
-    $from = $email['headers']['From'];
-    $reply_to = $email['headers']['Reply-To'];
+    $to = isset($email['headers']['delivered-to']) ? 
+        $email['headers']['delivered-to'] : 
+        $email['headers']['to'];
+    $from = $email['headers']['from'];
+    $reply_to = $email['headers']['reply-to'];
 
     watchdog('gb_maillist', "Incoming {$from} -> {$to}.");
-    //watchdog('gb_maillist', print_r($email['headers'], TRUE));
     
     // Parse the alias & from
-    // TODO: need to loop and choose the right one for multiple 'To' e-mail
+    // TODO: need to loop and choose the right one for multiple 'to' e-mail
     $parsed_to = _parse_string_for_emails($to);
     $alias = $parsed_to['aliases'][0];
     
@@ -316,7 +337,7 @@
     // Since the user is anonymous lets append something to the e-mail body
     // to let people know who this e-mail came from
     if ($account->uid == 0) {
-      $encoded_subject = rawurlencode('RE: ' . $email['headers']['Subject']);
+      $encoded_subject = rawurlencode('RE: ' . $email['headers']['subject']);
       $mailto = "<a href=\"mailto:{$sender}?subject={$encoded_subject}\"". 
           ">{$sender}</a>";
       $email['html'] = "{$mailto} (anonymous user) sent:</strong><br /><br />" .
@@ -411,19 +432,22 @@
     };
     
     // Create a default set of forums
-    $create_board(t('Members'), t('members'), $roles['member'], array(
+    $create_board(t('Members'), t('members'), $roles['member'], 
+    array(
       'module' => 'gb_member',
       'class' => 'gb_member_roles',
       'item' => 'gb_member_role_member',
     ));
     
-    $create_board(t('Music Team'), t('musicteam'), $roles['music_team_member'], array(
+    $create_board(t('Music Team'), t('musicteam'), $roles['music_team_member'], 
+    array(
       'module' => 'gb_member',
       'class' => 'gb_member_roles',
       'item' => 'gb_member_role_music_team',
     ));
     
-    $create_board(t('Board Members'), t('board'), $roles['board_member'], array(
+    $create_board(t('Board Members'), t('board'), $roles['board_member'], 
+    array(
       'module' => 'gb_member',
       'class' => 'gb_member_roles',
       'item' => 'gb_member_role_board_member',
