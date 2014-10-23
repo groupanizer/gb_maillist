@@ -727,7 +727,15 @@
       '#default_value' => $defaults['aliases'],
       '#maxlength' => 128,
       '#size' => 32,
-      '#required' => TRUE,
+      '#states' => array(
+        // visible & required if we are attaching a list
+        'visible' => array( 
+          ':input[name="attach_list"]' => array('checked' => TRUE),
+        ),
+        'required' => array( 
+          ':input[name="attach_list"]' => array('checked' => TRUE),
+        ),
+      ),
     );
     
     /*
@@ -1119,6 +1127,11 @@
     }
     
     if ($values['list_type'] == _MAILING_LIST_TYPE_STANDARD) {
+      if (empty($values['aliases'])) {
+        $title = $list_options['aliases']['#title'];
+        form_set_error('aliases', t("{$title} is required."));
+      }
+      
       // A string of aliases separated by commas => an array of aliases
       $aliases = $form_state['values']['aliases'];
       $aliases = explode(',', $aliases);
