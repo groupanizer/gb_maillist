@@ -61,7 +61,11 @@
     );
   }
   
-  function _save_attachments_and_generate_file_fields($nid, $email, $account) {
+  /**
+   * Saves the attachments in the e-mail to the file system and post parses
+   * the e-mail body to contain the corrected inline image paths if present.
+   */
+  function _save_attachments_and_parse_inline_images($nid, &$email, $account) {
     $file_fields = array();
     
     for ($i = 0; $i < count($email['attachments']); $i++) {
@@ -87,7 +91,7 @@
         $file->status = FILE_STATUS_PERMANENT;
     
         $file = file_save($file);
-        
+                
         $file_fields[$i] = array(
           'fid' => $file->fid,
           'display' => 1, /** @todo investigate */
@@ -104,6 +108,11 @@
           'origname' => $filename,
           'rdf_mapping' => NULL,
         );
+        
+        if (stristr($file->filemime, 'image') && $attachment['cid'] != NULL) {
+          $email['html'] = str_replace("cid:{$attachment['cid']}", 
+              file_create_url($file->uri), $email['html']);
+        }
       }
     }
 
@@ -137,12 +146,13 @@
       // Now we have a node id and can write the attachments
       // into the proper directory structure
       $node = node_load($node->nid);
-      $file_fields = _save_attachments_and_generate_file_fields(
+      $file_fields = _save_attachments_and_parse_inline_images(
           $node->nid, $email, $account);
       for ($i = 0; $i < count($file_fields); $i++) {
         $node->field_attachment[LANGUAGE_NONE][$i] = $file_fields[$i];
       }
       // Re-save
+      $node->body[LANGUAGE_NONE][0]['value'] = $email['html']; // Updated
       $node->status = NODE_PUBLISHED; // publish the node
       node_save($node);
       if (count($file_fields) > 0) {
@@ -177,9 +187,9 @@
           array(':nid' => $nid))->fetchField();
       $comment->comment_body[LANGUAGE_NONE][0]['format'] = variable_get(
           'gb_maillist_filter_format');
-      $comment->comment_body[LANGUAGE_NONE][0]['value'] = $email['html'];
-      $file_fields = _save_attachments_and_generate_file_fields(
+      $file_fields = _save_attachments_and_parse_inline_images(
           $nid, $email, $account);
+      $comment->comment_body[LANGUAGE_NONE][0]['value'] = $email['html'];
       for ($i = 0; $i < count($file_fields); $i++) {
         $comment->field_attachment[LANGUAGE_NONE][$i] = $file_fields[$i];
       }
