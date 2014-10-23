@@ -925,7 +925,7 @@
         '#type' => 'checkbox',
         '#title' => t('Attach e-mail source to node/comment'),
         '#description' => t('If set the mailing lists will attach a text file' .
-            'that contains the original e-mail source to its corresponding' . 
+            ' that contains the original e-mail source to its corresponding' . 
             ' node/comment.'),
         '#default_value' => variable_get(
             'gb_maillist_attach_email_source', FALSE),
