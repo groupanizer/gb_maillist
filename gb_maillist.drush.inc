@@ -130,7 +130,6 @@
       $node->name = $account->name;
       $node->picture = $account->picture;
       $node->comment = 2;                 // 0 = disabled, 1 = RO, 2 = R/W
-      watchdog('gb_maillist', "Subject: '{$email['headers']['subject']}'");
       $node->title = $email['headers']['subject'] ?
           $email['headers']['subject'] : t('(no subject)');
       $node->status = 0;   // 0 = unpublished, 1 = published
@@ -229,7 +228,8 @@
     }
           
     // Try and locate the forum topic via the subject
-    $subject = $email['headers']['subject'];
+    $subject = $email['headers']['subject'] ?
+          $email['headers']['subject'] : t('(no subject)');
     $subject = preg_replace("/^(RE:\s|FWD:\s)?(\[{$alias}\]\s)?/i", 
         '', $subject);
     
