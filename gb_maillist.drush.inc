@@ -73,6 +73,8 @@
       
       $filename = $attachment['filename'];
       
+      watchdog('gb_maillist', $filename);
+      
       // Save file data
       $destination = "private://attachments/{$nid}/";
       // Make sure the directory exists and is writable
