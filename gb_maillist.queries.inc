@@ -131,12 +131,6 @@
    */
   function _build_and_insert_list_records_for_tid($tid, &$values) {
     return _safe_closure(function () use ($tid, $values) {
-      if ($values['list_type'] == _MAILING_LIST_TYPE_BROADCAST) {
-        $reply_to_type = $values['broadcast_reply_to_type']; 
-      } else {
-        $reply_to_type = $values['standard_reply_to_type'];
-      }
-      
       // We are attaching a list
       // build and write our query for gb_maillist_metadata
       // db_merge will handle update & insert
@@ -144,9 +138,6 @@
         ->key(array('tid' => $tid))
         ->fields(array(
           'list_type' => $values['list_type'],
-          'reply_to_type' => $reply_to_type,
-          'reply_to_email' => $values['reply_to_email'],
-          'from_email' => $values['from_email'],
         ))
         ->execute();
       // MergeQuery::STATUS_UPDATE or MeryQuery::STATUS_INSERT

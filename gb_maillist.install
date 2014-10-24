@@ -171,11 +171,12 @@
             'unsigned' => TRUE,
           ),
           'list_type' => array(
-            'description' => t('The type of list (broadcast or standard)'),
+            'description' => t('The type of list'),
             'type' => 'int',
             'not nulll' => TRUE,
             'size' => 'tiny',
           ),
+          /*
           'reply_to_type' => array(
             'description' => t('The type of reply-to for a list'),
             'type' => 'int',
@@ -197,7 +198,7 @@
             'not null' => FALSE,
             'default' => NULL,
             'length' => _EMAIL_ADDRESS_MAX_LENGTH,
-          ),
+          ),*/
         ), // fields
         'unique keys' => array(
           'tid' => array('tid',),
@@ -272,6 +273,32 @@
           'alias' => array('alias',),
         ),
       ), // gb_maillist_aliases
+      'gb_maillist_email_records' => array(
+        'description' => t('A record of all mail that has been sent/received.'),
+        'fields' => array(
+          'id' => array(
+            'description' => t('The node or comment id of the post.'),
+            'type' => 'int',
+            'not null' => TRUE,
+            'unsigned' => TRUE,
+          ),
+          'type' => array(
+            'description' => t('Type of id, either comment or node'),
+            'type' => 'varchar',
+            'not null' => TRUE,
+            'length' => 32,
+          ),
+          'email' => array(
+            'description' => t('The original e-mail.'),
+            'type' => 'text',
+            'size' => 'medium',
+            'not null' => TRUE,
+          ),
+        ), // fields
+        'unique keys' => array(
+          'alias' => array('id','type'),
+        ),
+      ), // gb_maillist_aliases
     ); 
   }
 
@@ -308,4 +335,45 @@
         ' WHERE m.reply_to_type <> 1}');
   }
   
+  /**
+   * Create new database table {gb_maillist_email_records} and drop some
+   * deprecated fields.
+   */
+  function gb_maillist_update_7106() {
+    // Create new table of e-mail records
+    $schema['gb_maillist_email_records'] = array(
+      'description' => t('A record of all mail that has been sent/received.'),
+      'fields' => array(
+        'id' => array(
+          'description' => t('The node or comment id of the post.'),
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE,
+        ),
+        'type' => array(
+          'description' => t('Type of id, either comment or node'),
+          'type' => 'varchar',
+          'not null' => TRUE,
+          'length' => 32,
+        ),
+        'email' => array(
+          'description' => t('The original e-mail.'),
+          'type' => 'text',
+          'size' => 'medium',
+          'not null' => TRUE,
+        ),
+      ), // fields
+      'unique keys' => array(
+        'alias' => array('id', 'type'),
+      ),
+    );
+    
+    db_create_table('gb_maillist_email_records', 
+        $schema['gb_maillist_email_records']);
+        
+    // Drop older deprecated tables
+    db_drop_field('gb_maillist_metadata', 'reply_to_type');
+    db_drop_field('gb_maillist_metadata', 'reply_to_email');  
+    db_drop_field('gb_maillist_metadata', 'from_email');
+  }
  

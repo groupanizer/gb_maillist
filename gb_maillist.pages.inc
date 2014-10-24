@@ -1,6 +1,32 @@
 <?php
 
   module_load_include('inc', 'g3core', 'g3core.utils');
+  
+
+  /** Page to show the original e-mail source to admins */ 
+  function gb_maillist_view_source_page($id, $type) {
+    if ($type != 'comment' && $type != 'node') {
+      return t('Invalid type specified');
+    }
+    
+    if (!is_numeric($id)) {
+      return t('Invalid id specified');
+    }
+    
+    $source = db_query('SELECT r.email FROM {gb_maillist_email_records} r' .
+        ' WHERE r.type = :type AND r.id = :id', 
+        array(':type' => $type, ':id' => $id,))->fetchField();
+    if (!$source) {
+      return t('Oops...');
+    }
+     
+    drupal_add_http_header('Content-Type', 
+        'text/plain; charset="ISO-8859-1"');
+    drupal_add_http_header('Content-Disposition', 
+        'attachment; filename="source.txt"');
+    print($source);
+    drupal_exit();
+  }
 
   /** Page to show the emails of a list to the admin */   
   function gb_maillist_view_list_page($tid) {
