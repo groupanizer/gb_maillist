@@ -441,7 +441,7 @@
     array(
       'module' => 'gb_member',
       'class' => 'gb_member_roles',
-      'item' => 'gb_member_role_music_team',
+      'item' => 'gb_member_role_music_team_member',
     ));
     
     $create_board(t('Board Members'), t('board'), $roles['board_member'], 
