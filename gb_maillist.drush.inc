@@ -270,6 +270,7 @@
     module_load_include('inc', 'mimemail', 'includes/mimemail.incoming');
     $email = mimemail_parse($source); // parse e-mail into array
     
+    /*
     if (variable_get('gb_maillist_attach_email_source', FALSE)) {
       $email['attachments'][] = array(
         'filename' => 'source.txt',
@@ -277,7 +278,7 @@
         'content'  => $source,
         'cid'      => NULL,
       );
-    }
+    }*/
 
     $to = isset($email['headers']['delivered-to']) ? 
         $email['headers']['delivered-to'] : 
@@ -367,9 +368,6 @@
         ->fields(array(
           'tid' => $tid,
           'list_type' => _MAILING_LIST_TYPE_STANDARD,
-          'reply_to_type' => _STANDARD_REPLY_TO_TYPE_MAILING_LIST,
-          'reply_to_email' => NULL,
-          'from_email' => NULL,
         ))
         ->execute();
       

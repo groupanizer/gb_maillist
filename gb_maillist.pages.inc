@@ -135,6 +135,7 @@
     $is_admin = user_access('administer forums');
         
     if ($is_admin) {
+      // Display MX record warnings (missing or not pointed to us)
       $mxhosts = array();
       if (!getmxrr($domain, $mxhosts)) {
         drupal_set_message(t("No MX records were found for {$domain}." .
@@ -149,6 +150,22 @@
             " this site. Contact your DNS provider/host for assistance."), 
             'warning'); 
       }
+                         
+      // Display warnings if incoming or outgoing mail is disabled
+      if (variable_get('gb_maillist_incoming_disabled', FALSE)) {
+        drupal_set_message(
+            t('Incoming e-mail are turned off. You can turn them on !here.', 
+            array('!here' => l('here', 'admin/config/groupanizer/maillists'))), 
+            'warning');
+      }
+      
+      if (variable_get('gb_maillist_outgoing_disabled', FALSE)) {
+        drupal_set_message(
+            t('Outgoing e-mail are turned off. You can turn them on !here.', 
+            array('!here' => l('here', 'admin/config/groupanizer/maillists'))), 
+            'warning');
+      }
+      
     }
     
     $action_markup = function($tid, $admin, $container) use ($base) {

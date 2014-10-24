@@ -15,7 +15,6 @@
     variable_set('gb_maillist_incoming_disabled', FALSE);
     variable_set('gb_maillist_outgoing_disabled', FALSE);
     variable_set('gb_maillist_send_copy_to_sender', FALSE);
-    variable_set('gb_maillist_attach_email_source', FALSE);
     
     // Re-build permissions for forum_access
     node_access_rebuild();
@@ -31,7 +30,6 @@
     variable_del('gb_maillist_incoming_disabled');
     variable_del('gb_maillist_outgoing_disabled');
     variable_del('gb_maillist_send_copy_to_sender');
-    variable_del('gb_maillist_attach_email_source');
   }
   
   /**
