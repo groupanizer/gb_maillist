@@ -277,3 +277,30 @@
     });
   }
   
+  /** @return boolean */
+  function _delete_all_email_records_for_tid($tid) {
+    return _safe_closure(function () use ($tid) {
+      db_delete('gb_maillist_email_records')
+        ->condition('tid', $tid)
+        ->execute();
+        
+      return TRUE;
+    });
+  }
+  
+  /** @return boolean */
+  function _insert_email_record($tid, $id, $type, $email) {
+    return _safe_closure(function () use ($tid, $id, $type, $email) {
+      db_insert('gb_maillist_emails')
+        ->fields(array(
+          'tid' => $tid,
+          'id' => $id,
+          'type' => $type,
+          'email' => $email,
+        ))
+        ->execute();
+        
+      return TRUE;
+    });
+  }
+  

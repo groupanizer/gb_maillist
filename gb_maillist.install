@@ -271,9 +271,15 @@
           'alias' => array('alias',),
         ),
       ), // gb_maillist_aliases
-      'gb_maillist_email_records' => array(
+      'gb_maillist_emails' => array(
         'description' => t('A record of all mail that has been sent/received.'),
         'fields' => array(
+          'tid' => array(
+            'description' => t('The tid of the forum this data is bound to'),
+            'type' => 'int',
+            'not null' => TRUE,
+            'unsigned' => TRUE,
+          ),
           'id' => array(
             'description' => t('The node or comment id of the post.'),
             'type' => 'int',
@@ -288,8 +294,8 @@
           ),
           'email' => array(
             'description' => t('The original e-mail.'),
-            'type' => 'text',
-            'size' => 'medium',
+            'type' => 'blob',
+            'size' => 'big',
             'not null' => TRUE,
           ),
         ), // fields
@@ -339,9 +345,15 @@
    */
   function gb_maillist_update_7106() {
     // Create new table of e-mail records
-    $schema['gb_maillist_email_records'] = array(
+    $schema['gb_maillist_emails'] = array(
       'description' => t('A record of all mail that has been sent/received.'),
       'fields' => array(
+        'tid' => array(
+          'description' => t('The tid of the forum this data is bound to'),
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE,
+        ),
         'id' => array(
           'description' => t('The node or comment id of the post.'),
           'type' => 'int',
@@ -356,8 +368,8 @@
         ),
         'email' => array(
           'description' => t('The original e-mail.'),
-          'type' => 'text',
-          'size' => 'medium',
+          'type' => 'blob',
+          'size' => 'big',
           'not null' => TRUE,
         ),
       ), // fields
@@ -366,8 +378,8 @@
       ),
     );
     
-    db_create_table('gb_maillist_email_records', 
-        $schema['gb_maillist_email_records']);
+    db_create_table('gb_maillist_emails', 
+        $schema['gb_maillist_emails']);
         
     // Drop older deprecated tables
     db_drop_field('gb_maillist_metadata', 'reply_to_type');
