@@ -179,7 +179,7 @@
     if ($in_reply) {
        $subject = "RE: {$subject}"; 
     }
-    $bounces = "{$alias}@{$domain}"; //"bounces@{$domain}";
+    $bounces = "bounces@{$domain}";
     $sender = "{$alias}@{$domain}";
     $reply_to = "\"{$alias}\" <{$sender}>";
     $from = "\"{$username} via {$alias}\" <{$sender}>";
