@@ -285,6 +285,7 @@
     
     $update = !$node->is_new;
     if (_in_cli()) {
+      watchdog('gb_maillist', 'We did it!');
       global $_received_body;
       $body = $_received_body;
     } else {
