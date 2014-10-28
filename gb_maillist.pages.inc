@@ -11,10 +11,11 @@
     if (!is_numeric($nid)) {
       return t('Invalid nid specified');
     }
-    if (!is_numeric($cid)) {
+    if (!is_numeric($cid) && $cid !== 'NULL') {
       return t('Invalid cid specified');
     }
     
+    if ($cid == 0 || $cid === 'NULL') $cid = NULL;
     $source = db_query('SELECT r.source FROM {gb_maillist_received_email} r' .
         ' WHERE r.tid = :tid AND r.nid = :nid AND r.cid = :cid', 
         array(':tid' => $tid, ':nid' => $nid, ':cid' => $cid,))->fetchField();
