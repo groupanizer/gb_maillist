@@ -36,16 +36,6 @@
     }
   }
   
-  /** Implements hook_mimemail_incoming */
-  function gb_maillist_mimemail_incoming($email) {
-    //
-  }
-  
-  /** Implements hook_mimemail_incoming_alter */
-  function gb_maillist_mimemail_incoming_alter($email) {
-    //
-  }
-  
   // Extract only the e-mails from any RFC compliant header
   // e.g. Smith, John <(john@cox.net)>
   function _parse_string_for_emails($string) {
@@ -292,16 +282,6 @@
     $source = file_get_contents($file_uri);
     module_load_include('inc', 'mimemail', 'includes/mimemail.incoming');
     $email = mimemail_parse($source); // parse e-mail into array
-    
-    /*
-    if (variable_get('gb_maillist_attach_email_source', FALSE)) {
-      $email['attachments'][] = array(
-        'filename' => 'source.txt',
-        'filemime' => 'text/plain',
-        'content'  => $source,
-        'cid'      => NULL,
-      );
-    }*/
 
     $to = isset($email['headers']['delivered-to']) ? 
         $email['headers']['delivered-to'] : 
@@ -340,11 +320,11 @@
     
     // Try and load a user from the sender's e-mail
     $account = user_load_by_mail($sender);
-    if (!$account) {
+    if (!$account) { // try and load from multiple_email
       $uid = db_query('SELECT m.uid FROM {multiple_email} m' .
           ' WHERE m.email = :email', array(':email' => $sender))->fetchField();
       if ($uid) {
-        $account = user_load($uid); // try and load from alt e-mail
+        $account = user_load($uid);
       } 
       if (!$account) { // give up and load anonymous user
         $account = user_load(0);
@@ -371,6 +351,11 @@
     // Maillist depends on the global $user object
     global $user;
     $user = $account;
+    
+    // Store the parsed body in a global object so we can send it out
+    // without putting it through the node filters
+    global $_received_body;
+    $_received_body = $email['html'];
     
     // Post it 
     _post_to_forum($tid, $alias, $source, $email, $account);

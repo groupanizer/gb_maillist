@@ -280,13 +280,21 @@
     
     $metadata = _fetch_list_metadata_for_tid($tid);
     if (!$metadata) {
-      return; // There is no mailing list attached to this forum
+      return; // there is no mailing list attached to this forum
     }
     
     $update = !$node->is_new;
-    $body = $node->body[LANGUAGE_NONE][0]['value'];
-    //$plain = ($node->body[LANGUAGE_NONE][0]['format'] === 'plain_text');
-    $plain = FALSE; // always send HTML
+    if (_in_cli()) {
+      global $_received_body;
+      $body = $_received_body;
+    } else {
+      $body = $node->body[LANGUAGE_NONE][0]['value'];
+    }
+    if (0) {
+      $plain = ($node->body[LANGUAGE_NONE][0]['format'] === 'plain_text');
+    } else {
+      $plain = FALSE; // always send HTML
+    }
     $subject = $node->title;
     $fids = array();
     if (isset($node->field_attachment[LANGUAGE_NONE])) {
@@ -329,11 +337,18 @@
         $update = TRUE;
       }
     }
-    
-    $comment_body = $comment->comment_body[LANGUAGE_NONE][0];
-    //$plain = ($comment_body['format'] === 'plain_text');
-    $plain = FALSE;
-    $body = $comment_body['value'];
+    if (_in_cli()) {
+      global $_received_body;
+      $body = $_received_body;
+    } else {
+      $body = $comment->comment_body[LANGUAGE_NONE][0]['value'];
+    }
+    if (0) {
+       $plain = ($comment->comment_body[LANGUAGE_NONE][0]['format'] 
+          == 'plain_text');
+    } else {
+      $plain = FALSE; // always send HTML
+    }
     $subject = $comment->subject;
     $fids = array();
     if (isset($comment->field_attachment[LANGUAGE_NONE])) {
