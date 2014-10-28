@@ -7,8 +7,9 @@
    */
 
   // These are postfix-specfic errors
-  define('EX_SOFTWARE', 70);
+  define('EX_DATAERR', 65);
   define('EX_NOUSER', 67);
+  define('EX_SOFTWARE', 70);
   define('EX_NOPERM', 77);
   
   /** Implements hook_drush_command */
@@ -164,6 +165,8 @@
             ' ADD UNIQUE INDEX dupidx (nid, tid, created)');
         db_query('ALTER TABLE forum_index DROP INDEX dupidx');
       }
+      
+      return $node->nid;
     } catch (Exception $e) {
       watchdog_exception('gb_maillist', $e);
     }
@@ -195,12 +198,14 @@
       }
       comment_submit($comment);
       comment_save($comment);
+      
+      return $comment->cid;
     } catch (Exception $e) {
       watchdog_exception('gb_maillist', $e);
     } 
   }
 
-  function _post_to_forum($tid, $alias, $email, $account) {
+  function _post_to_forum($tid, $alias, $source, $email, $account) {
     $domain = g3core_get_domain();
     
     // Try and locate the forum topic via In-Reply-To: <$tid.$nid@$domain>
@@ -221,7 +226,12 @@
               ->fieldCondition('taxonomy_forums', 'tid', $inreplyto_tid)
               ->execute();
           if ($result && count($result)) {
-            return _post_comment_to_topic($inreplyto_nid, $email, $account); 
+            $cid = _post_comment_to_topic($inreplyto_nid, $email, $account);
+            if ($cid) {
+              _insert_received_email_record($tid, $inreplyto_nid, $cid, 
+                  $source, $email['html']);
+            }
+            return; 
           }
         }
       }
@@ -241,15 +251,21 @@
         ->execute();
     if ($result && count($result)) {
       $node = reset($result['node']); // take the first match
-      return _post_comment_to_topic($node->nid, $email, $account);
+      $cid = _post_comment_to_topic($node->nid, $email, $account);
+      if ($cid) {
+        _insert_received_email_record($tid, $node->nid, $cid, 
+            $source, $email['html']);
+      }
+      return;
     }    
    
     // Couldn't find the topic!
-    _post_new_topic($tid, $email, $account);
+    $nid = _post_new_topic($tid, $email, $account);
+    if ($nid) {
+      _insert_received_email_record($tid, $nid, NULL, $source, $email['html']);
+    }
   }
   
-  /** @todo check multi email */
-  /** @todo send multi email, in spreadsheet/requirements*/
   function drush_gb_maillist_incoming_mail() {
     if (variable_get('gb_maillist_incoming_disabled', FALSE)) {
       watchdog('gb_maillist', 'Rejecting incoming mail because incoming' .
@@ -265,6 +281,13 @@
     if (substr($file_uri, -2) == "\x03\n") {
       $file_uri = substr($file_uri, 0, strlen($file_uri) - 2);
     }
+    
+    // Check if e-mail is too large
+    if (filesize($file_uri) > variable_get('gb_maillist_email_max_size')) {
+      watchdog('gb_maillist', 'Mail rejected: e-mail is too large.');
+      exit(EX_DATAERR);
+    }
+    
     // Read filename from STDIN as it was piped in
     $source = file_get_contents($file_uri);
     module_load_include('inc', 'mimemail', 'includes/mimemail.incoming');
@@ -306,7 +329,7 @@
       watchdog('gb_maillist', 'Terminated potential infinite loop.');
       return; // Don't bounce nor reply
     }
-    
+
     // Does a forum with alias $alias exist?
     $record = _check_for_alias_record($alias);
     if (!$record) {
@@ -314,7 +337,7 @@
       exit(EX_NOUSER);
     }
     $tid = $record->tid;
-   
+    
     // Try and load a user from the sender's e-mail
     $account = user_load_by_mail($sender);
     if (!$account) {
@@ -350,7 +373,7 @@
     $user = $account;
     
     // Post it 
-    _post_to_forum($tid, $alias, $email, $account);
+    _post_to_forum($tid, $alias, $source, $email, $account);
   }
 
   function drush_gb_maillist_setup_boards() {
