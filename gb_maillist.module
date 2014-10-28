@@ -774,15 +774,15 @@
     $form['parent'][0]['#description'] = t('Boards may be placed at the top' .
         ' (root) level, or inside another container or board');
     $form['weight']['#description'] = t('Boards are displayed in ascending' . 
-        ' order by weight (baords with equal weights are displayed' .
+        ' order by weight (boards with equal weights are displayed' .
         ' alphabetically).');
         
     // Do the same for forum_access elements
     $form['forum_access']['template']['taxonomy'][1]['#title'] = 
         t('Template board');
     $form['forum_access']['template']['taxonomy'][1]['#description'] = 
-        t('Select a board and click [Load] to retrieve that baords\'s' .
-        ' settings as a starting point for this baord or container.');
+        t('Select a board and click [Load] to retrieve that boards\'s' .
+        ' settings as a starting point for this board or container.');
     $form['forum_access']['template']['load_for_new']['#title'] = t('Use the' .
         ' selected forum\'s settings as defaults for new forums and' .
         ' containers.');
