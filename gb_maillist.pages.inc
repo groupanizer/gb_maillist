@@ -4,18 +4,20 @@
   
 
   /** Page to show the original e-mail source to admins */ 
-  function gb_maillist_view_source_page($id, $type) {
-    if ($type != 'comment' && $type != 'node') {
-      return t('Invalid type specified');
+  function gb_maillist_view_source_page($tid, $nid, $cid) {
+    if (!is_numeric($tid)) {
+      return t('Invalid tid specified');
     }
-    
-    if (!is_numeric($id)) {
-      return t('Invalid id specified');
+    if (!is_numeric($nid)) {
+      return t('Invalid nid specified');
+    }
+    if (!is_numeric($cid)) {
+      return t('Invalid cid specified');
     }
     
     $source = db_query('SELECT r.email FROM {gb_maillist_email_records} r' .
-        ' WHERE r.type = :type AND r.id = :id', 
-        array(':type' => $type, ':id' => $id,))->fetchField();
+        ' WHERE r.tid = :tid AND r.nid = :nid AND r.cid = :cid', 
+        array(':tid' => $tid, ':nid' => $nid, ':cid' => $cid,))->fetchField();
     if (!$source) {
       return t('Oops...');
     }

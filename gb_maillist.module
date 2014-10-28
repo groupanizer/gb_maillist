@@ -885,10 +885,10 @@
    */
   function gb_maillist_menu() {
     return array(
-      'g/comm/maillist/source/%/%' => array(
+      'g/comm/maillist/source/%/%/%' => array(
         'title' => t('View the original e-mail source'),
         'page callback' => 'gb_maillist_view_source_page',
-        'page arguments' => array(4 ,5), // id, type as arguments
+        'page arguments' => array(4 ,5, 6), // tid, nid, cid as arguments
         'access arguments' => array('administer forums'),
         'file' => 'gb_maillist.pages.inc',
         'type' => MENU_CALLBACK,
@@ -974,7 +974,7 @@
    * Implements hook_admin_paths_alter()
    */
   function gb_maillist_admin_paths_alter(&$paths) {
-    $paths['g/comm/maillist/source/%/%'] = TRUE;
+    $paths['g/comm/maillist/source/%/%/%'] = TRUE;
     $paths['g/comm/maillist/view/%'] = TRUE;
     $paths['g/comm/maillist/export/%'] = TRUE;
     $paths['g/comm/maillist/unsubscribe/%/%'] = TRUE;
@@ -985,7 +985,7 @@
    */
   function gb_maillist_admin_paths() {
     return array(
-      'g/comm/maillist/source/%/%' => TRUE,
+      'g/comm/maillist/source/%/%/%' => TRUE,
       'g/comm/maillist/view/%' => TRUE,
       'g/comm/maillist/export/%' => TRUE,
       'g/comm/maillist/unsubscribe/%/%' => TRUE,
