@@ -7,7 +7,8 @@
    */
   function gb_maillist_install() {
     // Has to be after forum access, so we can edit their form modifications
-    db_query("UPDATE system SET weight = 3 WHERE type = 'module' AND name = 'gb_maillist'");
+    db_query("UPDATE system SET weight = 3 WHERE type = 'module' AND" .
+        " name = 'gb_maillist'");
 
     variable_set('gb_maillist_filter_format', 'advanced');
     variable_set('gb_maillist_email_max_size', 10 * 1024 * 1024); // 10 MB
@@ -15,7 +16,6 @@
     variable_set('gb_maillist_incoming_disabled', FALSE);
     variable_set('gb_maillist_outgoing_disabled', FALSE);
     variable_set('gb_maillist_send_copy_to_sender', FALSE);
-    variable_set('gb_maillist_attach_email_source', FALSE);
     
     // Re-build permissions for forum_access
     node_access_rebuild();
@@ -31,7 +31,6 @@
     variable_del('gb_maillist_incoming_disabled');
     variable_del('gb_maillist_outgoing_disabled');
     variable_del('gb_maillist_send_copy_to_sender');
-    variable_del('gb_maillist_attach_email_source');
   }
   
   /**
@@ -171,11 +170,12 @@
             'unsigned' => TRUE,
           ),
           'list_type' => array(
-            'description' => t('The type of list (broadcast or standard)'),
+            'description' => t('The type of list'),
             'type' => 'int',
             'not nulll' => TRUE,
             'size' => 'tiny',
           ),
+          /*
           'reply_to_type' => array(
             'description' => t('The type of reply-to for a list'),
             'type' => 'int',
@@ -197,7 +197,7 @@
             'not null' => FALSE,
             'default' => NULL,
             'length' => _EMAIL_ADDRESS_MAX_LENGTH,
-          ),
+          ),*/
         ), // fields
         'unique keys' => array(
           'tid' => array('tid',),
@@ -272,6 +272,45 @@
           'alias' => array('alias',),
         ),
       ), // gb_maillist_aliases
+      'gb_maillist_received_email' => array(
+        'description' => t('A record of e-mail that have been received'),
+        'fields' => array(
+          'tid' => array(
+            'description' => t('The tid of the forum this data is bound to'),
+            'type' => 'int',
+            'not null' => TRUE,
+            'unsigned' => TRUE,
+          ),
+          'nid' => array(
+            'description' => t('The node id of the forum topic'),
+            'type' => 'int',
+            'not null' => TRUE,
+            'unsigned' => TRUE,
+          ),
+          'cid' => array(
+            'description' => t('(optional) The comment id of the comment'),
+            'type' => 'int',
+            'not null' => FALSE,
+            'unsigned' => TRUE,
+            'default' => NULL,
+          ),
+          'source' => array(
+            'description' => t('The original e-mail content'),
+            'type' => 'blob',
+            'size' => 'big',
+            'not null' => TRUE,
+          ),
+          'html' => array(
+            'description' => t('The parsed HTML portion of the e-mail'),
+            'type' => 'blob',
+            'size' => 'big',
+            'not null' => TRUE,
+          ),
+        ), // fields
+        'unique keys' => array(
+          'alias' => array('tid','nid', 'cid'),
+        ),
+      ), // gb_maillist_received_email
     ); 
   }
 
@@ -308,4 +347,57 @@
         ' WHERE m.reply_to_type <> 1}');
   }
   
+  /**
+   * Create table {gb_maillist_received_email} and drop some deprecated columns.
+   */
+  function gb_maillist_update_7106() {
+    // Create new table of received e-mails
+    $schema['gb_maillist_received_email'] = array(
+     'description' => t('A record of e-mail that have been received'),
+      'fields' => array(
+        'tid' => array(
+          'description' => t('The tid of the forum this data is bound to'),
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE,
+        ),
+        'nid' => array(
+          'description' => t('The node id of the forum topic'),
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE,
+        ),
+        'cid' => array(
+          'description' => t('(optional) The comment id of the comment'),
+          'type' => 'int',
+          'not null' => FALSE,
+          'unsigned' => TRUE,
+          'default' => NULL,
+        ),
+        'source' => array(
+          'description' => t('The original e-mail content'),
+          'type' => 'blob',
+          'size' => 'big',
+          'not null' => TRUE,
+        ),
+        'html' => array(
+          'description' => t('The parsed HTML portion of the e-mail'),
+          'type' => 'blob',
+          'size' => 'big',
+          'not null' => TRUE,
+        ),
+      ), // fields
+      'unique keys' => array(
+        'alias' => array('tid','nid', 'cid'),
+      ),
+    );
+    
+    db_create_table('gb_maillist_received_email', 
+        $schema['gb_maillist_received_email']);
+        
+    // Drop older deprecated columns
+    db_drop_field('gb_maillist_metadata', 'reply_to_type');
+    db_drop_field('gb_maillist_metadata', 'reply_to_email');  
+    db_drop_field('gb_maillist_metadata', 'from_email');
+  }
  

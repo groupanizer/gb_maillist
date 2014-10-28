@@ -32,11 +32,6 @@
         $this->result = FALSE;
         
         watchdog_exception('gb_maillist', $e);
-        
-        /*
-        $message = t('Caught exception: %e.', array('%e' => $e->getMessage()));
-        watchdog('gb_maillist', $message);
-         */
       }
       
       return $this->result;
@@ -129,14 +124,8 @@
    * 
    * @return boolean
    */
-  function _build_and_insert_list_records_for_tid($tid, &$values) {
+  function _build_and_merge_list_records_for_tid($tid, &$values) {
     return _safe_closure(function () use ($tid, $values) {
-      if ($values['list_type'] == _MAILING_LIST_TYPE_BROADCAST) {
-        $reply_to_type = $values['broadcast_reply_to_type']; 
-      } else {
-        $reply_to_type = $values['standard_reply_to_type'];
-      }
-      
       // We are attaching a list
       // build and write our query for gb_maillist_metadata
       // db_merge will handle update & insert
@@ -144,9 +133,6 @@
         ->key(array('tid' => $tid))
         ->fields(array(
           'list_type' => $values['list_type'],
-          'reply_to_type' => $reply_to_type,
-          'reply_to_email' => $values['reply_to_email'],
-          'from_email' => $values['from_email'],
         ))
         ->execute();
       // MergeQuery::STATUS_UPDATE or MeryQuery::STATUS_INSERT
@@ -283,6 +269,34 @@
         ->condition('tid', $tid, '=')
         ->execute()
         ->fetchCol();
+    });
+  }
+  
+  /** @return boolean */
+  function _delete_all_received_email_records_for_tid($tid) {
+    return _safe_closure(function () use ($tid) {
+      db_delete('gb_maillist_received_email')
+        ->condition('tid', $tid)
+        ->execute();
+        
+      return TRUE;
+    });
+  }
+  
+  /** @return boolean */
+  function _insert_received_email_record($tid, $nid, $cid, $source, $html) {
+    return _safe_closure(function () use ($tid, $nid, $cid, $source, $html) {
+      db_insert('gb_maillist_received_email')
+        ->fields(array(
+          'tid' => $tid,
+          'nid' => $nid,
+          'cid' => $cid,
+          'source' => $source,
+          'html' => $html,
+        ))
+        ->execute();
+        
+      return TRUE;
     });
   }
   

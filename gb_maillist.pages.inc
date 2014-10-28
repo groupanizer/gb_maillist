@@ -1,6 +1,40 @@
 <?php
 
   module_load_include('inc', 'g3core', 'g3core.utils');
+  
+
+  /** Page to show the original e-mail source to admins */ 
+  function gb_maillist_view_source_page($tid, $nid, $cid) {
+    if (!is_numeric($tid)) {
+      return t('Invalid tid specified');
+    }
+    if (!is_numeric($nid)) {
+      return t('Invalid nid specified');
+    }
+    if (!is_numeric($cid) && !is_null($cid)) {
+      return t('Invalid cid specified');
+    }
+    
+    if ($cid) {
+      $source = db_query('SELECT r.source FROM {gb_maillist_received_email} r' .
+          ' WHERE r.tid = :tid AND r.nid = :nid AND r.cid = :cid', 
+          array(':tid' => $tid, ':nid' => $nid, ':cid' => $cid,))->fetchField();
+    } else {
+      $source = db_query('SELECT r.source FROM {gb_maillist_received_email} r' .
+          ' WHERE r.tid = :tid AND r.nid = :nid AND r.cid is NULL', 
+          array(':tid' => $tid, ':nid' => $nid,))->fetchField();
+    }
+    if (!$source) {
+      return t('Oops...');
+    }
+     
+    drupal_add_http_header('Content-Type', 
+        'text/plain; charset="ISO-8859-1"');
+    drupal_add_http_header('Content-Disposition', 
+        'attachment; filename="source.txt"');
+    print($source);
+    drupal_exit();
+  }
 
   /** Page to show the emails of a list to the admin */   
   function gb_maillist_view_list_page($tid) {
@@ -109,6 +143,7 @@
     $is_admin = user_access('administer forums');
         
     if ($is_admin) {
+      // Display MX record warnings (missing or not pointed to us)
       $mxhosts = array();
       if (!getmxrr($domain, $mxhosts)) {
         drupal_set_message(t("No MX records were found for {$domain}." .
@@ -123,6 +158,22 @@
             " this site. Contact your DNS provider/host for assistance."), 
             'warning'); 
       }
+                         
+      // Display warnings if incoming or outgoing mail is disabled
+      if (variable_get('gb_maillist_incoming_disabled', FALSE)) {
+        drupal_set_message(
+            t('Incoming e-mail are turned off. You can turn them on !here.', 
+            array('!here' => l('here', 'admin/config/groupanizer/maillists'))), 
+            'warning');
+      }
+      
+      if (variable_get('gb_maillist_outgoing_disabled', FALSE)) {
+        drupal_set_message(
+            t('Outgoing e-mail are turned off. You can turn them on !here.', 
+            array('!here' => l('here', 'admin/config/groupanizer/maillists'))), 
+            'warning');
+      }
+      
     }
     
     $action_markup = function($tid, $admin, $container) use ($base) {

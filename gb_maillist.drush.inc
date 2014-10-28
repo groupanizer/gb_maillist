@@ -7,8 +7,9 @@
    */
 
   // These are postfix-specfic errors
-  define('EX_SOFTWARE', 70);
+  define('EX_DATAERR', 65);
   define('EX_NOUSER', 67);
+  define('EX_SOFTWARE', 70);
   define('EX_NOPERM', 77);
   
   /** Implements hook_drush_command */
@@ -33,16 +34,6 @@
     case 'drush:setup_boards':
         return dt('Sets up the default message boards/mailing lists.');
     }
-  }
-  
-  /** Implements hook_mimemail_incoming */
-  function gb_maillist_mimemail_incoming($email) {
-    //
-  }
-  
-  /** Implements hook_mimemail_incoming_alter */
-  function gb_maillist_mimemail_incoming_alter($email) {
-    //
   }
   
   // Extract only the e-mails from any RFC compliant header
@@ -164,6 +155,8 @@
             ' ADD UNIQUE INDEX dupidx (nid, tid, created)');
         db_query('ALTER TABLE forum_index DROP INDEX dupidx');
       }
+      
+      return $node->nid;
     } catch (Exception $e) {
       watchdog_exception('gb_maillist', $e);
     }
@@ -195,12 +188,14 @@
       }
       comment_submit($comment);
       comment_save($comment);
+      
+      return $comment->cid;
     } catch (Exception $e) {
       watchdog_exception('gb_maillist', $e);
     } 
   }
 
-  function _post_to_forum($tid, $alias, $email, $account) {
+  function _post_to_forum($tid, $alias, $source, $email, $account) {
     $domain = g3core_get_domain();
     
     // Try and locate the forum topic via In-Reply-To: <$tid.$nid@$domain>
@@ -221,7 +216,12 @@
               ->fieldCondition('taxonomy_forums', 'tid', $inreplyto_tid)
               ->execute();
           if ($result && count($result)) {
-            return _post_comment_to_topic($inreplyto_nid, $email, $account); 
+            $cid = _post_comment_to_topic($inreplyto_nid, $email, $account);
+            if ($cid) {
+              _insert_received_email_record($tid, $inreplyto_nid, $cid, 
+                  $source, $email['html']);
+            }
+            return; 
           }
         }
       }
@@ -241,15 +241,21 @@
         ->execute();
     if ($result && count($result)) {
       $node = reset($result['node']); // take the first match
-      return _post_comment_to_topic($node->nid, $email, $account);
+      $cid = _post_comment_to_topic($node->nid, $email, $account);
+      if ($cid) {
+        _insert_received_email_record($tid, $node->nid, $cid, 
+            $source, $email['html']);
+      }
+      return;
     }    
    
     // Couldn't find the topic!
-    _post_new_topic($tid, $email, $account);
+    $nid = _post_new_topic($tid, $email, $account);
+    if ($nid) {
+      _insert_received_email_record($tid, $nid, NULL, $source, $email['html']);
+    }
   }
   
-  /** @todo check multi email */
-  /** @todo send multi email, in spreadsheet/requirements*/
   function drush_gb_maillist_incoming_mail() {
     if (variable_get('gb_maillist_incoming_disabled', FALSE)) {
       watchdog('gb_maillist', 'Rejecting incoming mail because incoming' .
@@ -265,19 +271,17 @@
     if (substr($file_uri, -2) == "\x03\n") {
       $file_uri = substr($file_uri, 0, strlen($file_uri) - 2);
     }
+    
+    // Check if e-mail is too large
+    if (filesize($file_uri) > variable_get('gb_maillist_email_max_size')) {
+      watchdog('gb_maillist', 'Mail rejected: e-mail is too large.');
+      exit(EX_DATAERR);
+    }
+    
     // Read filename from STDIN as it was piped in
     $source = file_get_contents($file_uri);
     module_load_include('inc', 'mimemail', 'includes/mimemail.incoming');
     $email = mimemail_parse($source); // parse e-mail into array
-    
-    if (variable_get('gb_maillist_attach_email_source', FALSE)) {
-      $email['attachments'][] = array(
-        'filename' => 'source.txt',
-        'filemime' => 'text/plain',
-        'content'  => $source,
-        'cid'      => NULL,
-      );
-    }
 
     $to = isset($email['headers']['delivered-to']) ? 
         $email['headers']['delivered-to'] : 
@@ -305,7 +309,7 @@
       watchdog('gb_maillist', 'Terminated potential infinite loop.');
       return; // Don't bounce nor reply
     }
-    
+
     // Does a forum with alias $alias exist?
     $record = _check_for_alias_record($alias);
     if (!$record) {
@@ -313,14 +317,14 @@
       exit(EX_NOUSER);
     }
     $tid = $record->tid;
-   
+    
     // Try and load a user from the sender's e-mail
     $account = user_load_by_mail($sender);
-    if (!$account) {
+    if (!$account) { // try and load from multiple_email
       $uid = db_query('SELECT m.uid FROM {multiple_email} m' .
           ' WHERE m.email = :email', array(':email' => $sender))->fetchField();
       if ($uid) {
-        $account = user_load($uid); // try and load from alt e-mail
+        $account = user_load($uid);
       } 
       if (!$account) { // give up and load anonymous user
         $account = user_load(0);
@@ -348,8 +352,13 @@
     global $user;
     $user = $account;
     
+    // Store the parsed body in a global object so we can send it out
+    // without putting it through the node filters
+    global $_received_body;
+    $_received_body = $email['html'];
+    
     // Post it 
-    _post_to_forum($tid, $alias, $email, $account);
+    _post_to_forum($tid, $alias, $source, $email, $account);
   }
 
   function drush_gb_maillist_setup_boards() {
@@ -367,9 +376,6 @@
         ->fields(array(
           'tid' => $tid,
           'list_type' => _MAILING_LIST_TYPE_STANDARD,
-          'reply_to_type' => _STANDARD_REPLY_TO_TYPE_MAILING_LIST,
-          'reply_to_email' => NULL,
-          'from_email' => NULL,
         ))
         ->execute();
       
@@ -443,7 +449,7 @@
     array(
       'module' => 'gb_member',
       'class' => 'gb_member_roles',
-      'item' => 'gb_member_role_music_team',
+      'item' => 'gb_member_role_music_team_member',
     ));
     
     $create_board(t('Board Members'), t('board'), $roles['board_member'], 
