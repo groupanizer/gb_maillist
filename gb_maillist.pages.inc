@@ -15,7 +15,7 @@
       return t('Invalid cid specified');
     }
     
-    $source = db_query('SELECT r.email FROM {gb_maillist_email_records} r' .
+    $source = db_query('SELECT r.source FROM {gb_maillist_received_email} r' .
         ' WHERE r.tid = :tid AND r.nid = :nid AND r.cid = :cid', 
         array(':tid' => $tid, ':nid' => $nid, ':cid' => $cid,))->fetchField();
     if (!$source) {
