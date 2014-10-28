@@ -11,14 +11,19 @@
     if (!is_numeric($nid)) {
       return t('Invalid nid specified');
     }
-    if (!is_numeric($cid) && $cid !== 'NULL') {
+    if (!is_numeric($cid) && !is_null($cid)) {
       return t('Invalid cid specified');
     }
     
-    if ($cid == 0 || $cid === 'NULL') $cid = NULL;
-    $source = db_query('SELECT r.source FROM {gb_maillist_received_email} r' .
-        ' WHERE r.tid = :tid AND r.nid = :nid AND r.cid = :cid', 
-        array(':tid' => $tid, ':nid' => $nid, ':cid' => $cid,))->fetchField();
+    if ($cid) {
+      $source = db_query('SELECT r.source FROM {gb_maillist_received_email} r' .
+          ' WHERE r.tid = :tid AND r.nid = :nid AND r.cid = :cid', 
+          array(':tid' => $tid, ':nid' => $nid, ':cid' => $cid,))->fetchField();
+    } else {
+      $source = db_query('SELECT r.source FROM {gb_maillist_received_email} r' .
+          ' WHERE r.tid = :tid AND r.nid = :nid AND r.cid is NULL', 
+          array(':tid' => $tid, ':nid' => $nid,))->fetchField();
+    }
     if (!$source) {
       return t('Oops...');
     }
