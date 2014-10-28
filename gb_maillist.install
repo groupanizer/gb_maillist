@@ -348,8 +348,7 @@
   }
   
   /**
-   * Create new database table {gb_maillist_received_email} and drop some
-   * deprecated fields.
+   * Create table {gb_maillist_received_email} and drop some deprecated columns.
    */
   function gb_maillist_update_7106() {
     // Create new table of received e-mails
