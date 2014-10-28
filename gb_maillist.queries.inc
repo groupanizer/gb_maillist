@@ -32,11 +32,6 @@
         $this->result = FALSE;
         
         watchdog_exception('gb_maillist', $e);
-        
-        /*
-        $message = t('Caught exception: %e.', array('%e' => $e->getMessage()));
-        watchdog('gb_maillist', $message);
-         */
       }
       
       return $this->result;
@@ -129,7 +124,7 @@
    * 
    * @return boolean
    */
-  function _build_and_insert_list_records_for_tid($tid, &$values) {
+  function _build_and_merge_list_records_for_tid($tid, &$values) {
     return _safe_closure(function () use ($tid, $values) {
       // We are attaching a list
       // build and write our query for gb_maillist_metadata

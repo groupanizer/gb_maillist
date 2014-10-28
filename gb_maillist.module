@@ -745,7 +745,7 @@
     if (!$create) {
       $result = _delete_all_list_records_for_tid($tid);
     } else {
-      $result = _build_and_insert_list_records_for_tid($tid, $values);
+      $result = _build_and_merge_list_records_for_tid($tid, $values);
     }
     
     if (!$result) {
@@ -813,7 +813,8 @@
     $form['actions']['#weight'] = 6;
   }
 
-  /** Implements hook_page_alter()
+  /** 
+   * Implements hook_page_alter()
    * @param array $page array of elements that comprise the page
    */
   function gb_maillist_page_alter(&$page) {
@@ -935,7 +936,7 @@
   }
  
  /**
-  * Implements hook_menu_alter
+  * Implements hook_menu_alter()
   */
   function gb_maillist_menu_alter(&$items) {
     // Disable the forum page
@@ -973,6 +974,7 @@
    * Implements hook_admin_paths_alter()
    */
   function gb_maillist_admin_paths_alter(&$paths) {
+    $paths['g/comm/maillist/source/%/%'] = TRUE;
     $paths['g/comm/maillist/view/%'] = TRUE;
     $paths['g/comm/maillist/export/%'] = TRUE;
     $paths['g/comm/maillist/unsubscribe/%/%'] = TRUE;
@@ -983,6 +985,7 @@
    */
   function gb_maillist_admin_paths() {
     return array(
+      'g/comm/maillist/source/%/%' => TRUE,
       'g/comm/maillist/view/%' => TRUE,
       'g/comm/maillist/export/%' => TRUE,
       'g/comm/maillist/unsubscribe/%/%' => TRUE,
@@ -1050,9 +1053,8 @@
    */
   function gb_maillist_taxonomy_term_delete($term) {
     if ($term->vocabulary_machine_name == 'forums') {
-      if (!_delete_all_list_records_for_tid($term->tid)) {
-        drupal_set_message(t('Failed to query the database'), 'error');
-      }
+      _delete_all_list_records_for_tid($term->tid);
+      _delete_all_received_email_records_for_tid($term->tid);
     }
   }
   
