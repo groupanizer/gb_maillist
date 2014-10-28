@@ -274,6 +274,7 @@
   
   /** @return boolean */
   function _delete_all_received_email_records_for_tid($tid) {
+    /*
     return _safe_closure(function () use ($tid) {
       db_delete('gb_maillist_received_email')
         ->condition('tid', $tid)
@@ -281,10 +282,14 @@
         
       return TRUE;
     });
+     */
+     
+    return TRUE;
   }
   
   /** @return boolean */
   function _insert_received_email_record($tid, $nid, $cid, $source, $html) {
+    /*
     return _safe_closure(function () use ($tid, $nid, $cid, $source, $html) {
       db_insert('gb_maillist_received_email')
         ->fields(array(
@@ -297,6 +302,8 @@
         ->execute();
         
       return TRUE;
-    });
+    });*/
+    
+    return TRUE;
   }
   
