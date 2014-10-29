@@ -275,28 +275,36 @@
   /** @return boolean */
   function _delete_all_received_email_records_for_tid($tid) {
     return _safe_closure(function () use ($tid) {
-      db_delete('gb_maillist_received_email')
-        ->condition('tid', $tid)
-        ->execute();
-        
-      return TRUE;
+      if (db_table_exists('gb_maillist_received_email')) {
+        db_delete('gb_maillist_received_email')
+          ->condition('tid', $tid)
+          ->execute();
+          
+        return TRUE;
+      }
+      
+      return FALSE;
     });
   }
   
   /** @return boolean */
   function _insert_received_email_record($tid, $nid, $cid, $source, $html) {
     return _safe_closure(function () use ($tid, $nid, $cid, $source, $html) {
-      db_insert('gb_maillist_received_email')
-        ->fields(array(
-          'tid' => $tid,
-          'nid' => $nid,
-          'cid' => $cid,
-          'source' => $source,
-          'html' => $html,
-        ))
-        ->execute();
-        
-      return TRUE;
+      if (db_table_exists('gb_maillist_received_email')) {
+        db_insert('gb_maillist_received_email')
+          ->fields(array(
+            'tid' => $tid,
+            'nid' => $nid,
+            'cid' => $cid,
+            'source' => $source,
+            'html' => $html,
+          ))
+          ->execute();
+          
+        return TRUE;
+      }
+      
+      return FALSE;
     });
   }
   
