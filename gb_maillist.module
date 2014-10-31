@@ -90,14 +90,6 @@
     $blacklisted = _fetch_blacklisted_emails_for_tid($tid);
     $result = array_diff($result, $blacklisted);
     
-    // Remove the current user's e-mail (who is sending this e-mail)
-    if (!variable_get('gb_maillist_send_copy_to_sender', FALSE)) {
-      global $user;
-      if ($user->mail) {
-        $result = array_diff($result, array($user->mail));
-      }
-    }
-    
     // Give other modules a chance to alter the emails
     drupal_alter('outgoing_email_addresses', $result);
     
@@ -132,6 +124,7 @@
       $update, $plain, $attachment_fids, $in_reply) {
     $tid = $metadata['tid'];
     $list_type = $metadata['list_type'];
+    $user = g3core_get_user();
     
     $items = _fetch_list_items_for_tid($tid);
     if (empty($items)) {
@@ -141,14 +134,20 @@
     }
     
     $addresses = _fetch_outgoing_email_addresses($tid, $items);
+    // Remove the current user's e-mail (who is sending this e-mail)
+    // from the outgoing list
+    if (!variable_get('gb_maillist_send_copy_to_sender', FALSE)) {
+      if ($user->mail) {
+        $addresses = array_diff($addresses, array($user->mail));
+      }
+    }
+    
     if (empty($addresses)) { 
       drupal_set_message(t('Failed to retrieve any emails for list'), 'error');
       return;
     }
     
-    // Get some globals
     $base_url = _get_base_url();
-    $user = g3core_get_user();
     $domain = g3core_get_domain();
     
     // global $user is not a complete object, no fields
@@ -196,11 +195,7 @@
       $key = 'standard';
       // Variables passed to theme
       $tokens = array(
-        'tid' => $tid,
         'nid' => $nid,
-        'reply_to' => $reply_to,
-        'user' => $user,
-        'alias' => $alias,
       );
       $email = new EmailMimeEmail($key, $tokens);
       $email->set_paths($address, $from, $reply_to);
@@ -285,8 +280,8 @@
     
     $update = !$node->is_new;
     if (_in_cli()) {
-      global $_received_body;
-      $body = $_received_body;
+      global $_unfiltered_html;
+      $body = $_unfiltered_html;
     } else {
       $body = $node->body[LANGUAGE_NONE][0]['value'];
     }
@@ -338,8 +333,8 @@
       }
     }
     if (_in_cli()) {
-      global $_received_body;
-      $body = $_received_body;
+      global $_unfiltered_html;
+      $body = $_unfiltered_html;
     } else {
       $body = $comment->comment_body[LANGUAGE_NONE][0]['value'];
     }
@@ -491,8 +486,10 @@
         ' \'members@yourchorus.com\' or \'members, users\' if you wanted the' .
         ' e-mail addresses \'members@yourchorus.com\' and' .
         ' \'users@yourchorus.com\' to both point to this mailing list.' .
-        ' The only valid characters are lowercase letters and underscores.' .
-        ' Aliases must be unique.');
+        ' The only valid characters are lowercase letters, underscores and' .
+        ' full stops (periods). Full stops can\'t be the first or last' .
+        ' character and cannot be in sequence (\'a.b\' is legal but \'a..b\'' . 
+        ' is illegal). Aliases must be unique (can\'t occur more than once).');
     $fieldset['list_options']['aliases'] = array(
       '#type' => 'textfield',
       '#title' => t('List aliases'),
@@ -696,9 +693,9 @@
       if (empty($value)) {
         form_set_error('aliases', 
             t('Aliases must be unique and cannot be empty.'));
-      } elseif (!preg_match('/^[a-z_]+$/', $value)) {
+      } elseif (!preg_match('/^[a-z_]([a-z_]|\.[a-z_])+$/', $value)) {
         form_set_error('aliases', 
-            t("Alias '{$value}' contains illegal characters."));
+            t("Alias '{$value}' is not valid."));
       } else if (in_array($value, 
           variable_get('gb_maillist_reserved_aliases', array()))) {
         form_set_error('aliases', t("Alias '{$value}' is reserved."));
