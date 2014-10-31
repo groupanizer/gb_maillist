@@ -354,8 +354,8 @@
     
     // Store the parsed body in a global object so we can send it out
     // without putting it through the node filters
-    global $_received_body;
-    $_received_body = $email['html'];
+    global $_unfiltered_html;
+    $_unfiltered_html = $email['html'];
     
     // Post it 
     _post_to_forum($tid, $alias, $source, $email, $account);

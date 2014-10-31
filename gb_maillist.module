@@ -195,11 +195,7 @@
       $key = 'standard';
       // Variables passed to theme
       $tokens = array(
-        'tid' => $tid,
         'nid' => $nid,
-        'reply_to' => $reply_to,
-        'user' => $user,
-        'alias' => $alias,
       );
       $email = new EmailMimeEmail($key, $tokens);
       $email->set_paths($address, $from, $reply_to);
@@ -284,8 +280,8 @@
     
     $update = !$node->is_new;
     if (_in_cli()) {
-      global $_received_body;
-      $body = $_received_body;
+      global $_unfiltered_html;
+      $body = $_unfiltered_html;
     } else {
       $body = $node->body[LANGUAGE_NONE][0]['value'];
     }
@@ -337,8 +333,8 @@
       }
     }
     if (_in_cli()) {
-      global $_received_body;
-      $body = $_received_body;
+      global $_unfiltered_html;
+      $body = $_unfiltered_html;
     } else {
       $body = $comment->comment_body[LANGUAGE_NONE][0]['value'];
     }
