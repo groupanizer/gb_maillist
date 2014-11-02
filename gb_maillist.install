@@ -10,7 +10,7 @@
     db_query("UPDATE system SET weight = 3 WHERE type = 'module' AND" .
         " name = 'gb_maillist'");
 
-    variable_set('gb_maillist_filter_format', 'advanced');
+    variable_set('gb_maillist_filter_format', 'email_filter');
     variable_set('gb_maillist_email_max_size', 10 * 1024 * 1024); // 10 MB
     variable_set('gb_maillist_reserved_aliases', array('bounces'));
     variable_set('gb_maillist_incoming_disabled', FALSE);
