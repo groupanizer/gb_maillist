@@ -155,7 +155,8 @@
         drupal_set_message(t("No MX records were found for {$domain}" .
             " that point to the Groupanizer server." .
             " Until this is resolved you will be unable to receive e-mail to" . 
-            " this site. Contact your DNS provider/host for assistance."), 
+            " this site. Contact your DNS provider/host for assistance." .
+            " (Current records point to " . implode(', ', $mxhosts) . ")"), 
             'warning'); 
       }
                          
