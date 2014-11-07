@@ -256,7 +256,7 @@
     }
   }
 
-  function _email_contains_illegal_attachments($email) {
+  function _check_for_illegal_attachments($email) {
     if (!empty($email['attachments'])) {
       $executable_mimetypes = array(
         'application/x-msdownload',     // microsoft executable
@@ -272,18 +272,20 @@
       $info = field_info_instance('node', 'field_attachment', 'forum');
       $extensions = explode(' ', $info['settings']['file_extensions']);
       
+      mb_internal_encoding('utf-8');
+      
       foreach ($email['attachments'] as $attachment) {  
         // Check for executable mimetypes
         if (in_array(strtolower($attachment['filemime']), 
             $executable_mimetypes)) {
-          return TRUE;
+          return "Invalid MIME type '{$attachment['filemime']}'";
         }
         
         // Check if file extension is allowed
-        if (!in_array(
-            pathinfo(strtolower($attachment['filename']), PATHINFO_EXTENSION), 
-            $extensions)) {
-          return TRUE;
+        $extension = pathinfo(strtolower($attachment['filename']), 
+            PATHINFO_EXTENSION);
+        if (!in_array($extension, $extensions)) {
+          return "Invalid file extension '{$extension}'"; 
         }
 
         // Check for PE file
@@ -309,7 +311,7 @@
             $Signature = reset(unpack('L*', 
                 mb_strcut($content, $e_lfanew, 4, 'UTF-8')));
             if ($Signature == 0x4550) {;
-              return TRUE;
+              return 'An executable file has been detected';
             }
           } 
         }
@@ -401,9 +403,10 @@
       exit(EX_NOPERM);
     }
     
-    if (_email_contains_illegal_attachments($email)) {
-       watchdog('gb_maillist', 'Mail rejected:' . 
-          ' e-mail contains illegal attachments');
+    $result = _check_for_illegal_attachments($email);
+    if ($result !== FALSE) {
+       watchdog('gb_maillist', "Mail rejected:" . 
+          " e-mail contains illegal attachment(s). {$result}.");
       exit(EX_DATAERR);     
     }
     
