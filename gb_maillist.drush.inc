@@ -255,6 +255,71 @@
       _insert_received_email_record($tid, $nid, NULL, $source, $email['html']);
     }
   }
+
+  function _check_for_illegal_attachments($email) {
+    if (!empty($email['attachments'])) {
+      $executable_mimetypes = array(
+        'application/x-msdownload',     // microsoft executable
+        'application/octet-stream',     // binary file
+        'application/x-msdos-program',  // dos executable
+        'application/x-dosexec',        // dos executable
+        'application/java',             // java applet
+        'application/javascript',       // javascript
+        'application/x-executable',     // generic executable
+      );
+    
+      // Read allowed file extensions from forum attachment field instance
+      $info = field_info_instance('node', 'field_attachment', 'forum');
+      $extensions = explode(' ', $info['settings']['file_extensions']);
+      
+      mb_internal_encoding('utf-8');
+      
+      foreach ($email['attachments'] as $attachment) {  
+        // Check for executable mimetypes
+        if (in_array(strtolower($attachment['filemime']), 
+            $executable_mimetypes)) {
+          return "Invalid MIME type '{$attachment['filemime']}'";
+        }
+        
+        // Check if file extension is allowed
+        $extension = pathinfo(strtolower($attachment['filename']), 
+            PATHINFO_EXTENSION);
+        if (!in_array($extension, $extensions)) {
+          return "Invalid file extension '{$extension}'"; 
+        }
+
+        // Check for PE file
+        // could theoritically give false positives in very unlikely situations
+        // where a text file contains the exact bytes in order with a valid
+        // offset
+        if (is_string($attachment['content']) && 
+            !ctype_print($attachment['content'])) {
+          $content = $attachment['content'];
+          
+          // Check for DOS Signature which is a WORD 0x5A4D ('MZ')
+          // at offset 0 of the IMAGE_DOS_HEADER
+          $e_magic = reset(unpack('S*', mb_strcut($content, 0, 2, 'UTF-8')));
+          if ($e_magic == 0x5A4D) {
+            // Read $e_lfanew which is the offset to the NT headers
+            // which is a LONG located at 0x3C of the IMAGE_DOS_HEADER structure
+            $e_lfanew = reset(unpack('l*', 
+                mb_strcut($content, 0x3C, 4, 'UTF-8')));
+            
+            // Check the IMAGE_NT_HEADERS offset for the PE Signature
+            // which is a DWORD at offset 0 of the structure
+            // should be 0x00004550 ('PE\0\0')
+            $Signature = reset(unpack('L*', 
+                mb_strcut($content, $e_lfanew, 4, 'UTF-8')));
+            if ($Signature == 0x4550) {;
+              return 'An executable file has been detected';
+            }
+          } 
+        }
+      }
+    }
+    
+    return FALSE;
+  }
   
   function drush_gb_maillist_incoming_mail() {
     if (variable_get('gb_maillist_incoming_disabled', FALSE)) {
@@ -336,6 +401,13 @@
       watchdog('gb_maillist', "Mail rejected: user does not have permission " .
           "{$sender}, {$account->uid}.");
       exit(EX_NOPERM);
+    }
+    
+    $result = _check_for_illegal_attachments($email);
+    if ($result !== FALSE) {
+       watchdog('gb_maillist', "Mail rejected:" . 
+          " e-mail contains illegal attachment(s). {$result}.");
+      exit(EX_DATAERR);     
     }
     
     // Since the user is anonymous lets append something to the e-mail body
