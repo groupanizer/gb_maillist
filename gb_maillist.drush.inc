@@ -375,6 +375,16 @@
       return; // Don't bounce nor reply
     }
 
+    // If the e-mail is direct to 'bounces' we can log it and exit
+    if ($alias == 'bounces') {
+      // Truncate message to first 6k and convert line breaks to <br />
+      $todisplay = (strlen($source) < 6144) ? $source : 
+          substr($source, 0, 6144);
+      $todisplay = preg_replace("/\r?\n/", '<br />', $todisplay);
+      watchdog('gb_maillist', "Received a bounce:<br />{$todisplay}");
+      return; // Don't bounce nor reply
+    }
+
     // Does a forum with alias $alias exist?
     $record = _check_for_alias_record($alias);
     if (!$record) {
