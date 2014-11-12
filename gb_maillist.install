@@ -15,7 +15,7 @@
     variable_set('gb_maillist_reserved_aliases', array('bounces'));
     variable_set('gb_maillist_incoming_disabled', FALSE);
     variable_set('gb_maillist_outgoing_disabled', FALSE);
-    variable_set('gb_maillist_send_copy_to_sender', FALSE);
+    variable_set('gb_maillist_send_copy_to_sender', TRUE);
     
     // Re-build permissions for forum_access
     node_access_rebuild();
