@@ -795,6 +795,11 @@ include_once 'gb_maillist.features.inc';
     $form['forum_access']['interference']['#access'] = FALSE;  
     $form['forum_access']['troubleshooting']['#access'] = FALSE;
     
+    // Hide acl fieldset if present
+    if (isset($form['forum_access']['acl'])) {
+      $form['forum_access']['acl']['#access'] = FALSE;
+    }
+    
     // Insert our form elements
     $descriptors = _fetch_mailing_list_descriptors();
     // Typically NULL for new forms, fill to current values in db on edit
