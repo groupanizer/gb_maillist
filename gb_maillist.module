@@ -1,4 +1,10 @@
 <?php
+/**
+ * @file
+ * Code for the Mailing Lists feature.
+ */
+
+include_once 'gb_maillist.features.inc';
 
   module_load_include('inc', 'g3core', 'g3core.utils');
   
@@ -1055,3 +1061,12 @@
     }
   }
   
+
+/**
+ * implements hook_gdash_blocks
+ */
+function gb_maillist_gdash_blocks() {
+  return array(
+    'views' => array('forums-recent_block'),
+  );
+}
