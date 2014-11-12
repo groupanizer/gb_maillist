@@ -32,8 +32,9 @@ function gb_maillist_field_default_field_instances() {
     'settings' => array(
       'better_formats' => array(
         'allowed_formats' => array(
-          'advanced' => 'advanced',
+          'advanced' => 0,
           'basic' => 0,
+          'email_filter' => 'email_filter',
           'php_code' => 0,
           'plain_text' => 0,
         ),
@@ -46,6 +47,9 @@ function gb_maillist_field_default_field_instances() {
             ),
             'basic' => array(
               'weight' => -10,
+            ),
+            'email_filter' => array(
+              'weight' => 0,
             ),
             'php_code' => array(
               'weight' => 11,
@@ -170,8 +174,9 @@ function gb_maillist_field_default_field_instances() {
     'settings' => array(
       'better_formats' => array(
         'allowed_formats' => array(
-          'advanced' => 'advanced',
+          'advanced' => 0,
           'basic' => 0,
+          'email_filter' => 'email_filter',
           'php_code' => 0,
           'plain_text' => 0,
         ),
@@ -184,6 +189,9 @@ function gb_maillist_field_default_field_instances() {
             ),
             'basic' => array(
               'weight' => -10,
+            ),
+            'email_filter' => array(
+              'weight' => 0,
             ),
             'php_code' => array(
               'weight' => 11,
