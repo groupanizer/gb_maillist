@@ -428,6 +428,7 @@
     // without putting it through the node filters
     global $_unfiltered_html;
     $_unfiltered_html = $email['html'];
+    
     // Store the parsed from address in a global object so we can generate
     // a reply-to sender link with this e-mail in case they're
     // sending in from an alternative e-mail address

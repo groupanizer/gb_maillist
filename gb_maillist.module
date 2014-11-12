@@ -191,19 +191,18 @@ include_once 'gb_maillist.features.inc';
     if (is_null($reply_to)) {
       drupal_set_message(t('Failed to generate a reply-to e-mail'), 'error');
       return;
-    }       
+    }
+    
+    // Store the node id for the template
+    global $_nid;
+    $_nid = $nid;  
 
     // Dispatch the e-mail
     $dispatcher = new EmailDispatcher($sender, $bounces, TRUE);
     $operations = array();
     
     foreach ($addresses as $address) {
-      $key = 'standard';
-      // Variables passed to theme
-      $tokens = array(
-        'nid' => $nid,
-      );
-      $email = new EmailMimeEmail($key, $tokens);
+      $email = new EmailMimeEmail('standard', array());
       $email->set_paths($address, $from, $reply_to);
       $email->set_subject($subject);
       $email->set_main_body($body, $plain);
