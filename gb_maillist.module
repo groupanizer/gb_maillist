@@ -126,12 +126,12 @@ include_once 'gb_maillist.features.inc';
     return $base_url;
   }
   
-  function _dispatch_emails_for_post($nid, $metadata, $subject, $body, 
+  function _dispatch_emails_for_post($nid, $metadata, $subject, $body, $alt, 
       $update, $plain, $attachment_fids, $in_reply) {
     $tid = $metadata['tid'];
     $list_type = $metadata['list_type'];
     $user = g3core_get_user();
-    
+
     $items = _fetch_list_items_for_tid($tid);
     if (empty($items)) {
       // We should always have items attached to a mailing list
@@ -207,8 +207,7 @@ include_once 'gb_maillist.features.inc';
       $email->set_subject($subject);
       $email->set_main_body($body, $plain);
       if (!$plain) {
-        $alt_body = 'To view this e-mail you need an HTML compatible client.';
-        $email->set_alt_body($alt_body);
+        $email->set_alt_body($alt);
       }
       // Attach files
       if (!empty($attachment_fids)) {
@@ -284,25 +283,39 @@ include_once 'gb_maillist.features.inc';
     }
     
     $update = !$node->is_new;
+    
     if (_in_cli()) {
+      // Pass unfiltered body from incoming e-mail
       global $_unfiltered_html;
       $body = $_unfiltered_html;
+      $alt = 'To view this e-mail you need an HTML compatible e-mail client.';
     } else {
+      // Pass node body with summary as alt_body if it's available
       $body = $node->body[LANGUAGE_NONE][0]['value'];
+      if (isset($node->body[LANGUAGE_NONE][0]['summary']) &&
+          !empty($node->body[LANGUAGE_NONE][0]['summary'])) {
+        $alt = drupal_html_to_text($node->body[LANGUAGE_NONE][0]['summary']);
+      } else {
+        $alt = 'To view this e-mail you need an HTML compatible e-mail client.';
+      }
     }
+    
     if (0) {
       $plain = ($node->body[LANGUAGE_NONE][0]['format'] === 'plain_text');
     } else {
       $plain = FALSE; // always send HTML
     }
+    
     $subject = $node->title;
+    
     $fids = array();
     if (isset($node->field_attachment[LANGUAGE_NONE])) {
       foreach ($node->field_attachment[LANGUAGE_NONE] as $attachment) {
         $fids[] = $attachment['fid'];
       }
     }
-    _dispatch_emails_for_post($node->nid, $metadata, $subject, $body, 
+    
+    _dispatch_emails_for_post($node->nid, $metadata, $subject, $body, $alt,
         $update, $plain, $fids, FALSE); 
   }
   
@@ -337,26 +350,33 @@ include_once 'gb_maillist.features.inc';
         $update = TRUE;
       }
     }
+    
     if (_in_cli()) {
       global $_unfiltered_html;
       $body = $_unfiltered_html;
     } else {
       $body = $comment->comment_body[LANGUAGE_NONE][0]['value'];
     }
+    
+    $alt = 'To view this e-mail you need an HTML compatible e-mail client.';
+    
     if (0) {
        $plain = ($comment->comment_body[LANGUAGE_NONE][0]['format'] 
           == 'plain_text');
     } else {
       $plain = FALSE; // always send HTML
     }
+    
     $subject = $comment->subject;
+    
     $fids = array();
     if (isset($comment->field_attachment[LANGUAGE_NONE])) {
       foreach ($comment->field_attachment[LANGUAGE_NONE] as $attachment) {
         $fids[] = $attachment['fid'];
       }
     }
-    _dispatch_emails_for_post($node->nid, $metadata, $subject, $body, 
+    
+    _dispatch_emails_for_post($node->nid, $metadata, $subject, $body, $alt,
         $update, $plain, $fids, TRUE);
   }
 
