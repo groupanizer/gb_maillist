@@ -484,7 +484,7 @@ include_once 'gb_maillist.features.inc';
     
     $fieldset['list_options']['summary'] = array(
       '#markup' => '<br />' . t('A mailing list allows you to send to and' . 
-          ' receive e-mail from a list of recepients.'),
+          ' receive e-mail from a list of recipients.'),
     );
     
     $options = array(
@@ -536,7 +536,7 @@ include_once 'gb_maillist.features.inc';
     // Elements to set which items are included in the list
     $fieldset['items'] = array(
       '#type' => 'fieldset',
-      '#title' => t('Recepients'),
+      '#title' => t('Recipients'),
       //'#collapsible' => TRUE,
       //'#collapsed' => $collapsed,
       '#states' => array(
