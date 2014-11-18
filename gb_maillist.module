@@ -775,7 +775,7 @@ include_once 'gb_maillist.features.inc';
       $form_state['rebuild'] = TRUE;
     }
   }
-
+  
   /**
    * Implements hook_form_FORM_ID_alter()
    * 
@@ -876,18 +876,25 @@ include_once 'gb_maillist.features.inc';
     if (current_path() == 'node/add/forum') {
       // Content->Add Content, do nothing
     } else {
+      // Hide move/post to forum choice
+      $form['taxonomy_forums']['#access'] = FALSE;
+      
+      // Hide shadow copy element
+      $form['shadow']['#access'] = FALSE;
+              
       $tid = arg(3);
       if (is_numeric($tid) && $tid > 0) {
-        // node/add/forum/%, hide element
+        // node/add/forum/%, hide element to select forum to post to
         $form['taxonomy_forums'][LANGUAGE_NONE]['#access'] = FALSE;
       } else {
-        // ajax, fill default value
+        // ajax, fill default value of forum to post to
         $complete_form = $form_state['complete form'];
         $form['taxonomy_forums'][LANGUAGE_NONE]['#default_value'] =
             $complete_form['taxonomy_forums'][LANGUAGE_NONE]['#default_value'];
       }
     }
     
+    // Install validation handler
     $form['#validate'][] = 'gb_maillist_forum_node_form_validate';
   }
       
