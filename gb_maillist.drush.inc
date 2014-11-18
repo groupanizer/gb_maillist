@@ -261,7 +261,9 @@
     if (!empty($email['attachments'])) {
       $executable_mimetypes = array(
         'application/x-msdownload',     // microsoft executable
-        'application/octet-stream',     // binary file
+        // apparently is used erroneously by lazy programs
+        // that don't give proper mimetypes to document files (xls, etc)
+        //'application/octet-stream',     // binary file
         'application/x-msdos-program',  // dos executable
         'application/x-dosexec',        // dos executable
         'application/java',             // java applet
