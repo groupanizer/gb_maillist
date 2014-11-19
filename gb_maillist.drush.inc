@@ -9,6 +9,7 @@
   // These are postfix-specfic errors
   define('EX_DATAERR', 65);
   define('EX_NOUSER', 67);
+  define('EX_UNAVAILABLE', 69);
   define('EX_SOFTWARE', 70);
   define('EX_NOPERM', 77);
   
@@ -324,12 +325,14 @@
   }
   
   function drush_gb_maillist_incoming_mail() {
+    print('Accepting incoming e-mail');
+    
     if (variable_get('gb_maillist_incoming_disabled', FALSE)) {
       watchdog('gb_maillist', 'Rejecting incoming mail because incoming' .
           ' mail is disabled.');
-      exit(EX_NOPERM);
+      exit(EX_UNAVAILABLE);
     }
-    
+   
     watchdog('gb_maillist', 'Accepting incoming e-mail.');
     
     $file_uri = stream_get_contents(STDIN);
