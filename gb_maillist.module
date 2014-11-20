@@ -1122,6 +1122,6 @@ include_once 'gb_maillist.features.inc';
  */
 function gb_maillist_gdash_blocks() {
   return array(
-    'views' => array('forums-recent_block'),
+    'views' => array('forums-recent_block', 'forums-recent_titles'),
   );
 }
