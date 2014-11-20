@@ -53,11 +53,16 @@ include_once 'gb_maillist.features.inc';
   
   function _get_forum_tid_from_topic_node($node) {
     // Do we have an attached forum taxonomy?
-    if (!isset($node->taxonomy_forums)) {
-      return FALSE;
+    if (isset($node->taxonomy_forums[LANGUAGE_NONE]) &&
+        !empty($node->taxonomy_forums[LANGUAGE_NONE])) {
+      return $node->taxonomy_forums[LANGUAGE_NONE][0]['tid'];
     }
     
-    return $node->taxonomy_forums[LANGUAGE_NONE][0]['tid'];
+    if (isset($node->forum_tid)) {
+      return $node->forum_tid;
+    }
+    
+    return FALSE;
   }
   
   /*
@@ -873,25 +878,27 @@ include_once 'gb_maillist.features.inc';
    */
   function gb_maillist_form_forum_node_form_alter(&$form, 
       &$form_state, $form_id) {
-    if (current_path() == 'node/add/forum') {
+    $path = current_path();
+    if ($path == 'node/add/forum') {
       // Content->Add Content, do nothing
     } else {
-      // Hide move/post to forum choice
-      $form['taxonomy_forums']['#access'] = FALSE;
-      
-      // Hide shadow copy element
-      $form['shadow']['#access'] = FALSE;
-              
-      $tid = arg(3);
+      if (strstr($path, 'node/add')) { // node add, get tid from path
+        $tid = arg(3);
+      } else {                         // node edit, get tid from form
+        $tid = $form['forum_tid']['#value'];
+      }
       if (is_numeric($tid) && $tid > 0) {
-        // node/add/forum/%, hide element to select forum to post to
+        // Hide element to select forum to post to
         $form['taxonomy_forums'][LANGUAGE_NONE]['#access'] = FALSE;
       } else {
-        // ajax, fill default value of forum to post to
+        // Ajax, fill default value of forum to post to
         $complete_form = $form_state['complete form'];
         $form['taxonomy_forums'][LANGUAGE_NONE]['#default_value'] =
             $complete_form['taxonomy_forums'][LANGUAGE_NONE]['#default_value'];
       }
+
+       // Hide shadow copy element
+      $form['shadow']['#access'] = FALSE;
     }
     
     // Install validation handler
@@ -1039,9 +1046,26 @@ include_once 'gb_maillist.features.inc';
   }
   
   /**
+   * Callback for drupal_register_shutdown_function()
+   */
+  function gb_maillist_node_post_update() {
+    db_query('ALTER IGNORE TABLE forum_index' .
+        ' ADD UNIQUE INDEX dupidx (nid, tid, created)');
+    db_query('ALTER TABLE forum_index DROP INDEX dupidx');
+  }
+  
+  /**
    * Implements hook_node_update()
    */
   function gb_maillist_node_update($node) {
+    // Forums have a bug where the forum_index row is getting inserted again
+    // after an update causing duplicate rows to show.
+    // We need to remove the duplicates AFTER the node update query
+    // so we register a shutdown function.
+    if ($node->type == 'forum') {
+      drupal_register_shutdown_function('gb_maillist_node_post_update');
+    }       
+    
     _node_update_and_insert($node);
   }
   
