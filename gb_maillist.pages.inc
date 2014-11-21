@@ -15,17 +15,12 @@
       return t('Invalid cid specified');
     }
     
-    if ($cid) {
-      $source = db_query('SELECT r.source FROM {gb_maillist_received_email} r' .
-          ' WHERE r.tid = :tid AND r.nid = :nid AND r.cid = :cid', 
-          array(':tid' => $tid, ':nid' => $nid, ':cid' => $cid,))->fetchField();
-    } else {
-      $source = db_query('SELECT r.source FROM {gb_maillist_received_email} r' .
-          ' WHERE r.tid = :tid AND r.nid = :nid AND r.cid is NULL', 
-          array(':tid' => $tid, ':nid' => $nid,))->fetchField();
-    }
+    if (!$cid) $cid = NULL;
+    
+    $source = _fetch_received_email_source($tid, $nid, $cid);
     if (!$source) {
-      return t('Oops...');
+      return t('This message has no incoming e-mail source. It was probably' .
+          ' posted through the message boards.');
     }
      
     drupal_add_http_header('Content-Type', 

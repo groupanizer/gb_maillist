@@ -113,6 +113,11 @@
       db_delete('gb_maillist_aliases')
         ->condition('tid', $tid)
         ->execute();
+        
+     db_delete('gb_maillist_received_email')
+      ->condition('tid', $tid)
+      ->execute();
+        
       
       return TRUE;
     });
@@ -253,7 +258,7 @@
   function _check_for_matching_blacklist_record($tid, $email) {
     return _safe_closure(function () use ($tid, $email) {
       return db_select('gb_maillist_blacklist', 'black')
-        ->fields('black')
+        ->fields('black', array('tid'))
         ->condition('tid', $tid, '=')
         ->condition('email', $email, '=')
         ->execute()
@@ -273,38 +278,54 @@
   }
   
   /** @return boolean */
-  function _delete_all_received_email_records_for_tid($tid) {
-    return _safe_closure(function () use ($tid) {
-      if (db_table_exists('gb_maillist_received_email')) {
-        db_delete('gb_maillist_received_email')
-          ->condition('tid', $tid)
-          ->execute();
-          
-        return TRUE;
-      }
-      
-      return FALSE;
-    });
-  }
-  
-  /** @return boolean */
   function _insert_received_email_record($tid, $nid, $cid, $source, $html) {
     return _safe_closure(function () use ($tid, $nid, $cid, $source, $html) {
-      if (db_table_exists('gb_maillist_received_email')) {
-        db_insert('gb_maillist_received_email')
-          ->fields(array(
-            'tid' => $tid,
-            'nid' => $nid,
-            'cid' => $cid,
-            'source' => $source,
-            'html' => $html,
-          ))
-          ->execute();
-          
-        return TRUE;
-      }
-      
-      return FALSE;
+      db_insert('gb_maillist_received_email')
+        ->fields(array(
+          'tid' => $tid,
+          'nid' => $nid,
+          'cid' => $cid,
+          'source' => $source,
+          'html' => $html,
+        ))
+        ->execute();
+        
+      return TRUE;
     });
   }
   
+  /** @return boolean test can be used */
+  function _check_for_received_email_record($tid, $nid, $cid = NULL) {
+    return _safe_closure(function () use ($tid, $nid, $cid) {
+      $query = db_select('gb_maillist_received_email', 'r')
+        ->fields('r', array('tid'))
+        ->condition('tid', $tid, '=')
+        ->condition('nid', $nid, '=');
+
+      if (is_null($cid)) {
+        $query->isNull('cid');
+      } else {
+        $query->condition('cid', $cid, '=');
+      }
+        
+      return $query->execute()->fetch();
+    });
+  }
+
+  /** @return the source text of the received e-mail */
+  function _fetch_received_email_source($tid, $nid, $cid = NULL) {
+    return _safe_closure(function () use ($tid, $nid, $cid) {
+      $query = db_select('gb_maillist_received_email', 'r')
+        ->fields('r', array('source'))
+        ->condition('tid', $tid, '=')
+        ->condition('nid', $nid, '=');
+        
+      if (is_null($cid)) {
+        $query->isNull('cid');
+      } else {
+        $query->condition('cid', $cid, '=');
+      }
+        
+      return $query->execute()->fetchField();
+    });
+  }  

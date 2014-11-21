@@ -1112,16 +1112,55 @@ include_once 'gb_maillist.features.inc';
   function gb_maillist_taxonomy_term_delete($term) {
     if ($term->vocabulary_machine_name == 'forums') {
       _delete_all_list_records_for_tid($term->tid);
-      _delete_all_received_email_records_for_tid($term->tid);
     }
   }
   
 
 /**
- * implements hook_gdash_blocks
+ * Implements hook_gdash_blocks
  */
 function gb_maillist_gdash_blocks() {
   return array(
     'views' => array('forums-recent_block', 'forums-recent_titles'),
   );
+}
+
+/**
+ * Implements hook_node_view_alter()
+ */
+function gb_maillist_node_view($node, $build_mode) {
+  // We are user 1
+  if (!g3core_user_is_admin()) return;
+   
+  // This is a forum 
+  if ($node->type != 'forum') return;
+  
+  // Write a link for the original post if this post came in from
+  // an e-mail
+  $tid = $node->forum_tid;
+  $nid = $node->nid;
+  
+  if (_check_for_received_email_record($tid, $nid)) {; 
+    $node->content['source'] = array(
+      '#markup' => l('View source of received e-mail', 
+          "g/comm/maillist/source/{$tid}/{$nid}/0"),
+      '#weight' => 11,
+    );
+  }
+
+  // Do the same for each comment
+  if (!empty($node->content['comments']['comments'])) {
+    foreach ($node->content['comments']['comments'] as $index => $element) {
+      if (!is_numeric($index)) continue;
+      
+      $cid = $node->content['comments']['comments'][$index]['#comment']->cid;
+      if (!_check_for_received_email_record($tid, $nid, $cid)) continue;
+      
+      $node->content['comments']['comments'][$index]['source'] = array(
+        '#markup' => l('View source of received e-mail',
+            "g/comm/maillist/source/{$tid}/{$nid}/{$cid}"),
+        '#weight' => 11,
+      ); 
+    }
+  }
 }
