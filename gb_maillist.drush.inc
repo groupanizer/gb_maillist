@@ -367,6 +367,9 @@
     $parsed_from = _parse_string_for_emails($from);
     $sender = $parsed_from['emails'][0];
     
+    watchdog('gb_maillist', str_replace('<', '', $from));
+    watchdog('gb_maillist', str_replace('<', '', $sender));
+    
     $parsed_reply_to = _parse_string_for_emails($reply_to);
     $reply_to = $parsed_reply_to['emails'][0];
     
