@@ -325,8 +325,6 @@
   }
   
   function drush_gb_maillist_incoming_mail() {
-    print('Accepting incoming e-mail');
-    
     if (variable_get('gb_maillist_incoming_disabled', FALSE)) {
       watchdog('gb_maillist', 'Rejecting incoming mail because incoming' .
           ' mail is disabled.');
