@@ -42,7 +42,7 @@
   function _parse_string_for_emails($string) {
     $matches = array();
     preg_match_all(
-        "/([\w\$\?\^\+\{\}\|\-\*\.\/!#%&'=~]+)@([\w\-]+(\.[a-z]+)+)/",
+        "/([\w\$\?\^\+\{\}\|\-\*\.\/!#%&'=~]+)@([\w\-]+(\.[a-zA-Z]+)+)/",
         $string, $matches);
     return array(
       'emails' => $matches[0],
