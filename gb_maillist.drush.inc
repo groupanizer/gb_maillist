@@ -357,7 +357,8 @@
     $from = $email['headers']['from'];
     $reply_to = $email['headers']['reply-to'];
 
-    watchdog('gb_maillist', "Incoming {$from} -> {$to}.");
+    $todisplay = htmlentities($from);
+    watchdog('gb_maillist', "Incoming {$todisplay} -> {$to}.");
     
     // Parse the alias & from
     // TODO: need to loop and choose the right one for multiple 'to' e-mail
