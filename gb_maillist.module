@@ -170,21 +170,18 @@ include_once 'gb_maillist.features.inc';
     } else {
       $username = $user->name;
     }
-
-    // Setup some variables
-    $aliases = _fetch_list_aliases_for_tid($tid);
-    if (empty($aliases)) {
-      drupal_set_message(t('Failed to retrieve any aliases for the list'),
-          'error');
-      return;
-    }
-    $alias = $aliases[0]['alias'];
-    // Append the alias to the subject e.g. [board]
-    $subject = "[{$alias}] {$subject}";      
+    
+    // Append the prefix to the subject e.g. [board]
+    $prefix = $metadata['prefix'];
+    $subject = "[{$prefix}] {$subject}";      
     // Append 'RE: ' if it's an outgoing comment
     if ($in_reply) {
        $subject = "RE: {$subject}"; 
     }
+
+    // Setup some more variables
+    $aliases = _fetch_list_aliases_for_tid($tid);
+    $alias = $aliases[0]['alias']; // use the first alias in the list
     $bounces = "bounces@{$domain}";
     $sender = "{$alias}@{$domain}";
     $reply_to = "\"{$alias}\" <{$sender}>";
@@ -198,10 +195,11 @@ include_once 'gb_maillist.features.inc';
     global $_nid;
     $_nid = $nid;  
 
-    // Dispatch the e-mail
+    // Create the dispatcher
     $dispatcher = new EmailDispatcher($sender, $bounces, TRUE);
     $operations = array();
     
+    // Dispatch the e-mail
     foreach ($addresses as $address) {
       $email = new EmailMimeEmail('standard', array());
       $email->set_paths($address, $from, $reply_to);
