@@ -138,6 +138,7 @@
         ->key(array('tid' => $tid))
         ->fields(array(
           'list_type' => $values['list_type'],
+          'prefix' => $values['prefix'],
         ))
         ->execute();
       // MergeQuery::STATUS_UPDATE or MeryQuery::STATUS_INSERT
@@ -237,43 +238,6 @@
       }
         
       return $query->execute()->fetch();
-    });
-  }
-  
-  /** @return boolean */
-  function _insert_blacklist_record($tid, $email) {
-    return _safe_closure(function () use ($tid, $email) {
-      db_insert('gb_maillist_blacklist')
-        ->fields(array(
-          'tid' => $tid,
-          'email' => $email,
-        ))
-        ->execute();
-        
-      return TRUE;
-    });
-  }
-  
-  /** @return boolean test can be used */
-  function _check_for_matching_blacklist_record($tid, $email) {
-    return _safe_closure(function () use ($tid, $email) {
-      return db_select('gb_maillist_blacklist', 'black')
-        ->fields('black', array('tid'))
-        ->condition('tid', $tid, '=')
-        ->condition('email', $email, '=')
-        ->execute()
-        ->fetch();
-    });
-  }
-  
-  /** @return an array of e-mail addresses */
-  function _fetch_blacklisted_emails_for_tid($tid) {
-    return _safe_closure(function () use ($tid) {
-      return db_select('gb_maillist_blacklist', 'black')
-        ->fields('black', array('email'))
-        ->condition('tid', $tid, '=')
-        ->execute()
-        ->fetchCol();
     });
   }
   

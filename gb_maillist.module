@@ -412,6 +412,7 @@ include_once 'gb_maillist.features.inc';
       $current = array(
         'create_list' => 1,
         'list_type' => $metadata['list_type'],
+        'prefix' => $metadata['prefix'],
       );
       
       // Default list items
@@ -421,7 +422,6 @@ include_once 'gb_maillist.features.inc';
         drupal_set_message(t('Mailing list has no attached lists'), 'error');
         return;
       }
-      
       foreach ($items as $item) {
         // scid:<storage_class_id>
         $scid = 'scid:' . $item['class'];
@@ -512,16 +512,37 @@ include_once 'gb_maillist.features.inc';
         ' \'members@yourchorus.com\' or \'members, users\' if you wanted the' .
         ' e-mail addresses \'members@yourchorus.com\' and' .
         ' \'users@yourchorus.com\' to both point to this mailing list.' .
-        ' The only valid characters are lowercase letters, underscores and' .
-        ' full stops (periods). Full stops can\'t be the first or last' .
-        ' character and cannot be in sequence (\'a.b\' is legal but \'a..b\'' . 
-        ' is illegal). Aliases must be unique (can\'t occur more than once).');
+        ' The only valid characters are alphanumeric (a-z, A-Z and 0-9),' .
+        ' underscores and full stops (periods). Aliases can\'t start with a' .
+        ' number. Full stops can\'t be the first or last character and can\'t' .
+        ' be in sequence (\'a.b\' is legal but \'a..b\' is illegal).' .
+        ' Aliases must be unique (can\'t occur more than once per-site).');
     $fieldset['list_options']['aliases'] = array(
       '#type' => 'textfield',
       '#title' => t('List aliases'),
       '#description' => $description,
       '#default_value' => $defaults['aliases'],
       '#maxlength' => 128,
+      '#size' => 32,
+      '#states' => array(
+        // visible & required if we are attaching a list
+        'visible' => array( 
+          ':input[name="create_list"]' => array('checked' => TRUE),
+        ),
+        'required' => array( 
+          ':input[name="create_list"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+    
+    $fieldset['list_options']['prefix'] = array(
+      '#type' => 'textfield',
+      '#title' => t('List prefix'),
+      '#description' => t('The prefix to use in the subject of all e-mail' . 
+          ' sent from this mailing list. e.g. [prefix].' . 
+          ' The same rules apply that apply to aliases.'),
+      '#default_value' => $defaults['prefix'],
+      '#maxlength' => 64,
       '#size' => 32,
       '#states' => array(
         // visible & required if we are attaching a list
@@ -719,7 +740,11 @@ include_once 'gb_maillist.features.inc';
       if (empty($value)) {
         form_set_error('aliases', 
             t('Aliases must be unique and cannot be empty.'));
-      } elseif (!preg_match('/^[a-z_]([a-z_]|\.[a-z_])+$/', $value)) {
+      // Allowed characters a-z, A-Z, 0-9, . and _
+      // . must not be at the beginning or end of the alias
+      // and cannot appear more than once in a row
+      // 0-9 cannot occur at the beginning of the e-mail
+      } elseif (!preg_match('/^[a-zA-Z_](.?[a-zA-Z0-9_])+$/', $value)) {
         form_set_error('aliases', 
             t("Alias '{$value}' is not valid."));
       } else if (in_array($value, 
@@ -846,6 +871,7 @@ include_once 'gb_maillist.features.inc';
    * @param array $page array of elements that comprise the page
    */
   function gb_maillist_page_alter(&$page) {
+    // Change help text for message board creation
     if (stristr(current_path(), 'admin/structure/forum/add/forum')) {
       $page['help']['system_help']['#markup'] = t('A discussion board holds' . 
           ' related board topics and may optionally contain a mailing list.');
@@ -1112,51 +1138,51 @@ include_once 'gb_maillist.features.inc';
   }
   
 
-/**
- * Implements hook_gdash_blocks
- */
-function gb_maillist_gdash_blocks() {
-  return array(
-    'views' => array('forums-recent_block', 'forums-recent_titles'),
-  );
-}
-
-/**
- * Implements hook_node_view_alter()
- */
-function gb_maillist_node_view($node, $build_mode) {
-  // We are user 1
-  if (!g3core_user_is_admin()) return;
-   
-  // This is a forum 
-  if ($node->type != 'forum') return;
-  
-  // Write a link for the original post if this post came in from
-  // an e-mail
-  $tid = $node->forum_tid;
-  $nid = $node->nid;
-  
-  if (_check_for_received_email_record($tid, $nid)) {; 
-    $node->content['source'] = array(
-      '#markup' => l('View source of received e-mail', 
-          "g/comm/maillist/source/{$tid}/{$nid}/0"),
-      '#weight' => 11,
+  /**
+   * Implements hook_gdash_blocks
+   */
+  function gb_maillist_gdash_blocks() {
+    return array(
+      'views' => array('forums-recent_block', 'forums-recent_titles'),
     );
   }
-
-  // Do the same for each comment
-  if (!empty($node->content['comments']['comments'])) {
-    foreach ($node->content['comments']['comments'] as $index => $element) {
-      if (!is_numeric($index)) continue;
-      
-      $cid = $node->content['comments']['comments'][$index]['#comment']->cid;
-      if (!_check_for_received_email_record($tid, $nid, $cid)) continue;
-      
-      $node->content['comments']['comments'][$index]['source'] = array(
-        '#markup' => l('View source of received e-mail',
-            "g/comm/maillist/source/{$tid}/{$nid}/{$cid}"),
+  
+  /**
+   * Implements hook_node_view_alter()
+   */
+  function gb_maillist_node_view($node, $build_mode) {
+    // We are user 1
+    if (!g3core_user_is_admin()) return;
+     
+    // This is a forum 
+    if ($node->type != 'forum') return;
+    
+    // Write a link for the original post if this post came in from
+    // an e-mail
+    $tid = $node->forum_tid;
+    $nid = $node->nid;
+    
+    if (_check_for_received_email_record($tid, $nid)) {; 
+      $node->content['source'] = array(
+        '#markup' => l('View source of received e-mail', 
+            "g/comm/maillist/source/{$tid}/{$nid}/0"),
         '#weight' => 11,
-      ); 
+      );
+    }
+  
+    // Do the same for each comment
+    if (!empty($node->content['comments']['comments'])) {
+      foreach ($node->content['comments']['comments'] as $index => $element) {
+        if (!is_numeric($index)) continue;
+        
+        $cid = $node->content['comments']['comments'][$index]['#comment']->cid;
+        if (!_check_for_received_email_record($tid, $nid, $cid)) continue;
+        
+        $node->content['comments']['comments'][$index]['source'] = array(
+          '#markup' => l('View source of received e-mail',
+              "g/comm/maillist/source/{$tid}/{$nid}/{$cid}"),
+          '#weight' => 11,
+        ); 
+      }
     }
   }
-}
