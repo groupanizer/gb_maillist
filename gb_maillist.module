@@ -154,9 +154,7 @@ include_once 'gb_maillist.features.inc';
       return;
     }
     
-    $base_url = _get_base_url();
     $domain = g3core_get_domain();
-    
     // global $user is not a complete object, no fields
     $user = user_load($user->uid);
     
@@ -191,9 +189,18 @@ include_once 'gb_maillist.features.inc';
       return;
     }
     
-    // Store the node id for the template
-    global $_nid;
-    $_nid = $nid;  
+    // Both declared in gb_maillist.drush.inc from drush command incoming_mail
+    global $_unfiltered_html;
+    global $_sender;
+    
+    // Variables to pass to 'standard' template
+    $variables = array(
+      'topic nid' => $nid,
+      'user name' => $username,
+      'user mail' => (isset($_sender) && !is_null($_sender)) ?
+          $_sender : $user->mail,
+      'unfiltered body' => $_unfiltered_html,
+    );
 
     // Create the dispatcher
     $dispatcher = new EmailDispatcher($sender, $bounces, TRUE);
@@ -201,7 +208,7 @@ include_once 'gb_maillist.features.inc';
     
     // Dispatch the e-mail
     foreach ($addresses as $address) {
-      $email = new EmailMimeEmail('standard', array());
+      $email = new EmailMimeEmail('maillist', $variables);
       $email->set_paths($address, $from, $reply_to);
       $email->set_subject($subject);
       $email->set_main_body($body, $plain);
