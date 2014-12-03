@@ -745,8 +745,7 @@ include_once 'gb_maillist.features.inc';
       // and cannot appear more than once in a row
       // 0-9 cannot occur at the beginning of the e-mail
       } elseif (!preg_match('/^[a-zA-Z_](.?[a-zA-Z0-9_])+$/', $value)) {
-        form_set_error('aliases', 
-            t("Alias '{$value}' is not valid."));
+        form_set_error('aliases', t("Alias '{$value}' is not valid."));
       } else if (in_array($value, 
           variable_get('gb_maillist_reserved_aliases', array()))) {
         form_set_error('aliases', t("Alias '{$value}' is reserved."));
@@ -757,10 +756,22 @@ include_once 'gb_maillist.features.inc';
       }     
     }
     
+    // Verify the prefix
+    $prefix = $form_state['values']['prefix'];
+    
+    // Allowed characters a-z, A-Z, 0-9, . and _
+    // . must not be at the beginning or end of the alias
+    // and cannot appear more than once in a row
+    // 0-9 cannot occur at the beginning of the e-mail
+    if (!preg_match('/^[a-zA-Z_](.?[a-zA-Z0-9_])+$/', $prefix)) {
+      form_set_error('prefix', t("Prefix '{$prefix}' is not valid."));
+    }
+    
     // Save the verified aliases in the form
     $values['verified_aliases'] = $aliases;
     
     // TODO: Ugh...
+    // Verify list items
     $a_list_item_is_checked = FALSE;
 
     $list_classes = _extract_values_with_keys_that_match_pattern(
