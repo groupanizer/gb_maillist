@@ -97,10 +97,6 @@ include_once 'gb_maillist.features.inc';
     // Filter out the duplicates
     $result = array_unique($result);
     
-    // Remove any blacklisted e-mails
-    $blacklisted = _fetch_blacklisted_emails_for_tid($tid);
-    $result = array_diff($result, $blacklisted);
-    
     // Give other modules a chance to alter the emails
     drupal_alter('outgoing_email_addresses', $result);
     
