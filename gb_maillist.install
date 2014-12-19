@@ -401,3 +401,12 @@
     db_drop_field('gb_maillist_metadata', 'from_email');
   }
  
+  /**
+   * Create table {gb_maillist_blacklist}
+   */
+  function gb_maillist_update_7107() {
+    $schema = gb_maillist_schema();
+    db_create_table('gb_maillist_blacklist', 
+        $schema['gb_maillist_received_email']);
+  }
+
