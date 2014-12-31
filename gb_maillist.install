@@ -175,29 +175,13 @@
             'not nulll' => TRUE,
             'size' => 'tiny',
           ),
-          /*
-          'reply_to_type' => array(
-            'description' => t('The type of reply-to for a list'),
-            'type' => 'int',
+          'prefix' => array(
+            'description' => t('A prefix used in the subject of each e-mail'),
+            'type' => 'varchar',
             'not null' => TRUE,
-            'size' => 'tiny'
+            'default' => '',
+            'length' => _ALIAS_MAX_LENGTH,
           ),
-          'reply_to_email' => array(
-            'description' => 
-                t('(optional) user-defined e-mail to act as the reply-to'),
-            'type' => 'varchar',
-            'not null' => FALSE,
-            'default' => NULL,
-            'length' => _EMAIL_ADDRESS_MAX_LENGTH,
-          ),
-          'from_email' => array(
-            'description' => 
-                t('(optional) user-defined e-mail to act as the from e-mail'),
-            'type' => 'varchar',
-            'not null' => FALSE,
-            'default' => NULL,
-            'length' => _EMAIL_ADDRESS_MAX_LENGTH,
-          ),*/
         ), // fields
         'unique keys' => array(
           'tid' => array('tid',),
@@ -232,26 +216,6 @@
           ),
         ), // fields
       ), // gb_maillist_items
-      'gb_maillist_blacklist' => array(
-        'description' => t('A table of blacklisted e-mails for gb_maillist'),
-        'fields' => array(
-          'tid' => array(
-            'description' => t('The tid of the forum this e-mail is bound to'),
-            'type' => 'int',
-            'not null' => TRUE,
-            'unsigned' => TRUE,
-          ),
-          'email' => array(
-            'description' => t('E-mail address to exclude from the list'),
-            'type' => 'varchar',
-            'not null' => TRUE,
-            'length' => _EMAIL_ADDRESS_MAX_LENGTH,
-          ),
-        ), // fields
-        'unique keys' => array(
-          'tid' => array('tid', 'email'),
-        ),
-      ), // gb_maillist_blacklist
       'gb_maillist_aliases' => array(
         'description' => t('A table of mailing list aliases for gb_maillist'),
         'fields' => array(
@@ -308,7 +272,7 @@
           ),
         ), // fields
         'unique keys' => array(
-          'alias' => array('tid','nid', 'cid'),
+          'email' => array('tid','nid', 'cid',),
         ),
       ), // gb_maillist_received_email
     ); 
@@ -388,7 +352,7 @@
         ),
       ), // fields
       'unique keys' => array(
-        'alias' => array('tid','nid', 'cid'),
+        'alias' => array('tid','nid', 'cid',),
       ),
     );
     
@@ -400,4 +364,38 @@
     db_drop_field('gb_maillist_metadata', 'reply_to_email');  
     db_drop_field('gb_maillist_metadata', 'from_email');
   }
- 
+
+  /**
+   * Add the field prefix to the table {gb_maillist_metadata},
+   * update key the {gb_maillist_received_email} and drop
+   * {gb_maillist_blacklist}
+   */
+  function gb_maillist_update_7107() {
+    // Add the prefix field
+    $spec = array(
+      'description' => t('A prefix used in the subject of each e-mail'),
+      'type' => 'varchar',
+      'not null' => TRUE,
+      'default' => '', // Need a default because we're adding it
+      'length' => _ALIAS_MAX_LENGTH,
+    );
+    db_add_field('gb_maillist_metadata', 'prefix', $spec);
+    
+    // This is a required field so we will fill in a default value
+    // based on the current aliases
+    $query = db_query('SELECT DISTINCT tid, alias FROM {gb_maillist_aliases}');
+    $rows = $query->fetchAll();
+    foreach ($rows as $row) {
+      db_query('UPDATE {gb_maillist_metadata} SET prefix = :a WHERE tid = :t', 
+          array(':t' => $row->tid, ':a' => $row->alias));
+    }
+    
+    // Change unique key
+    db_drop_unique_key('gb_maillist_received_email', 'alias');
+    db_add_unique_key('gb_maillist_received_email', 'email',
+        array('tid','nid', 'cid',));
+        
+    // Drop table
+    db_drop_table('gb_maillist_blacklist');
+  }
+  
