@@ -13,12 +13,8 @@ include_once 'gb_maillist.features.inc';
   module_load_include('inc', 'gb_maillist', 'gb_maillist.queries');
   module_load_include('inc', 'gb_maillist', 'gb_maillist.api');
   
-  function _in_cli() {
-    if (php_sapi_name() != 'cli') {
-      return FALSE;
-    }
-    
-    return TRUE;
+  function _in_drush() {
+    return drupal_is_cli() && function_exists('drush_main');
   }
   
   function _is_forum_topic($node) {
@@ -26,7 +22,7 @@ include_once 'gb_maillist.features.inc';
       return FALSE;
     }
     
-    if (!_in_cli()) {
+    if (!_in_drush()) {
       // Is this coming from the forum post topic form that we've hooked?
       if ($node->form_id != 'forum_node_form') {
         return FALSE;
@@ -41,7 +37,7 @@ include_once 'gb_maillist.features.inc';
       return FALSE;
     }
     
-    if (!_in_cli()) {
+    if (!_in_drush()) {
       // Is this coming from the forum post comment form?
       if ($comment->form_id !== 'comment_node_forum_form') {
         return FALSE;
@@ -127,6 +123,28 @@ include_once 'gb_maillist.features.inc';
     return $base_url;
   }
   
+  /** Callback called at the end of the e-mail dispatch */
+  function _dispatch_email_finished($results) {
+    $failed = array_filter($results, function ($var) {
+      return !$var['result'];
+    });
+    
+    $total = count($results);
+    $count = $total - count($failed);
+    $message = t('Sent @count of @total e-mail.', 
+        array('@count' => $count, '@total' => $total));
+    watchdog('gb_maillist', $message);
+    drupal_set_message($message);
+    
+    foreach ($failed as $result) {
+      $message = t('Failed to send e-mail to %to.', 
+          array('%to' => $result['email']->to));
+      watchdog('gb_maillist', $message);
+      drupal_set_message($message, 'warning');
+    }
+  }
+
+  
   function _dispatch_emails_for_post($nid, $metadata, $subject, $body, $alt, 
       $update, $plain, $attachment_fids, $in_reply) {
     $tid = $metadata['tid'];
@@ -193,7 +211,7 @@ include_once 'gb_maillist.features.inc';
     global $_unfiltered_html;
     global $_sender;
     
-    // Variables to pass to 'standard' template
+    // Variables to pass to 'maillist' template
     $variables = array(
       'topic nid' => $nid,
       'user name' => $username,
@@ -203,18 +221,18 @@ include_once 'gb_maillist.features.inc';
     );
 
     // Create the dispatcher
-    $dispatcher = new EmailDispatcher($sender, $bounces, TRUE);
-    $operations = array();
+    $dispatcher = new EmailDispatcher($sender, $bounces, 
+        '_dispatch_email_finished');
+    $emails = array();
     
     // Dispatch the e-mail
     foreach ($addresses as $address) {
       $email = new EmailMimeEmail('maillist', $variables);
       $email->set_paths($address, $from, $reply_to);
       $email->set_subject($subject);
-      $email->set_main_body($body, $plain);
-      if (!$plain) {
-        $email->set_alt_body($alt);
-      }
+      $email->set_body($body);
+      $email->set_alt_body($alt);
+      
       // Attach files
       if (!empty($attachment_fids)) {
         foreach ($attachment_fids as $fid) {
@@ -222,7 +240,8 @@ include_once 'gb_maillist.features.inc';
           $email->add_attachment($file->uri, $file->filemime);
         }
       }
-      if (0) { // PLACEHOLDER
+      
+      if (0) {
         // Set unsubscribe
         $mailto = "<mailto:unsubscribe-{$tid}@{$domain}>";
         $email->add_header('List-Unsubscribe', $mailto);
@@ -232,39 +251,16 @@ include_once 'gb_maillist.features.inc';
         $email->add_header('List-Id', "<{$nid}.{$domain}>");
         $email->add_header('Message-Id', "<{$nid}.{$tid}@{$domain}>");
       }
-    
-      $operations[] = array('_dispatch_email', array($dispatcher, $email));
+      
+      $emails[] = $email;
     }
 
-    // Don't use batch if we've been called from Drush
-    // TODO: Batch with 'progressive' => FALSE??
-    if (_in_cli()) {
-      $dispatched = 0;
-      foreach ($operations as $operation) {
-        $result = $operation[1][0]->dispatch($operation[1][1]);
-        
-        if ($result) {
-          $dispatched += 1;
-        } else {
-          $message = t('Failed to send e-mail to %to.', 
-              array('%to' => $result['to']));
-          watchdog('gb_maillist', $message);
-        }
-      }
-      
-      $message = t('Dispatched @count of @total e-mail.', 
-          array('@count' => $dispatched, '@total' => count($operations)));
-      watchdog('gb_maillist', $message);
-    } else { // use batch
-      $batch = array(
-        'title' => t('Dispatching e-mail'),
-        'operations' => $operations,
-        'finished' => '_dispatch_email_finished',
-        'file' => drupal_get_path('module', 'gb_maillist') . 
-            '/gb_maillist.batch.inc',
-      );
-      
-      batch_set($batch);
+    $background = !_in_drush(); // Send in the background if not Drush
+    $dispatcher->dispatch_multiple($emails, $background);
+    
+    if ($background) {
+      drupal_set_message(t('A total of @count e-mail are queued for sending.',
+          array('@count' => count($emails))));
     }
   }
 
@@ -290,7 +286,7 @@ include_once 'gb_maillist.features.inc';
     
     $update = !$node->is_new;
     
-    if (_in_cli()) {
+    if (_in_drush()) {
       // Pass unfiltered body from incoming e-mail
       global $_unfiltered_html;
       $body = $_unfiltered_html;
@@ -357,7 +353,7 @@ include_once 'gb_maillist.features.inc';
       }
     }
     
-    if (_in_cli()) {
+    if (_in_drush()) {
       global $_unfiltered_html;
       $body = $_unfiltered_html;
     } else {
@@ -405,6 +401,7 @@ include_once 'gb_maillist.features.inc';
         'create_list' => 0,
         'list_type' => _MAILING_LIST_TYPE_STANDARD,
         'aliases' => NULL,
+        'prefix' => NULL,
      );
     
     if (!is_null($tid)) {
@@ -1078,7 +1075,7 @@ include_once 'gb_maillist.features.inc';
     // Drush incoming mail command has to save the node twice
     // in order to attach files in the correct directory
     // so, ignore inserts from the CLI and just use update
-    if (!_in_cli()) {
+    if (!_in_drush()) {
       _node_update_and_insert($node);
     }
   }
