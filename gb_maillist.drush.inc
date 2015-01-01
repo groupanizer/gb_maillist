@@ -468,6 +468,7 @@
         ->fields(array(
           'tid' => $tid,
           'list_type' => _MAILING_LIST_TYPE_STANDARD,
+          'prefix' => $alias,
         ))
         ->execute();
       
