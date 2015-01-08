@@ -630,6 +630,15 @@ include_once 'gb_maillist.features.inc';
         '#default_value' => variable_get(
             'gb_maillist_send_copy_to_sender', FALSE),
       ),
+      'gb_maillist_strict_spam_filtering' => array(
+        '#type' => 'checkbox',
+        '#title' => t('Strict SPAM filtering'),
+        '#description' => t('If set SPAM filtering is more strict.' . 
+            ' Less SPAM will get through but there will be more' .
+            ' false positives.'),
+        '#default_value' => variable_get(
+            'gb_maillist_strict_spam_filtering', TRUE),
+      ),
     );
     
     return system_settings_form($form);
