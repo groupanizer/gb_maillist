@@ -935,7 +935,7 @@ include_once 'gb_maillist.features.inc';
         'type' => MENU_CALLBACK,
       ),
       'g/comm/maillist/view/%' => array(
-        'title' => t('View the e-mail(s) assocated with a mailing list'),
+        'title' => t('View the e-mail(s) associated with a mailing list'),
         'page callback' => 'gb_maillist_view_list_page',
         'page arguments' => array(4), // tid as argument
         'access arguments' => array('administer forums'),
