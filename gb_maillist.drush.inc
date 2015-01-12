@@ -323,6 +323,60 @@
     
     return FALSE;
   }
+
+  /** Is this e-mail SPAM? */
+  function _check_for_SPAM($email) {
+    /*
+    $data = array(
+      'postTitle' => '',              // don't set if not provided
+      'postBody' => '',               // can contain HTML
+      'authorId' => '',               // uid, don't set if not provided
+      'authorName' => '',             // don't set if not provided
+      'authorIp' => '',               // seems to be always set
+      'contextCreated' => 1420568770, // timestamp
+      'checks' => array('spam'),      // check SPAM only
+      'strictness' => 'normal',       // normal strictness
+      'unsure' => 0,                  // allow if unsure
+    );
+    */
+    
+    $status = _mollom_status(TRUE);
+    if (!$status['isConfigured']) {
+      watchdog('gb_maillist', 'Please configure MOLLOM for SPAM filtering');
+      return FALSE; // Mollom is not enabled
+    }
+  
+    // Try and get an IP
+    $matches = array();  
+    if (preg_match('/\[((\d{1,3}\.?)+)\]/', 
+        $email['headers']['received'], $matches)) {
+      $ip = $matches[1];
+    } else {
+      $ip = '127.0.0.1'; /** @todo don't know what to use here... */
+    }
+    
+    $data = array(
+      'postTitle' => $email['headers']['subject'],
+      'postBody' => $email['html'],
+      // authorId left unset
+      'authorName' => $email['headers']['from'],
+      'authorIp' => $ip,
+      'contextCreated' => REQUEST_TIME,
+      'checks' => array('spam'),      
+      'strictness' => variable_get('gb_maillist_strict_spam_filtering', TRUE) ?
+          'strict' : 'normal',      
+      'unsure' => 0,                  
+    );
+    
+    $result = mollom()->checkContent($data);
+    if (!is_array($result) || !isset($result['id'])) {
+      watchdog('gb_maillist', 'Mollom SPAM check failed');
+      return FALSE;
+    }
+    
+    return ($result['spamClassification'] == 'spam');
+    
+  }  
   
   function drush_gb_maillist_incoming_mail() {
     if (variable_get('gb_maillist_incoming_disabled', FALSE)) {
@@ -357,7 +411,8 @@
     $from = $email['headers']['from'];
     $reply_to = $email['headers']['reply-to'];
 
-    watchdog('gb_maillist', "Incoming {$from} -> {$to}.");
+    $todisplay = htmlentities($from);
+    watchdog('gb_maillist', "Incoming {$todisplay} -> {$to}.");
     
     // Parse the alias & from
     // TODO: need to loop and choose the right one for multiple 'to' e-mail
@@ -418,14 +473,22 @@
     
     $result = _check_for_illegal_attachments($email);
     if ($result !== FALSE) {
-       watchdog('gb_maillist', "Mail rejected:" . 
+      watchdog('gb_maillist', "Mail rejected:" . 
           " e-mail contains illegal attachment(s). {$result}.");
       exit(EX_DATAERR);     
     }
     
-    // Since the user is anonymous lets append something to the e-mail body
-    // to let people know who this e-mail came from
+    // If user is anonymous
     if ($account->uid == 0) {
+      // Check for SPAM
+      $result = _check_for_SPAM($email);
+      if ($result) {
+        watchdog('gb_maillist', 'Mail rejected: e-mail contains SPAM');
+        exit(EX_DATAERR);  
+      }
+      
+      // Since the user is anonymous lets append something to the e-mail body
+      // to let people know who this e-mail came from
       $encoded_subject = rawurlencode('RE: ' . $email['headers']['subject']);
       $mailto = "<a href=\"mailto:{$sender}?subject={$encoded_subject}\"". 
           ">{$sender}</a>";
@@ -467,6 +530,7 @@
         ->fields(array(
           'tid' => $tid,
           'list_type' => _MAILING_LIST_TYPE_STANDARD,
+          'prefix' => $alias,
         ))
         ->execute();
       

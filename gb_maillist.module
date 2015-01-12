@@ -13,12 +13,8 @@ include_once 'gb_maillist.features.inc';
   module_load_include('inc', 'gb_maillist', 'gb_maillist.queries');
   module_load_include('inc', 'gb_maillist', 'gb_maillist.api');
   
-  function _in_cli() {
-    if (php_sapi_name() != 'cli') {
-      return FALSE;
-    }
-    
-    return TRUE;
+  function _in_drush() {
+    return drupal_is_cli() && function_exists('drush_main');
   }
   
   function _is_forum_topic($node) {
@@ -26,7 +22,7 @@ include_once 'gb_maillist.features.inc';
       return FALSE;
     }
     
-    if (!_in_cli()) {
+    if (!_in_drush()) {
       // Is this coming from the forum post topic form that we've hooked?
       if ($node->form_id != 'forum_node_form') {
         return FALSE;
@@ -41,7 +37,7 @@ include_once 'gb_maillist.features.inc';
       return FALSE;
     }
     
-    if (!_in_cli()) {
+    if (!_in_drush()) {
       // Is this coming from the forum post comment form?
       if ($comment->form_id !== 'comment_node_forum_form') {
         return FALSE;
@@ -97,10 +93,6 @@ include_once 'gb_maillist.features.inc';
     // Filter out the duplicates
     $result = array_unique($result);
     
-    // Remove any blacklisted e-mails
-    $blacklisted = _fetch_blacklisted_emails_for_tid($tid);
-    $result = array_diff($result, $blacklisted);
-    
     // Give other modules a chance to alter the emails
     drupal_alter('outgoing_email_addresses', $result);
     
@@ -131,6 +123,28 @@ include_once 'gb_maillist.features.inc';
     return $base_url;
   }
   
+  /** Callback called at the end of the e-mail dispatch */
+  function _dispatch_email_finished($results) {
+    $failed = array_filter($results, function ($var) {
+      return !$var['result'];
+    });
+    
+    $total = count($results);
+    $count = $total - count($failed);
+    $message = t('Sent @count of @total e-mail.', 
+        array('@count' => $count, '@total' => $total));
+    watchdog('gb_maillist', $message);
+    drupal_set_message($message);
+    
+    foreach ($failed as $result) {
+      $message = t('Failed to send e-mail to %to.', 
+          array('%to' => $result['email']->to));
+      watchdog('gb_maillist', $message);
+      drupal_set_message($message, 'warning');
+    }
+  }
+
+  
   function _dispatch_emails_for_post($nid, $metadata, $subject, $body, $alt, 
       $update, $plain, $attachment_fids, $in_reply) {
     $tid = $metadata['tid'];
@@ -158,9 +172,7 @@ include_once 'gb_maillist.features.inc';
       return;
     }
     
-    $base_url = _get_base_url();
     $domain = g3core_get_domain();
-    
     // global $user is not a complete object, no fields
     $user = user_load($user->uid);
     
@@ -174,21 +186,18 @@ include_once 'gb_maillist.features.inc';
     } else {
       $username = $user->name;
     }
-
-    // Setup some variables
-    $aliases = _fetch_list_aliases_for_tid($tid);
-    if (empty($aliases)) {
-      drupal_set_message(t('Failed to retrieve any aliases for the list'),
-          'error');
-      return;
-    }
-    $alias = $aliases[0]['alias'];
-    // Append the alias to the subject e.g. [board]
-    $subject = "[{$alias}] {$subject}";      
+    
+    // Append the prefix to the subject e.g. [board]
+    $prefix = $metadata['prefix'];
+    $subject = "[{$prefix}] {$subject}";      
     // Append 'RE: ' if it's an outgoing comment
     if ($in_reply) {
        $subject = "RE: {$subject}"; 
     }
+
+    // Setup some more variables
+    $aliases = _fetch_list_aliases_for_tid($tid);
+    $alias = $aliases[0]['alias']; // use the first alias in the list
     $bounces = "bounces@{$domain}";
     $sender = "{$alias}@{$domain}";
     $reply_to = "\"{$alias}\" <{$sender}>";
@@ -198,22 +207,32 @@ include_once 'gb_maillist.features.inc';
       return;
     }
     
-    // Store the node id for the template
-    global $_nid;
-    $_nid = $nid;  
-
-    // Dispatch the e-mail
-    $dispatcher = new EmailDispatcher($sender, $bounces, TRUE);
-    $operations = array();
+    // Both declared in gb_maillist.drush.inc from drush command incoming_mail
+    global $_unfiltered_html;
+    global $_sender;
     
+    // Variables to pass to 'maillist' template
+    $variables = array(
+      'topic nid' => $nid,
+      'user name' => $username,
+      'user mail' => (isset($_sender) && !is_null($_sender)) ?
+          $_sender : $user->mail,
+      'unfiltered body' => $_unfiltered_html,
+    );
+
+    // Create the dispatcher
+    $dispatcher = new EmailDispatcher($sender, $bounces, 
+        '_dispatch_email_finished');
+    $emails = array();
+    
+    // Dispatch the e-mail
     foreach ($addresses as $address) {
-      $email = new EmailMimeEmail('standard', array());
+      $email = new EmailMimeEmail('maillist', $variables);
       $email->set_paths($address, $from, $reply_to);
       $email->set_subject($subject);
-      $email->set_main_body($body, $plain);
-      if (!$plain) {
-        $email->set_alt_body($alt);
-      }
+      $email->set_body($body);
+      $email->set_alt_body($alt);
+      
       // Attach files
       if (!empty($attachment_fids)) {
         foreach ($attachment_fids as $fid) {
@@ -221,7 +240,8 @@ include_once 'gb_maillist.features.inc';
           $email->add_attachment($file->uri, $file->filemime);
         }
       }
-      if (0) { // PLACEHOLDER
+      
+      if (0) {
         // Set unsubscribe
         $mailto = "<mailto:unsubscribe-{$tid}@{$domain}>";
         $email->add_header('List-Unsubscribe', $mailto);
@@ -231,39 +251,16 @@ include_once 'gb_maillist.features.inc';
         $email->add_header('List-Id', "<{$nid}.{$domain}>");
         $email->add_header('Message-Id', "<{$nid}.{$tid}@{$domain}>");
       }
-    
-      $operations[] = array('_dispatch_email', array($dispatcher, $email));
+      
+      $emails[] = $email;
     }
 
-    // Don't use batch if we've been called from Drush
-    // TODO: Batch with 'progressive' => FALSE??
-    if (_in_cli()) {
-      $dispatched = 0;
-      foreach ($operations as $operation) {
-        $result = $operation[1][0]->dispatch($operation[1][1]);
-        
-        if ($result) {
-          $dispatched += 1;
-        } else {
-          $message = t('Failed to send e-mail to %to.', 
-              array('%to' => $result['to']));
-          watchdog('gb_maillist', $message);
-        }
-      }
-      
-      $message = t('Dispatched @count of @total e-mail.', 
-          array('@count' => $dispatched, '@total' => count($operations)));
-      watchdog('gb_maillist', $message);
-    } else { // use batch
-      $batch = array(
-        'title' => t('Dispatching e-mail'),
-        'operations' => $operations,
-        'finished' => '_dispatch_email_finished',
-        'file' => drupal_get_path('module', 'gb_maillist') . 
-            '/gb_maillist.batch.inc',
-      );
-      
-      batch_set($batch);
+    $background = !_in_drush(); // Send in the background if not Drush
+    $dispatcher->dispatch_multiple($emails, $background);
+    
+    if ($background) {
+      drupal_set_message(t('A total of @count e-mail are queued for sending.',
+          array('@count' => count($emails))));
     }
   }
 
@@ -289,7 +286,7 @@ include_once 'gb_maillist.features.inc';
     
     $update = !$node->is_new;
     
-    if (_in_cli()) {
+    if (_in_drush()) {
       // Pass unfiltered body from incoming e-mail
       global $_unfiltered_html;
       $body = $_unfiltered_html;
@@ -356,7 +353,7 @@ include_once 'gb_maillist.features.inc';
       }
     }
     
-    if (_in_cli()) {
+    if (_in_drush()) {
       global $_unfiltered_html;
       $body = $_unfiltered_html;
     } else {
@@ -404,6 +401,7 @@ include_once 'gb_maillist.features.inc';
         'create_list' => 0,
         'list_type' => _MAILING_LIST_TYPE_STANDARD,
         'aliases' => NULL,
+        'prefix' => NULL,
      );
     
     if (!is_null($tid)) {
@@ -416,6 +414,7 @@ include_once 'gb_maillist.features.inc';
       $current = array(
         'create_list' => 1,
         'list_type' => $metadata['list_type'],
+        'prefix' => $metadata['prefix'],
       );
       
       // Default list items
@@ -425,7 +424,6 @@ include_once 'gb_maillist.features.inc';
         drupal_set_message(t('Mailing list has no attached lists'), 'error');
         return;
       }
-      
       foreach ($items as $item) {
         // scid:<storage_class_id>
         $scid = 'scid:' . $item['class'];
@@ -516,16 +514,37 @@ include_once 'gb_maillist.features.inc';
         ' \'members@yourchorus.com\' or \'members, users\' if you wanted the' .
         ' e-mail addresses \'members@yourchorus.com\' and' .
         ' \'users@yourchorus.com\' to both point to this mailing list.' .
-        ' The only valid characters are lowercase letters, underscores and' .
-        ' full stops (periods). Full stops can\'t be the first or last' .
-        ' character and cannot be in sequence (\'a.b\' is legal but \'a..b\'' . 
-        ' is illegal). Aliases must be unique (can\'t occur more than once).');
+        ' The only valid characters are alphanumeric (a-z, A-Z and 0-9),' .
+        ' underscores and full stops (periods). Aliases can\'t start with a' .
+        ' number. Full stops can\'t be the first or last character and can\'t' .
+        ' be in sequence (\'a.b\' is legal but \'a..b\' is illegal).' .
+        ' Aliases must be unique (can\'t occur more than once per-site).');
     $fieldset['list_options']['aliases'] = array(
       '#type' => 'textfield',
       '#title' => t('List aliases'),
       '#description' => $description,
       '#default_value' => $defaults['aliases'],
       '#maxlength' => 128,
+      '#size' => 32,
+      '#states' => array(
+        // visible & required if we are attaching a list
+        'visible' => array( 
+          ':input[name="create_list"]' => array('checked' => TRUE),
+        ),
+        'required' => array( 
+          ':input[name="create_list"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+    
+    $fieldset['list_options']['prefix'] = array(
+      '#type' => 'textfield',
+      '#title' => t('List prefix'),
+      '#description' => t('The prefix to use in the subject of all e-mail' . 
+          ' sent from this mailing list. e.g. [prefix].' . 
+          ' The same rules apply that apply to aliases.'),
+      '#default_value' => $defaults['prefix'],
+      '#maxlength' => 64,
       '#size' => 32,
       '#states' => array(
         // visible & required if we are attaching a list
@@ -610,6 +629,15 @@ include_once 'gb_maillist.features.inc';
             ' boards or mailed in.'),
         '#default_value' => variable_get(
             'gb_maillist_send_copy_to_sender', FALSE),
+      ),
+      'gb_maillist_strict_spam_filtering' => array(
+        '#type' => 'checkbox',
+        '#title' => t('Strict SPAM filtering'),
+        '#description' => t('If set SPAM filtering is more strict.' . 
+            ' Less SPAM will get through but there will be more' .
+            ' false positives.'),
+        '#default_value' => variable_get(
+            'gb_maillist_strict_spam_filtering', TRUE),
       ),
     );
     
@@ -723,9 +751,12 @@ include_once 'gb_maillist.features.inc';
       if (empty($value)) {
         form_set_error('aliases', 
             t('Aliases must be unique and cannot be empty.'));
-      } elseif (!preg_match('/^[a-z_]([a-z_]|\.[a-z_])+$/', $value)) {
-        form_set_error('aliases', 
-            t("Alias '{$value}' is not valid."));
+      // Allowed characters a-z, A-Z, 0-9, . and _
+      // . must not be at the beginning or end of the alias
+      // and cannot appear more than once in a row
+      // 0-9 cannot occur at the beginning of the e-mail
+      } elseif (!preg_match('/^[a-zA-Z_](.?[a-zA-Z0-9_])+$/', $value)) {
+        form_set_error('aliases', t("Alias '{$value}' is not valid."));
       } else if (in_array($value, 
           variable_get('gb_maillist_reserved_aliases', array()))) {
         form_set_error('aliases', t("Alias '{$value}' is reserved."));
@@ -736,10 +767,22 @@ include_once 'gb_maillist.features.inc';
       }     
     }
     
+    // Verify the prefix
+    $prefix = $form_state['values']['prefix'];
+    
+    // Allowed characters a-z, A-Z, 0-9, . and _
+    // . must not be at the beginning or end of the alias
+    // and cannot appear more than once in a row
+    // 0-9 cannot occur at the beginning of the e-mail
+    if (!preg_match('/^[a-zA-Z_](.?[a-zA-Z0-9_])+$/', $prefix)) {
+      form_set_error('prefix', t("Prefix '{$prefix}' is not valid."));
+    }
+    
     // Save the verified aliases in the form
     $values['verified_aliases'] = $aliases;
     
     // TODO: Ugh...
+    // Verify list items
     $a_list_item_is_checked = FALSE;
 
     $list_classes = _extract_values_with_keys_that_match_pattern(
@@ -850,6 +893,7 @@ include_once 'gb_maillist.features.inc';
    * @param array $page array of elements that comprise the page
    */
   function gb_maillist_page_alter(&$page) {
+    // Change help text for message board creation
     if (stristr(current_path(), 'admin/structure/forum/add/forum')) {
       $page['help']['system_help']['#markup'] = t('A discussion board holds' . 
           ' related board topics and may optionally contain a mailing list.');
@@ -1040,7 +1084,7 @@ include_once 'gb_maillist.features.inc';
     // Drush incoming mail command has to save the node twice
     // in order to attach files in the correct directory
     // so, ignore inserts from the CLI and just use update
-    if (!_in_cli()) {
+    if (!_in_drush()) {
       _node_update_and_insert($node);
     }
   }
@@ -1116,51 +1160,51 @@ include_once 'gb_maillist.features.inc';
   }
   
 
-/**
- * Implements hook_gdash_blocks
- */
-function gb_maillist_gdash_blocks() {
-  return array(
-    'views' => array('forums-recent_block', 'forums-recent_titles'),
-  );
-}
-
-/**
- * Implements hook_node_view_alter()
- */
-function gb_maillist_node_view($node, $build_mode) {
-  // We are user 1
-  if (!g3core_user_is_admin()) return;
-   
-  // This is a forum 
-  if ($node->type != 'forum') return;
-  
-  // Write a link for the original post if this post came in from
-  // an e-mail
-  $tid = $node->forum_tid;
-  $nid = $node->nid;
-  
-  if (_check_for_received_email_record($tid, $nid)) {; 
-    $node->content['source'] = array(
-      '#markup' => l('View source of received e-mail', 
-          "g/comm/maillist/source/{$tid}/{$nid}/0"),
-      '#weight' => 11,
+  /**
+   * Implements hook_gdash_blocks
+   */
+  function gb_maillist_gdash_blocks() {
+    return array(
+      'views' => array('forums-recent_block', 'forums-recent_titles'),
     );
   }
-
-  // Do the same for each comment
-  if (!empty($node->content['comments']['comments'])) {
-    foreach ($node->content['comments']['comments'] as $index => $element) {
-      if (!is_numeric($index)) continue;
-      
-      $cid = $node->content['comments']['comments'][$index]['#comment']->cid;
-      if (!_check_for_received_email_record($tid, $nid, $cid)) continue;
-      
-      $node->content['comments']['comments'][$index]['source'] = array(
-        '#markup' => l('View source of received e-mail',
-            "g/comm/maillist/source/{$tid}/{$nid}/{$cid}"),
+  
+  /**
+   * Implements hook_node_view_alter()
+   */
+  function gb_maillist_node_view($node, $build_mode) {
+    // We are user 1
+    if (!g3core_user_is_admin()) return;
+     
+    // This is a forum 
+    if ($node->type != 'forum') return;
+    
+    // Write a link for the original post if this post came in from
+    // an e-mail
+    $tid = $node->forum_tid;
+    $nid = $node->nid;
+    
+    if (_check_for_received_email_record($tid, $nid)) {; 
+      $node->content['source'] = array(
+        '#markup' => l('View source of received e-mail', 
+            "g/comm/maillist/source/{$tid}/{$nid}/0"),
         '#weight' => 11,
-      ); 
+      );
+    }
+  
+    // Do the same for each comment
+    if (!empty($node->content['comments']['comments'])) {
+      foreach ($node->content['comments']['comments'] as $index => $element) {
+        if (!is_numeric($index)) continue;
+        
+        $cid = $node->content['comments']['comments'][$index]['#comment']->cid;
+        if (!_check_for_received_email_record($tid, $nid, $cid)) continue;
+        
+        $node->content['comments']['comments'][$index]['source'] = array(
+          '#markup' => l('View source of received e-mail',
+              "g/comm/maillist/source/{$tid}/{$nid}/{$cid}"),
+          '#weight' => 11,
+        ); 
+      }
     }
   }
-}
