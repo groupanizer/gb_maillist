@@ -259,7 +259,7 @@ include_once 'gb_maillist.features.inc';
     $dispatcher->dispatch_multiple($emails, $background);
     
     if ($background) {
-      drupal_set_message(t('A total of @count e-mail are queued for sending.',
+      drupal_set_message(t('A total of @count e-mail have been sent.',
           array('@count' => count($emails))));
     }
   }

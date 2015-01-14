@@ -158,10 +158,12 @@
       // Display warnings if the Mollom keys are not properly configured
       $status = _mollom_status(TRUE);
       if (!$status['isConfigured']) {
+        $tutorial = 'https://support.groupanizer.com/portal/helpcenter/' .
+            'articles/how-to-use-mollom-to-protect-your-site-from-spam';
         $message = t('Mollom is not configured, please follow the' .
             ' instructions <a href="@setup">here</a> and then configure it' .
             ' <a href="@settings">here</a>', 
-            array('@setup' => url('TUTORIAL'), 
+            array('@setup' => url($tutorial), 
             '@settings' => url('admin/config/groupanizer/mollom')));
         drupal_set_message($message, 'warning');
       }
