@@ -252,6 +252,8 @@ include_once 'gb_maillist.features.inc';
         $email->add_header('Message-Id', "<{$nid}.{$tid}@{$domain}>");
       }
       
+      watchdog('gb_maillist', print_r($email, TRUE));
+      
       $emails[] = $email;
     }
 
