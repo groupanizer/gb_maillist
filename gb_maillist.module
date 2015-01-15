@@ -219,7 +219,7 @@ include_once 'gb_maillist.features.inc';
           $_sender : $user->mail,
       'unfiltered body' => 
           (isset($_unfiltered_html) && !is_null($_unfiltered_html)) ?
-          $_unfiltered_html : NULL;
+          $_unfiltered_html : NULL,
     );
 
     // Create the dispatcher
