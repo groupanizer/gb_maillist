@@ -607,7 +607,7 @@ include_once 'gb_maillist.features.inc';
 
   /** Form callback for notifications settings form */
   function gb_maillist_settings_form($form, &$form_state) {
-    $form = array(
+    $form += array(
       'gb_maillist_outgoing_disabled' => array(
         '#type' => 'checkbox',
         '#title' => t('Disable outgoing e-mail'),
@@ -625,12 +625,20 @@ include_once 'gb_maillist.features.inc';
       ),
       'gb_maillist_send_copy_to_sender' => array(
         '#type' => 'checkbox',
-        '#title' => t('Send copy of outgoing e-mail to the original sender'),
+        '#title' => t('Send a copy of outgoing e-mail to the original sender'),
         '#description' => t('If set the mailing lists will send a copy of all' .
             ' outgoing e-mail to the original sender, whether posted in the' .
             ' boards or mailed in.'),
         '#default_value' => variable_get(
             'gb_maillist_send_copy_to_sender', FALSE),
+      ),
+      'gb_maillist_reply_to_sender' => array(
+        '#type' => 'checkbox',
+        '#title' => t('Reply to sender instead of list'),
+        '#description' => t('If set replies to mail from the mailing lists' .
+            ' will be sent to the original sender instead of the entire list,' .
+            ' which is the default. Reply-all will go to the entire list.'),
+        '#default_value' => variable_get('gb_maillist_reply_to_sender', FALSE),
       ),
       'gb_maillist_strict_spam_filtering' => array(
         '#type' => 'checkbox',
@@ -644,6 +652,227 @@ include_once 'gb_maillist.features.inc';
     );
     
     return system_settings_form($form);
+  }
+
+  /**
+   * Implements hook_theme().
+   */
+  function gb_maillist_theme() {
+    return array(
+      'poll_choices' => array(
+        'render element' => 'form',
+      ),
+    );
+  }
+  
+  /**
+   * Submit handler to add more choices to a poll form.
+   *
+   * This handler is run regardless of whether JS is enabled or not. It makes
+   * changes to the form state. If the button was clicked with JS disabled, then
+   * the page is reloaded with the complete rebuilt form. If the button was
+   * clicked with JS enabled, then ajax_form_callback() calls poll_choice_js() to
+   * return just the changed part of the form.
+   */
+  function mpoll_more_choices_submit($form, &$form_state) {
+    // If this is a Ajax POST, add 1, otherwise add 5 more choices to the form.
+    if ($form_state['values']['poll_more']) {
+      $n = $_GET['q'] == 'system/ajax' ? 1 : 5;
+      $form_state['forwards_count'] = count($form_state['values']['choice']) + $n;
+    }
+    // Renumber the choices. This invalidates the corresponding key/value
+    // associations in $form_state['input'], so clear that out. This requires
+    // poll_form() to rebuild the choices with the values in
+    // $form_state['node']->choice, which it does.
+    $form_state['node']->choice = array_values($form_state['values']['choice']);
+    unset($form_state['input']['choice']);
+    $form_state['rebuild'] = TRUE;
+  }
+
+  function _mpoll_choice_form($key, $chid = NULL, $value = '', $votes = 0, $weight = 0, $size = 10) {
+    $form = array(
+      '#tree' => TRUE,
+      '#weight' => $weight,
+    );
+  
+    // We'll manually set the #parents property of these fields so that
+    // their values appear in the $form_state['values']['choice'] array.
+    $form['chid'] = array(
+      '#type' => 'value',
+      '#value' => $chid,
+      '#parents' => array('choice', $key, 'chid'),
+    );
+  
+    $form['chtext'] = array(
+      '#type' => 'textfield',
+      '#title' => $value !== '' ? t('Choice label') : t('New choice label'),
+      '#title_display' => 'invisible',
+      '#default_value' => $value,
+      '#parents' => array('choice', $key, 'chtext'),
+    );
+  
+    $form['chvotes'] = array(
+      '#type' => 'textfield',
+      '#title' => $value !== '' ? t('Vote count for choice @label', array('@label' => $value)) : t('Vote count for new choice'),
+      '#title_display' => 'invisible',
+      '#default_value' => $votes,
+      '#size' => 5,
+      '#maxlength' => 7,
+      '#parents' => array('choice', $key, 'chvotes'),
+      '#access' => user_access('administer nodes'),
+      '#element_validate' => array('element_validate_integer'),
+    );
+  
+    $form['weight'] = array(
+      '#type' => 'weight',
+      '#title' => $value !== '' ? t('Weight for choice @label', array('@label' => $value)) : t('Weight for new choice'),
+      '#title_display' => 'invisible',
+      '#default_value' => $weight,
+      '#delta' => $size,
+      '#parents' => array('choice', $key, 'weight'),
+    );
+  
+    return $form;
+  }
+
+  /**
+   * Ajax callback in response to new choices being added to the form.
+   *
+   * This returns the new page content to replace the page content made obsolete
+   * by the form submission.
+   *
+   * @see poll_more_choices_submit()
+   */
+  function mpoll_choice_js($form, $form_state) {
+    return $form['choice_wrapper']['choice'];
+  }
+
+  /**
+   * Returns HTML for an admin poll form for choices.
+   *
+   * @param $variables
+   *   An associative array containing:
+   *   - form: A render element representing the form.
+   *
+   * @ingroup themeable
+   */
+   /*
+  function theme_poll_choices($variables) {
+    $form = $variables['form'];
+  
+    drupal_add_tabledrag('poll-choice-table', 'order', 'sibling', 'poll-weight');
+  
+    $is_admin= user_access('administer nodes');
+    $delta = 0;
+    $rows = array();
+    $headers = array('', t('Choice'));
+    if ($is_admin) {
+      $headers[] = t('Vote count');
+    }
+    $headers[] = t('Weight');
+  
+    foreach (element_children($form) as $key) {
+      $delta++;
+      // Set special classes for drag and drop updating.
+      $form[$key]['weight']['#attributes']['class'] = array('poll-weight');
+  
+      // Build the table row.
+      $row = array(
+        'data' => array(
+          array('class' => array('choice-flag')),
+          drupal_render($form[$key]['chtext']),
+        ),
+        'class' => array('draggable'),
+      );
+      if ($is_admin) {
+        $row['data'][] = drupal_render($form[$key]['chvotes']);
+      }
+      $row['data'][] = drupal_render($form[$key]['weight']);
+  
+      // Add any additional classes set on the row.
+      if (!empty($form[$key]['#attributes']['class'])) {
+        $row['class'] = array_merge($row['class'], $form[$key]['#attributes']['class']);
+      }
+  
+      $rows[] = $row;
+    }
+  
+    $output = theme('table', array('header' => $headers, 'rows' => $rows, 'attributes' => array('id' => 'poll-choice-table')));
+    $output .= drupal_render_children($form);
+    return $output;
+  }*/
+
+  function gb_maillist_forwarding_form($node, &$form_state) {
+    // The submit handlers to add more poll choices require that this form is
+    // cached, regardless of whether Ajax is used.
+    $form_state['cache'] = TRUE;
+  
+    if (isset($form_state['forwards_count'])) {
+      $forwards_count = $form_state['forwards_count'];
+    } else {
+      $forwards_count = 1; // n from db
+    }
+    
+    // Add a wrapper for the choices and more button.
+    $form['choice_wrapper'] = array(
+      '#tree' => FALSE,
+      '#weight' => -4,
+      '#prefix' => '<div class="clearfix" id="poll-choice-wrapper">',
+      '#suffix' => '</div>',
+    );
+  
+    // Container for just the poll choices.
+    $form['choice_wrapper']['choice'] = array(
+      '#prefix' => '<div id="poll-choices">',
+      '#suffix' => '</div>',
+      '#theme' => 'poll_choices',
+    );
+  
+    // Add the current choices to the form.
+    $delta = 0;
+    $weight = 0;
+    if (isset($node->choice)) {
+      $delta = count($node->choice);
+      foreach ($node->choice as $chid => $choice) {
+        $key = 'chid:' . $chid;
+        $form['choice_wrapper']['choice'][$key] = _mpoll_choice_form($key, $choice['chid'], $choice['chtext'], $choice['chvotes'], $choice['weight'], $choice_count);
+        $weight = max($choice['weight'], $weight);
+      }
+    }
+  
+    // Add initial or additional choices.
+    $existing_delta = $delta;
+    for ($delta; $delta < $forwards_count; $delta++) {
+      $key = 'new:' . ($delta - $existing_delta);
+      // Increase the weight of each new choice.
+      $weight++;
+      $form['choice_wrapper']['choice'][$key] = _mpoll_choice_form($key, NULL, '', 0, $weight, $forwards_count);
+    }
+  
+    // We name our button 'poll_more' to avoid conflicts with other modules using
+    // Ajax-enabled buttons with the id 'more'.
+    $form['choice_wrapper']['poll_more'] = array(
+      '#type' => 'submit',
+      '#value' => t('More choices'),
+      '#attributes' => array(
+        'title' => t("If the amount of boxes above isn't enough, click here to add more choices."),
+      ),
+      '#weight' => -1,
+      '#limit_validation_errors' => array(array('choice')),
+      '#submit' => array('mpoll_more_choices_submit'),
+      '#ajax' => array(
+        'callback' => 'mpoll_choice_js',
+        'wrapper' => 'poll-choices',
+        'effect' => 'fade',
+      ),
+    );
+    $form['save'] = array(
+      '#type' => 'submit',
+      '#value' => t('Save settings'),
+      '#submit' => array(''),
+      '#prefix' => '<br />',  
+    );
+    return $form;
   }
       
   /**
@@ -1010,6 +1239,13 @@ include_once 'gb_maillist.features.inc';
         'page arguments' => array(),
         'access arguments' => array('view forums'),
         'file' => 'gb_maillist.pages.inc',
+        'type' => MENU_NORMAL_ITEM,
+      ),
+      'g/comm/maillist/fowarding' => array(
+        'title' => t('Mail Forwarding'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('gb_maillist_forwarding_form'),
+        'access arguments' => array('administer forums'),
         'type' => MENU_NORMAL_ITEM,
       ),
       'admin/config/groupanizer/maillists' => array(

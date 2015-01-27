@@ -17,6 +17,7 @@
     variable_set('gb_maillist_outgoing_disabled', FALSE);
     variable_set('gb_maillist_send_copy_to_sender', TRUE);
     variable_set('gb_maillist_strict_spam_filtering', TRUE);
+    variable_set('gb_maillist_reply_to_sender', FALSE);
     
     // Re-build permissions for forum_access
     node_access_rebuild();
@@ -32,7 +33,8 @@
     variable_del('gb_maillist_incoming_disabled');
     variable_del('gb_maillist_outgoing_disabled');
     variable_del('gb_maillist_send_copy_to_sender');
-    variable_set('gb_maillist_strict_spam_filtering');
+    variable_del('gb_maillist_strict_spam_filtering');
+    variable_del('gb_maillist_reply_to_sender');
   }
   
   /**
