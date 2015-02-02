@@ -257,6 +257,38 @@
     }
   }
 
+  /**
+   * Send a reply straight to the original sender
+   */
+  function _send_to_original_sender($email, $original_sender_uid, $alias, $domain) {
+
+    $sender = "{$alias}@{$domain}";
+    $bounces = "bounces@{$domain}";
+    $dispatcher = new EmailDispatcher($sender, $bounces, '_dispatch_email_finished');
+
+    // Variables to pass to 'maillist' template
+    $variables = array(
+      'unfiltered body' => $email['html'],
+    );
+
+    $original_sender = user_load($original_sender_uid);
+    $to = $original_sender->mail;
+    $from = $email['headers']['from'];
+    $reply_to = "noreply@{$domain}";
+    $alt = 'To view this e-mail you need an HTML compatible e-mail client.';
+    $email_to_send = new EmailMimeEmail('maillist', $variables);
+    $email_to_send->set_paths($to, $from, $reply_to);
+    $email_to_send->set_subject($email['headers']['subject']);
+    $email_to_send->set_body($email['html']);
+    $email_to_send->set_alt_body($alt);
+      
+    $background = FALSE; // we're in the drush comment hence no need to background
+    $dispatcher->dispatch_multiple(array($email_to_send), $background);
+
+    watchdog('gb_maillist', "Sent reply straight to @to", array('@to'=>$to));
+
+  }
+
   function _check_for_illegal_attachments($email) {
     if (!empty($email['attachments'])) {
       $executable_mimetypes = array(
@@ -433,7 +465,7 @@
       return; // Don't bounce nor reply
     }
 
-    // If the e-mail is direct to 'bounces' we can log it and exit
+    // If the e-mail is directed to 'bounces' we can log it and exit
     if ($alias == 'bounces') {
       // Truncate message to first 6k and convert line breaks to <br />
       $todisplay = (strlen($source) < 6144) ? $source : 
@@ -443,6 +475,23 @@
       return; // Don't bounce nor reply
     }
 
+    // Decode the alias if it looks to be encoded, or leave it alone otherwise
+    $sneaky_prefix = 'xLn2';
+    if( substr($alias,0,strlen($sneaky_prefix)) == $sneaky_prefix ) {
+      $encoded_data = substr($alias,strlen($sneaky_prefix));
+      if( $serialized_alias = base64_decode($encoded_data,TRUE) ) {
+        $alias_struct = unserialize($serialized_alias);
+        if( isset($alias_struct['alias']) && isset($alias_struct['sender_uid']) ) {
+          $alias = $alias_struct['alias'];
+          $original_sender_uid = $alias_struct['sender_uid'];
+        } else {
+          watchdog('gb_maillist', t("Decoded reply-to did not contain the necessary data"));
+        }
+      } else {
+        watchdog('gb_maillist', t("Could not decode reply-to header (@data)", array('@data'=>$encoded_data)));
+      }
+    } 
+
     // Does a forum with alias $alias exist?
     $record = _check_for_alias_record($alias);
     if (!$record) {
@@ -451,7 +500,7 @@
     }
     $tid = $record->tid;
     
-    // Try and load a user from the sender's e-mail
+    // Determine which account is sending the email (or anonymous if no match)
     $account = user_load_by_mail($sender);
     if (!$account) { // try and load from multiple_email
       $uid = db_query('SELECT m.uid FROM {multiple_email} m' .
@@ -464,18 +513,25 @@
       }
     }
     
-    // Check for posting permission
-    if (!forum_access_access('create', $tid, $account)) {
-      watchdog('gb_maillist', "Mail rejected: user does not have permission " .
-          "{$sender}, {$account->uid}.");
-      exit(EX_NOPERM);
-    }
-    
     $result = _check_for_illegal_attachments($email);
     if ($result !== FALSE) {
       watchdog('gb_maillist', "Mail rejected:" . 
           " e-mail contains illegal attachment(s). {$result}.");
       exit(EX_DATAERR);     
+    }
+
+    // If this is a distribution list reply, just send the reply to the original sender
+    // without checking permissions.  This mail will not be logged (other than watchdog).
+    if( isset($original_sender_uid) ) {
+      _send_to_original_sender($email, $original_sender_uid, $alias, $domain);
+      return;
+    }
+
+    // Check for posting permission
+    if (!forum_access_access('create', $tid, $account)) {
+      watchdog('gb_maillist', "Mail rejected: user does not have permission " .
+          "{$sender}, {$account->uid}.");
+      exit(EX_NOPERM);
     }
     
     // If user is anonymous
@@ -514,6 +570,12 @@
     // Post it 
     _post_to_forum($tid, $alias, $source, $email, $account);
   }
+
+
+
+/**
+ * Drush command for creating default boards
+ */
 
   function drush_gb_maillist_setup_boards() {
     $roles = db_select('role', 'r')

@@ -15,3 +15,4 @@
   
   // list types
   define('_MAILING_LIST_TYPE_STANDARD', 0);
+  define('_MAILING_LIST_TYPE_DISTRIBUTION', 1);

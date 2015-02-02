@@ -144,9 +144,12 @@ include_once 'gb_maillist.features.inc';
     }
   }
 
-  
+/**
+ * Dispatch emails
+ */ 
   function _dispatch_emails_for_post($nid, $metadata, $subject, $body, $alt, 
-      $update, $plain, $attachment_fids, $in_reply) {
+      $update, $plain, $attachment_fids, $in_reply) 
+  {
     $tid = $metadata['tid'];
     $list_type = $metadata['list_type'];
     $user = g3core_get_user();
@@ -200,11 +203,19 @@ include_once 'gb_maillist.features.inc';
     $alias = $aliases[0]['alias']; // use the first alias in the list
     $bounces = "bounces@{$domain}";
     $sender = "{$alias}@{$domain}";
-    $reply_to = "\"{$alias}\" <{$sender}>";
     $from = "\"{$username} via {$alias}\" <{$sender}>";
-    if (is_null($reply_to)) {
-      drupal_set_message(t('Failed to generate a reply-to e-mail'), 'error');
-      return;
+
+    // reply_to handling
+    if( $metadata['reply_behavior'] == 'reply_to_sender' ) {
+      $alias_struct = array(
+        'alias' => $alias,
+        'sender_uid' => $user->uid,
+      );
+      $sneaky_prefix = 'xLn2';
+      $encoded_alias = $sneaky_prefix . base64_encode(serialize($alias_struct));
+      $reply_to = "{$encoded_alias}@{$domain}";
+    } else {
+      $reply_to = "\"{$alias}\" <{$sender}>";
     }
     
     // Both declared in gb_maillist.drush.inc from drush command incoming_mail
@@ -259,7 +270,7 @@ include_once 'gb_maillist.features.inc';
     $dispatcher->dispatch_multiple($emails, $background);
     
     if ($background) {
-      drupal_set_message(t('A total of @count e-mail are queued for sending.',
+      drupal_set_message(t('@count emails are queued and will be sent shortly.',
           array('@count' => count($emails))));
     }
   }
@@ -491,7 +502,8 @@ include_once 'gb_maillist.features.inc';
     );
     
     $options = array(
-      _MAILING_LIST_TYPE_STANDARD => t('Standard mailing list'),
+      _MAILING_LIST_TYPE_STANDARD => t('Chat list - replies go to all list members'),
+      _MAILING_LIST_TYPE_DISTRIBUTION => t('Distribution list - replies to go sender (explicit reply-to-all also permitted)'),
     );
     $fieldset['list_options']['list_type'] = array(
       '#type' => 'radios',
