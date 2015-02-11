@@ -206,14 +206,14 @@ include_once 'gb_maillist.features.inc';
     $from = "\"{$username} via {$alias}\" <{$sender}>";
 
     // reply_to handling
-    if( $metadata['reply_behavior'] == 'reply_to_sender' ) {
+    if( $list_type == _MAILING_LIST_TYPE_DISTRIBUTION ) {
       $alias_struct = array(
-        'alias' => $alias,
-        'sender_uid' => $user->uid,
+        'a' => $alias,
+        'u' => $user->uid,
       );
       $sneaky_prefix = 'xLn2';
       $encoded_alias = $sneaky_prefix . base64_encode(serialize($alias_struct));
-      $reply_to = "{$encoded_alias}@{$domain}";
+      $reply_to = "\"{$username}\" <{$encoded_alias}@{$domain}>";
     } else {
       $reply_to = "\"{$alias}\" <{$sender}>";
     }
@@ -225,13 +225,14 @@ include_once 'gb_maillist.features.inc';
     // Variables to pass to 'maillist' template
     $variables = array(
       'topic nid' => $nid,
-      'user name' => $username,
-      'user mail' => (isset($_sender) && !is_null($_sender)) ?
-          $_sender : $user->mail,
       'unfiltered body' => 
           (isset($_unfiltered_html) && !is_null($_unfiltered_html)) ?
           $_unfiltered_html : NULL,
     );
+    if( $list_type == _MAILING_LIST_TYPE_STANDARD ) {
+      $variables['user name'] = $username;
+      $variables['user mail'] = (isset($_sender) && !is_null($_sender)) ?  $_sender : $user->mail;
+    }
 
     // Create the dispatcher
     $dispatcher = new EmailDispatcher($sender, $bounces, 
@@ -245,6 +246,11 @@ include_once 'gb_maillist.features.inc';
       $email->set_subject($subject);
       $email->set_body($body);
       $email->set_alt_body($alt);
+
+      // need CC header to point to the list alias if we're on a distrib list
+      if( $list_type == _MAILING_LIST_TYPE_DISTRIBUTION ) {
+        $email->add_header('cc', "{$alias}@{$domain}");
+      }
       
       // Attach files
       if (!empty($attachment_fids)) {

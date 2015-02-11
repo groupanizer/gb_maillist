@@ -481,9 +481,11 @@
       $encoded_data = substr($alias,strlen($sneaky_prefix));
       if( $serialized_alias = base64_decode($encoded_data,TRUE) ) {
         $alias_struct = unserialize($serialized_alias);
-        if( isset($alias_struct['alias']) && isset($alias_struct['sender_uid']) ) {
-          $alias = $alias_struct['alias'];
-          $original_sender_uid = $alias_struct['sender_uid'];
+        if( isset($alias_struct['a']) && isset($alias_struct['u']) ) {
+          $alias = $alias_struct['a'];
+          $original_sender_uid = $alias_struct['u'];
+          watchdog('gb_maillist', t("Decoded reply-to alias: @alias, User: @uid "),
+            array('@alias'=>$alias, '@uid'=>$original_sender_uid));
         } else {
           watchdog('gb_maillist', t("Decoded reply-to did not contain the necessary data"));
         }
