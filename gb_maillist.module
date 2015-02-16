@@ -623,47 +623,6 @@ include_once 'gb_maillist.features.inc';
     }
   }
 
-  /** Form callback for notifications settings form */
-  function gb_maillist_settings_form($form, &$form_state) {
-    $form = array(
-      'gb_maillist_outgoing_disabled' => array(
-        '#type' => 'checkbox',
-        '#title' => t('Disable outgoing e-mail'),
-        '#description' => t('If set the mailing lists will not send e-mail.'),
-        '#default_value' => variable_get(
-            'gb_maillist_outgoing_disabled', FALSE),
-      ),
-      'gb_maillist_incoming_disabled' => array(
-        '#type' => 'checkbox',
-        '#title' => t('Disable incoming e-mail'),
-        '#description' => t('If set the mailing lists will not accept' .
-            ' incoming e-mail.'),
-        '#default_value' => variable_get(
-            'gb_maillist_incoming_disabled', FALSE),
-      ),
-      'gb_maillist_send_copy_to_sender' => array(
-        '#type' => 'checkbox',
-        '#title' => t('Send copy of outgoing e-mail to the original sender'),
-        '#description' => t('If set the mailing lists will send a copy of all' .
-            ' outgoing e-mail to the original sender, whether posted in the' .
-            ' boards or mailed in.'),
-        '#default_value' => variable_get(
-            'gb_maillist_send_copy_to_sender', FALSE),
-      ),
-      'gb_maillist_strict_spam_filtering' => array(
-        '#type' => 'checkbox',
-        '#title' => t('Strict SPAM filtering'),
-        '#description' => t('If set SPAM filtering is more strict.' . 
-            ' Less SPAM will get through but there will be more' .
-            ' false positives.'),
-        '#default_value' => variable_get(
-            'gb_maillist_strict_spam_filtering', TRUE),
-      ),
-    );
-    
-    return system_settings_form($form);
-  }
-      
   /**
    * Validation function for forum_node_form
    * 
@@ -1030,11 +989,14 @@ include_once 'gb_maillist.features.inc';
         'file' => 'gb_maillist.pages.inc',
         'type' => MENU_NORMAL_ITEM,
       ),
+
+      // admin
       'admin/config/groupanizer/maillists' => array(
         'title' => t('Mailing lists'),
         'page callback' => 'drupal_get_form',
         'page arguments' => array('gb_maillist_settings_form'),
         'access arguments' => array('administer forums'),
+        'file' => 'gb_maillist.admin.inc',
         'type' => MENU_NORMAL_ITEM,
       ),
     );
