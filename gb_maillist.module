@@ -283,6 +283,8 @@ include_once 'gb_maillist.features.inc';
     }
   }
 
+
+
   function _node_update_and_insert($node) {
     if (!_is_forum_topic($node)) {
       return;
@@ -302,7 +304,14 @@ include_once 'gb_maillist.features.inc';
     if (!$metadata) {
       return; // there is no mailing list attached to this forum
     }
-    
+
+/***
+  TEST CODE - ultimately we will dispatch most mail in the background
+*/
+    g3core_request_background_job('testcommand', array('nid'=>$node->nid));
+
+/*****/
+
     $update = !$node->is_new;
     
     if (_in_drush()) {
