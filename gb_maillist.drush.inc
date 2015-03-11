@@ -484,7 +484,7 @@ function gb_maillist_drush_command() {
 
     // Decode the alias if it looks to be encoded, or leave it alone otherwise
     $sneaky_prefix = 'xLn2';
-    if( substr($alias,0,strlen($sneaky_prefix)) == $sneaky_prefix ) {
+    if( strcasecmp( substr($alias,0,strlen($sneaky_prefix)), $sneaky_prefix) == 0 ) {
       $encoded_data = substr($alias,strlen($sneaky_prefix));
       if( $serialized_alias = base64_decode($encoded_data,TRUE) ) {
         $alias_struct = unserialize($serialized_alias);
