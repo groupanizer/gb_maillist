@@ -1,31 +1,38 @@
 <?php
   
-  require_once DRUPAL_ROOT . '/sites/all/modules/g3/g3core/g3core.utils.inc';
+require_once DRUPAL_ROOT . '/sites/all/modules/g3/g3core/g3core.utils.inc';
 
-  /**
-   * Incoming mail handling for the site using MimeMail
-   */
+/**
+ * Incoming mail handling for the site using MimeMail
+ */
 
-  // These are postfix-specfic errors
-  define('EX_DATAERR', 65);
-  define('EX_NOUSER', 67);
-  define('EX_UNAVAILABLE', 69);
-  define('EX_SOFTWARE', 70);
-  define('EX_NOPERM', 77);
+// These are postfix-specfic errors
+define('EX_DATAERR', 65);
+define('EX_NOUSER', 67);
+define('EX_UNAVAILABLE', 69);
+define('EX_SOFTWARE', 70);
+define('EX_NOPERM', 77);
   
-  /** Implements hook_drush_command */
-  function gb_maillist_drush_command() {
-    return array(
-      'incoming_mail' => array(
-        'description' => dt('Drush command for handling incoming mail'),
-        'aliases' => array('g3incomingmail'),
-      ),
-      'setup_boards' => array(
-        'description' => dt('Drush command for setuping up initial boards'),
-        'aliases' => array('g3defboards'),
-      ),
-    );
-  }
+
+/** Implements hook_drush_command */
+function gb_maillist_drush_command() {
+  return array(
+    'incoming_mail' => array(
+      'description' => dt('Drush command for handling incoming mail'),
+      'aliases' => array('g3incomingmail'),
+    ),
+    'send_queued_mail' => array(
+      'description' => dt('Drush command for sending queued mail'),
+      'aliases' => array('g3sendmail'),
+    ),
+    'setup_boards' => array(
+      'description' => dt('Drush command for setuping up initial boards'),
+      'aliases' => array('g3defboards'),
+    ),
+  );
+}
+
+
   
   /** Implements hook_drush_help */
   function gb_maillist_drush_help($section) {
@@ -477,7 +484,7 @@
 
     // Decode the alias if it looks to be encoded, or leave it alone otherwise
     $sneaky_prefix = 'xLn2';
-    if( substr($alias,0,strlen($sneaky_prefix)) == $sneaky_prefix ) {
+    if( strcasecmp( substr($alias,0,strlen($sneaky_prefix)), $sneaky_prefix) == 0 ) {
       $encoded_data = substr($alias,strlen($sneaky_prefix));
       if( $serialized_alias = base64_decode($encoded_data,TRUE) ) {
         $alias_struct = unserialize($serialized_alias);
@@ -573,6 +580,61 @@
     _post_to_forum($tid, $alias, $source, $email, $account);
   }
 
+
+/**
+ * Drush command for sending out queued mail
+ */
+function drush_gb_maillist_send_queued_mail() {
+
+  // Get arguments from "data" field of queued job
+  $arguments = drush_get_arguments();
+print_r($arguments,TRUE);
+return;
+
+  // Load the node and 
+
+  $tid = _get_forum_tid_from_topic_node($node);
+  if (!$tid) {
+    drupal_set_message(t('Forum node has no attached tid'), 'error');
+    return;
+  }
+    
+  $metadata = _fetch_list_metadata_for_tid($tid);
+  if (!$metadata) {
+    return; // there is no mailing list attached to this forum
+  }
+
+  $update = !$node->is_new;
+
+  // Pass node body with summary as alt_body if it's available
+  $body = $node->body[LANGUAGE_NONE][0]['value'];
+  if (isset($node->body[LANGUAGE_NONE][0]['summary']) &&
+      !empty($node->body[LANGUAGE_NONE][0]['summary'])) {
+    $alt = drupal_html_to_text($node->body[LANGUAGE_NONE][0]['summary']);
+  } else {
+    $alt = 'To view this e-mail you need an HTML compatible e-mail client.';
+  }
+
+  if (0) {
+    $plain = ($node->body[LANGUAGE_NONE][0]['format'] === 'plain_text');
+  } else {
+    $plain = FALSE; // always send HTML
+  }
+  $subject = $node->title;
+    
+  // gather the attached files
+  $fids = array();
+  if (isset($node->field_attachment[LANGUAGE_NONE])) {
+    foreach ($node->field_attachment[LANGUAGE_NONE] as $attachment) {
+      $fids[] = $attachment['fid'];
+    }
+  }
+    
+  // dispatch will send for real (not background) since we're obviously in drush
+  _dispatch_emails_for_post($node->nid, $metadata, $subject, $body, $alt,
+      $update, $plain, $fids, FALSE); 
+
+}
 
 
 /**

@@ -305,21 +305,24 @@ include_once 'gb_maillist.features.inc';
       return; // there is no mailing list attached to this forum
     }
 
-/***
-  TEST CODE - ultimately we will dispatch most mail in the background
-*/
-    g3core_request_background_job('testcommand', array('nid'=>$node->nid));
-
-/*****/
-
     $update = !$node->is_new;
     
+    // we are "in drush" if we are being called from the g3incomingmail drush command
+
     if (_in_drush()) {
       // Pass unfiltered body from incoming e-mail
       global $_unfiltered_html;
       $body = $_unfiltered_html;
       $alt = 'To view this e-mail you need an HTML compatible e-mail client.';
     } else {
+
+      // if we're not in drush, we are in the web interface, so we should
+      // queue the mail for later
+      g3core_request_background_job('g3sendmail', array('nid'=>$node->nid));
+      return;
+
+//    // not being executed:
+
       // Pass node body with summary as alt_body if it's available
       $body = $node->body[LANGUAGE_NONE][0]['value'];
       if (isset($node->body[LANGUAGE_NONE][0]['summary']) &&
@@ -328,6 +331,7 @@ include_once 'gb_maillist.features.inc';
       } else {
         $alt = 'To view this e-mail you need an HTML compatible e-mail client.';
       }
+
     }
     
     if (0) {
