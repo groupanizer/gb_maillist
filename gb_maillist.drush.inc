@@ -587,15 +587,15 @@ function gb_maillist_drush_command() {
 function drush_gb_maillist_send_queued_mail() {
 
   // Get arguments from "data" field of queued job
-  $arguments = drush_get_arguments();
-print_r($arguments,TRUE);
-return;
+  $args = drush_get_arguments();
+  $data = unserialize($args[1]);
+  $forum_nid = $data['nid'];
+  $node = node_load($forum_nid);
 
   // Load the node and 
-
   $tid = _get_forum_tid_from_topic_node($node);
   if (!$tid) {
-    drupal_set_message(t('Forum node has no attached tid'), 'error');
+    watchdog('gb_maillist', t('Forum node has no attached tid'), 'error');
     return;
   }
     
@@ -603,8 +603,6 @@ return;
   if (!$metadata) {
     return; // there is no mailing list attached to this forum
   }
-
-  $update = !$node->is_new;
 
   // Pass node body with summary as alt_body if it's available
   $body = $node->body[LANGUAGE_NONE][0]['value'];
