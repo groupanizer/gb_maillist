@@ -454,9 +454,14 @@ function gb_maillist_drush_command() {
     watchdog('gb_maillist', "Incoming {$todisplay} -> {$to}.");
     
     // Parse the alias & from
-    // TODO: need to loop and choose the right one for multiple 'to' e-mail
     $parsed_to = _parse_string_for_emails($to);
+    // TODO: need to loop and choose the right one for multiple 'to' e-mail
+    // for now we'll just log this case...
+    if( sizeof($parsed_to['aliases']) > 1 ) {
+      watchdog('gb_maillist', "Parsed out multiple 'to' email addresses: " . print_r($parsed_to,TRUE));
+    }
     $alias = $parsed_to['aliases'][0];
+    watchdog('gb_maillist', "Alias: {$alias}");
     
     $parsed_from = _parse_string_for_emails($from);
     $sender = $parsed_from['emails'][0];
@@ -465,6 +470,7 @@ function gb_maillist_drush_command() {
     $reply_to = $parsed_reply_to['emails'][0];
     
     // If the e-mail is from our own domain, there is an erroneous loop
+    // TODO: this is not true in all cases - implement message ID checking instead
     $domain = g3core_get_domain();
     if ($parsed_from['domain names'][0] == $domain ||
         $parsed_reply_to['domain names'][0] == $domain) {
