@@ -175,7 +175,6 @@ include_once 'gb_maillist.features.inc';
       return;
     }
     
-    $domain = g3core_get_domain();
     // global $user is not a complete object, no fields
     $user = user_load($user->uid);
     
@@ -199,6 +198,7 @@ include_once 'gb_maillist.features.inc';
     }
 
     // Setup some more variables
+    $domain = g3core_get_domain();
     $aliases = _fetch_list_aliases_for_tid($tid);
     $alias = $aliases[0]['alias']; // use the first alias in the list
     $bounces = "bounces@{$domain}";
@@ -207,13 +207,20 @@ include_once 'gb_maillist.features.inc';
 
     // reply_to handling
     if( $list_type == _MAILING_LIST_TYPE_DISTRIBUTION ) {
-      $alias_struct = array(
-        'a' => $alias,
-        'u' => $user->uid,
-      );
-      $sneaky_prefix = 'xLn2';
-      $encoded_alias = $sneaky_prefix . base64_encode(serialize($alias_struct));
-      $reply_to = "\"{$username}\" <{$encoded_alias}@{$domain}>";
+      if( $user->uid > 0 ) {
+        // for distribution lists, we code the original sender (if a real user)
+        // so the recipient can reply directly to the sender
+        $alias_struct = array(
+          'a' => $alias,
+          'u' => $user->uid,
+        );
+        $sneaky_prefix = 'xLn2';
+        $encoded_alias = $sneaky_prefix . base64_encode(serialize($alias_struct));
+        $reply_to = "\"{$username}\" <{$encoded_alias}@{$domain}>";
+      } else {
+        watchdog('gb_maillist', "Anonymous user sending to distribution list");
+        $reply_to = "\"Sorry can not reply to anonymous senders\" <noreply@{$domain}>";
+      }
     } else {
       $reply_to = "\"{$alias}\" <{$sender}>";
     }
