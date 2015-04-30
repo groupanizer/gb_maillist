@@ -494,10 +494,12 @@ function gb_maillist_drush_command() {
     $sneaky_prefix = 'xLn2';
     if( strcasecmp( substr($alias,0,strlen($sneaky_prefix)), $sneaky_prefix) == 0 ) {
       $encoded_data = substr($alias,strlen($sneaky_prefix));
+watchdog('gb_maillist', "Received alias {$encoded_data}");
       $alias_struct = hex2bin($encoded_data);
+watchdog('gb_maillist', "Decoded alias {$alias_struct}");
       list($forum_tid,$original_sender_uid) = explode('-', $alias_struct);
       watchdog('gb_maillist', t("Decoded reply-to forum: @forum_tid, User: @uid "),
-        array('@alias'=>$forum_tid, '@uid'=>$original_sender_uid));
+        array('@forum_tid'=>$forum_tid, '@uid'=>$original_sender_uid));
       // sanity checks on the decoded data
       $forum_term = taxonomy_term_load($forum_tid);
       $forum_vocab = taxonomy_vocabulary_machine_name_load('forum');
