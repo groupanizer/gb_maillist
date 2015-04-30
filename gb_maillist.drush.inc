@@ -500,7 +500,7 @@ function gb_maillist_drush_command() {
           watchdog('gb_maillist', t("Decoded reply-to alias: @alias, User: @uid "),
             array('@alias'=>$alias, '@uid'=>$original_sender_uid));
         } else {
-          watchdog('gb_maillist', t("Decoded reply-to did not contain the necessary data"));
+          watchdog('gb_maillist', t("Decoded reply-to did not contain the necessary data: " . print_r($alias_struct,TRUE)));
         }
       } else {
         watchdog('gb_maillist', t("Could not decode reply-to header (@data)", array('@data'=>$encoded_data)));
