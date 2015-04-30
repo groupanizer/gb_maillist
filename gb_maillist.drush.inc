@@ -499,18 +499,15 @@ function gb_maillist_drush_command() {
     $sneaky_prefix = 'xLn2';
     if( strcasecmp( substr($alias,0,strlen($sneaky_prefix)), $sneaky_prefix) == 0 ) {
       $encoded_data = substr($alias,strlen($sneaky_prefix));
-watchdog('gb_maillist', "Received alias {$encoded_data}");
       $alias_struct = hex2bin($encoded_data);
-watchdog('gb_maillist', "Decoded alias {$alias_struct}");
       list($forum_tid,$original_sender_uid) = explode('-', $alias_struct);
       watchdog('gb_maillist', t("Decoded reply-to forum: @forum_tid, User: @uid "),
         array('@forum_tid'=>$forum_tid, '@uid'=>$original_sender_uid));
       // sanity checks on the decoded data
-      $forum_term = taxonomy_term_load(intval($forum_tid));
+      $term_vid = db_query("SELECT vid FROM taxonomy_term_data WHERE tid = :tid",
+        array(':tid'=>$forum_tid))->fetchField();
       $forum_vocab = taxonomy_vocabulary_machine_name_load('forums');
-watchdog('gb_maillist', print_r($forum_term,TRUE));
-watchdog('gb_maillist', print_r($forum_vocab,TRUE));
-      if( !$forum_term || $forum_term->vid != $forum_vocab->vid ) {
+      if( $term_vid != $forum_vocab->vid ) {
         watchdog('gb_maillist', t("Unfortunately the forum ID @forum_tid is not valid"),
           array('@forum_tid'=>$forum_tid));
         exit(EX_NOUSER);
