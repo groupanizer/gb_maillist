@@ -324,11 +324,13 @@ function gb_maillist_drush_command() {
         }
         
         // Check if file extension is allowed
+/*
         $extension = pathinfo(strtolower($attachment['filename']), 
             PATHINFO_EXTENSION);
         if (!in_array($extension, $extensions)) {
           return "Invalid file extension '{$extension}'"; 
         }
+*/
 
         // Check for PE file
         // could theoritically give false positives in very unlikely situations
@@ -492,28 +494,37 @@ function gb_maillist_drush_command() {
     $sneaky_prefix = 'xLn2';
     if( strcasecmp( substr($alias,0,strlen($sneaky_prefix)), $sneaky_prefix) == 0 ) {
       $encoded_data = substr($alias,strlen($sneaky_prefix));
-      if( $serialized_alias = base64_decode($encoded_data,TRUE) ) {
-        $alias_struct = unserialize($serialized_alias);
-        if( isset($alias_struct['a']) && isset($alias_struct['u']) ) {
-          $alias = $alias_struct['a'];
-          $original_sender_uid = $alias_struct['u'];
-          watchdog('gb_maillist', t("Decoded reply-to alias: @alias, User: @uid "),
-            array('@alias'=>$alias, '@uid'=>$original_sender_uid));
-        } else {
-          watchdog('gb_maillist', t("Decoded reply-to did not contain the necessary data: " . print_r($alias_struct,TRUE)));
-        }
-      } else {
-        watchdog('gb_maillist', t("Could not decode reply-to header (@data)", array('@data'=>$encoded_data)));
+      $alias_struct = hex2bin($encoded_data);
+      list($forum_tid,$original_sender_uid) = explode('-', $alias_struct);
+      watchdog('gb_maillist', t("Decoded reply-to forum: @forum_tid, User: @uid "),
+        array('@alias'=>$forum_tid, '@uid'=>$original_sender_uid));
+      // sanity checks on the decoded data
+      $forum_term = taxonomy_term_load($forum_tid);
+      $forum_vocab = taxonomy_vocabulary_machine_name_load('forum');
+      if( !$forum_term || $forum_term->vid != $forum_vocab->vid ) {
+        watchdog('gb_maillist', t("Unfortunately the forum ID @forum_tid is not valid"),
+          array('@forum_tid'=>$forum_tid));
+        exit(EX_NOUSER);
+      }
+      $original_sending_user = user_load($original_sender_uid);
+      if( !$original_sending_user ) {
+        watchdog('gb_maillist', t("Unfortunately the user ID @uid is not valid"),
+          array('@uid'=>$original_sending_user));
+        exit(EX_NOUSER);
       }
     } 
 
-    // Does a forum with alias $alias exist?
-    $record = _check_for_alias_record($alias);
-    if (!$record) {
-      watchdog('gb_maillist', "Mail rejected: forum does not exist {$alias}.");
-      exit(EX_NOUSER);
+    // Use the decoded forum tid from above, or look it up by alias
+    if( $forum_tid ) {
+      $tid = $forum_tid;
+    } else {
+      $record = _check_for_alias_record($alias);
+      if (!$record) {
+        watchdog('gb_maillist', "Mail rejected: forum does not exist {$alias}.");
+        exit(EX_NOUSER);
+      }
+      $tid = $record->tid;
     }
-    $tid = $record->tid;
     
     // Determine which account is sending the email (or anonymous if no match)
     $account = user_load_by_mail($sender);

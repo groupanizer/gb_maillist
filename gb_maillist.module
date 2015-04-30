@@ -210,12 +210,9 @@ include_once 'gb_maillist.features.inc';
       if( $user->uid > 0 ) {
         // for distribution lists, we code the original sender (if a real user)
         // so the recipient can reply directly to the sender
-        $alias_struct = array(
-          'a' => $alias,
-          'u' => $user->uid,
-        );
+        $alias_struct = array( "{$tid}-{$user->uid}");
         $sneaky_prefix = 'xLn2';
-        $encoded_alias = $sneaky_prefix . base64_encode(serialize($alias_struct));
+        $encoded_alias = $sneaky_prefix . bin2hex($alias_struct);
         $reply_to = "\"{$username}\" <{$encoded_alias}@{$domain}>";
       } else {
         watchdog('gb_maillist', "Anonymous user sending to distribution list");
