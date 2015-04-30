@@ -506,7 +506,7 @@ watchdog('gb_maillist', "Decoded alias {$alias_struct}");
       watchdog('gb_maillist', t("Decoded reply-to forum: @forum_tid, User: @uid "),
         array('@forum_tid'=>$forum_tid, '@uid'=>$original_sender_uid));
       // sanity checks on the decoded data
-      $forum_term = taxonomy_term_load($forum_tid);
+      $forum_term = taxonomy_term_load(intval($forum_tid));
       $forum_vocab = taxonomy_vocabulary_machine_name_load('forums');
 watchdog('gb_maillist', print_r($forum_term,TRUE));
 watchdog('gb_maillist', print_r($forum_vocab,TRUE));
