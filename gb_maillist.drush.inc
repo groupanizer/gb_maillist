@@ -446,8 +446,14 @@ function gb_maillist_drush_command() {
     module_load_include('inc', 'mimemail', 'includes/mimemail.incoming');
     $email = mimemail_parse($source); // parse e-mail into array
 
-    // before we do anything else, did we just send this mail?
-    watchdog('gb_maillist', "Whole email parsed: <pre>" . print_r($email,TRUE) . '</pre>');
+    // before we do anything else, did we just send this mail? because we do cc: ourselves...
+    //watchdog('gb_maillist', "Whole email parsed: <pre>" . print_r($email,TRUE) . '</pre>');
+    $domain = g3core_get_domain();
+    $message_id = $email['headers']['message-id'];
+    if( stripos($message_id, $domain) !== FALSE ) {
+watchdog('gb_maillist', 'Discarding an email we just sent');
+      return; // Don't bounce nor reply
+    }
 
     $to = isset($email['headers']['delivered-to']) ? 
         $email['headers']['delivered-to'] : 
@@ -543,7 +549,6 @@ function gb_maillist_drush_command() {
 
     // If this is a distribution list reply, just send the reply to the original sender
     // without checking permissions.  This mail will not be logged (other than watchdog).
-    $domain = g3core_get_domain();
     if( isset($original_sender_uid) ) {
       _send_to_original_sender($email, $original_sender_uid, $alias, $domain);
       return;
