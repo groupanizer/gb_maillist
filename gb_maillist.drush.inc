@@ -507,7 +507,7 @@ watchdog('gb_maillist', "Decoded alias {$alias_struct}");
         array('@forum_tid'=>$forum_tid, '@uid'=>$original_sender_uid));
       // sanity checks on the decoded data
       $forum_term = taxonomy_term_load($forum_tid);
-      $forum_vocab = taxonomy_vocabulary_machine_name_load('forum');
+      $forum_vocab = taxonomy_vocabulary_machine_name_load('forums');
       if( !$forum_term || $forum_term->vid != $forum_vocab->vid ) {
         watchdog('gb_maillist', t("Unfortunately the forum ID @forum_tid is not valid"),
           array('@forum_tid'=>$forum_tid));
