@@ -428,8 +428,6 @@ function gb_maillist_drush_command() {
       exit(EX_UNAVAILABLE);
     }
    
-    watchdog('gb_maillist', 'Accepting mail (not yet parsed)');
-    
     $file_uri = stream_get_contents(STDIN);
     // Hack.. OSX 'echo' utility claims to support -n and '\c' but annoyingly
     // it supports neither...
@@ -447,6 +445,9 @@ function gb_maillist_drush_command() {
     $source = file_get_contents($file_uri);
     module_load_include('inc', 'mimemail', 'includes/mimemail.incoming');
     $email = mimemail_parse($source); // parse e-mail into array
+
+    // before we do anything else, did we just send this mail?
+    watchdog('gb_maillist', "Whole email parsed: <pre>" . print_r($email,TRUE) . '</pre>');
 
     $to = isset($email['headers']['delivered-to']) ? 
         $email['headers']['delivered-to'] : 
@@ -473,18 +474,6 @@ function gb_maillist_drush_command() {
     $parsed_reply_to = _parse_string_for_emails($reply_to);
     $reply_to = $parsed_reply_to['emails'][0];
     
-    // If the e-mail is from our own domain, there is an erroneous loop
-    // TODO: this is not true in all cases - implement message ID checking instead
-    $domain = g3core_get_domain();
-/*
-//TODO: check the message IDs
-    if ($parsed_from['domain names'][0] == $domain ||
-        $parsed_reply_to['domain names'][0] == $domain) {
-      watchdog('gb_maillist', 'Terminated potential infinite loop.');
-      return; // Don't bounce nor reply
-    }
-*/
-
     // If the e-mail is directed to 'bounces' we can log it and exit
     if ($alias == 'bounces') {
       // Truncate message to first 6k and convert line breaks to <br />
@@ -554,6 +543,7 @@ function gb_maillist_drush_command() {
 
     // If this is a distribution list reply, just send the reply to the original sender
     // without checking permissions.  This mail will not be logged (other than watchdog).
+    $domain = g3core_get_domain();
     if( isset($original_sender_uid) ) {
       _send_to_original_sender($email, $original_sender_uid, $alias, $domain);
       return;
