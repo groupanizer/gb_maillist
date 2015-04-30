@@ -419,6 +419,8 @@ function gb_maillist_drush_command() {
     
   }  
   
+
+
   function drush_gb_maillist_incoming_mail() {
     if (variable_get('gb_maillist_incoming_disabled', FALSE)) {
       watchdog('gb_maillist', 'Rejecting incoming mail because incoming' .
@@ -426,7 +428,7 @@ function gb_maillist_drush_command() {
       exit(EX_UNAVAILABLE);
     }
    
-    watchdog('gb_maillist', 'Accepting incoming e-mail.');
+    watchdog('gb_maillist', 'Accepting mail (not yet parsed)');
     
     $file_uri = stream_get_contents(STDIN);
     // Hack.. OSX 'echo' utility claims to support -n and '\c' but annoyingly
@@ -474,11 +476,14 @@ function gb_maillist_drush_command() {
     // If the e-mail is from our own domain, there is an erroneous loop
     // TODO: this is not true in all cases - implement message ID checking instead
     $domain = g3core_get_domain();
+/*
+//TODO: check the message IDs
     if ($parsed_from['domain names'][0] == $domain ||
         $parsed_reply_to['domain names'][0] == $domain) {
       watchdog('gb_maillist', 'Terminated potential infinite loop.');
       return; // Don't bounce nor reply
     }
+*/
 
     // If the e-mail is directed to 'bounces' we can log it and exit
     if ($alias == 'bounces') {
