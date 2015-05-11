@@ -228,6 +228,7 @@ function gb_maillist_drush_command() {
             if ($cid) {
               _insert_received_email_record($tid, $inreplyto_nid, $cid, 
                   $source, $email['html']);
+              watchdog('gb_maillist', 'Matched thread by in-reply-to header');
             }
             return; 
           }
@@ -248,6 +249,8 @@ function gb_maillist_drush_command() {
         ->fieldCondition('taxonomy_forums', 'tid', $tid)
         ->execute();
     if ($result && count($result)) {
+      watchdog('gb_maillist', 'Would have matched thread by subject line - creating new topic');
+/*
       $node = reset($result['node']); // take the first match
       $cid = _post_comment_to_topic($node->nid, $email, $account);
       if ($cid) {
@@ -255,9 +258,10 @@ function gb_maillist_drush_command() {
             $source, $email['html']);
       }
       return;
+*/
     }    
    
-    // Couldn't find the topic!
+    // Couldn't find the original topic if there was one, so new thread
     $nid = _post_new_topic($tid, $email, $account);
     if ($nid) {
       _insert_received_email_record($tid, $nid, NULL, $source, $email['html']);
