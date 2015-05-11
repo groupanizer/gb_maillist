@@ -396,6 +396,12 @@ include_once 'gb_maillist.features.inc';
       $body = $_unfiltered_html;
     } else {
       $body = $comment->comment_body[LANGUAGE_NONE][0]['value'];
+      // if we're not in drush, we are in the web interface, so we should
+      // queue the mail for later
+      g3core_request_background_job('g3sendmail', 
+        array('nid'=>$comment->nid, 'cid'=>$comment->cid));
+      drupal_set_message(t("The reply was queued for sending."));
+      return;
     }
     
     $alt = 'To view this e-mail you need an HTML compatible e-mail client.';

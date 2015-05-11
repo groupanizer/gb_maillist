@@ -619,33 +619,58 @@ function drush_gb_maillist_send_queued_mail() {
     
   $metadata = _fetch_list_metadata_for_tid($tid);
   if (!$metadata) {
+    watchdog('gb_maillist', t('There is no mailing list on this forum.'), 'error');
     return; // there is no mailing list attached to this forum
   }
 
-  // Pass node body with summary as alt_body if it's available
-  $body = $node->body[LANGUAGE_NONE][0]['value'];
-  if (isset($node->body[LANGUAGE_NONE][0]['summary']) &&
-      !empty($node->body[LANGUAGE_NONE][0]['summary'])) {
-    $alt = drupal_html_to_text($node->body[LANGUAGE_NONE][0]['summary']);
-  } else {
-    $alt = 'To view this e-mail you need an HTML compatible e-mail client.';
-  }
+  // could be that we're sending a comment!
+  if( isset($data['cid']) ) {
 
-  if (0) {
-    $plain = ($node->body[LANGUAGE_NONE][0]['format'] === 'plain_text');
-  } else {
+    $comment = comment_load($data['cid']);
+    $body = $comment->comment_body[LANGUAGE_NONE][0]['value'];
+    $alt = 'To view this e-mail you need an HTML compatible e-mail client.';
     $plain = FALSE; // always send HTML
-  }
-  $subject = $node->title;
+    $subject = $comment->subject;
     
-  // gather the attached files
-  $fids = array();
-  if (isset($node->field_attachment[LANGUAGE_NONE])) {
-    foreach ($node->field_attachment[LANGUAGE_NONE] as $attachment) {
-      $fids[] = $attachment['fid'];
+    // grab files from comment
+    $fids = array();
+    if (isset($comment->field_attachment[LANGUAGE_NONE])) {
+      foreach ($comment->field_attachment[LANGUAGE_NONE] as $attachment) {
+        $fids[] = $attachment['fid'];
+      }
     }
-  }
+
+    watchdog('gb_maillist', 
+      t("Sending queued comment from drush. forum @tid, node @nid, comment @cid, @title",
+      array('@tid'=>$tid, '@nid'=>node->nid, '@cid' => $comment->cid, '@title'=>$node->title)));
+
+  } else { // must be the node 
+
+    // Pass node body with summary as alt_body if it's available
+    $body = $node->body[LANGUAGE_NONE][0]['value'];
+    if (isset($node->body[LANGUAGE_NONE][0]['summary']) &&
+        !empty($node->body[LANGUAGE_NONE][0]['summary'])) {
+      $alt = drupal_html_to_text($node->body[LANGUAGE_NONE][0]['summary']);
+    } else {
+      // TODO: this is stupid.  Send a text version of the body.
+      $alt = 'To view this e-mail you need an HTML compatible e-mail client.';
+    }
+
+    $plain = FALSE; // always send HTML
+    $subject = $node->title;
     
+    // gather the attached files
+    $fids = array();
+    if (isset($node->field_attachment[LANGUAGE_NONE])) {
+      foreach ($node->field_attachment[LANGUAGE_NONE] as $attachment) {
+        $fids[] = $attachment['fid'];
+      }
+    }
+    watchdog('gb_maillist', t("Sending queued node from drush. Forum @tid, Node @nid, @title",
+      array('@tid'=>$tid, '@nid'=>node->nid, '@title'=>$node->title)));
+
+  }
+   
   // dispatch will send for real (not background) since we're obviously in drush
   _dispatch_emails_for_post($node->nid, $metadata, $subject, $body, $alt,
       $update, $plain, $fids, FALSE); 
