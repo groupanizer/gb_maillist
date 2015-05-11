@@ -631,6 +631,9 @@ function drush_gb_maillist_send_queued_mail() {
     $alt = 'To view this e-mail you need an HTML compatible e-mail client.';
     $plain = FALSE; // always send HTML
     $subject = $comment->subject;
+    // important we set the user to the author of the comment
+    global $user;
+    $user = user_load($comment->uid);
     
     // grab files from comment
     $fids = array();
@@ -658,6 +661,9 @@ function drush_gb_maillist_send_queued_mail() {
 
     $plain = FALSE; // always send HTML
     $subject = $node->title;
+    // important we set the user to the author of the node
+    global $user;
+    $user = user_load($node->uid);
     
     // gather the attached files
     $fids = array();
