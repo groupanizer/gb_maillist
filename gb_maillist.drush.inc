@@ -641,8 +641,8 @@ function drush_gb_maillist_send_queued_mail() {
     }
 
     watchdog('gb_maillist', 
-      t("Sending queued comment from drush. forum @tid, node @nid, comment @cid, @title",
-      array('@tid'=>$tid, '@nid'=>node->nid, '@cid' => $comment->cid, '@title'=>$node->title)));
+      "Sending queued comment from drush: forum @tid, node @nid, comment @cid, @title",
+      array('@tid'=>$tid, '@nid'=>$node->nid, '@cid'=>$comment->cid, '@title'=>$node->title));
 
   } else { // must be the node 
 
@@ -666,8 +666,9 @@ function drush_gb_maillist_send_queued_mail() {
         $fids[] = $attachment['fid'];
       }
     }
-    watchdog('gb_maillist', t("Sending queued node from drush. Forum @tid, Node @nid, @title",
-      array('@tid'=>$tid, '@nid'=>node->nid, '@title'=>$node->title)));
+    watchdog('gb_maillist', 
+      "Sending queued node from drush: forum @tid, node @nid, @title",
+      array('@tid'=>$tid, '@nid'=>$node->nid, '@title'=>$node->title));
 
   }
    
