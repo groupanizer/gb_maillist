@@ -183,14 +183,14 @@ function gb_maillist_drush_command() {
       $comment->picture = $account->picture;
       $comment->is_anonymous = 0; /** @todo change when actually anonymous? */
       $comment->status = COMMENT_PUBLISHED;
-      //$comment->language = LANGUAGE_NONE
       $comment->subject = db_query('SELECT title FROM {node} WHERE nid = :nid', 
           array(':nid' => $nid))->fetchField();
       $comment->comment_body[LANGUAGE_NONE][0]['format'] = variable_get(
           'gb_maillist_filter_format');
+      $comment->comment_body[LANGUAGE_NONE][0]['value'] = $email['html'];
+
       $file_fields = _save_attachments_and_parse_inline_images(
           $nid, $email, $account);
-      $comment->comment_body[LANGUAGE_NONE][0]['value'] = $email['html'];
       for ($i = 0; $i < count($file_fields); $i++) {
         $comment->field_attachment[LANGUAGE_NONE][$i] = $file_fields[$i];
       }

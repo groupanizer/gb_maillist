@@ -272,7 +272,9 @@ include_once 'gb_maillist.features.inc';
         // Set headers for standard lists
         $email->add_header('Precedence', 'bulk');
         $email->add_header('List-Id', "<{$nid}.{$domain}>");
-        $email->add_header('Message-Id', "<{$nid}.{$tid}@{$domain}>");
+        // make sure the message ids are unique
+        $unique_id = uniqid();
+        $email->add_header('Message-Id', "<{$unique_id}.{$nid}.{$tid}@{$domain}>");
       }
       
       $emails[] = $email;
