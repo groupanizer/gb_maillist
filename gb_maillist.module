@@ -179,11 +179,13 @@ include_once 'gb_maillist.features.inc';
     $user = user_load($user->uid);
     
     // Construct a username
+    // NB: spaces seem to cause trouble somehow with from and reply-to, so we
+    // need to be careful to trim these fields
     if (isset($user->field_first_name[LANGUAGE_NONE])) {
-      $username = $user->field_first_name[LANGUAGE_NONE][0]['value'];
+      $username = trim($user->field_first_name[LANGUAGE_NONE][0]['value']);
       if (isset($user->field_last_name[LANGUAGE_NONE])) {
         $username .= ' ';
-        $username .= $user->field_last_name[LANGUAGE_NONE][0]['value'];
+        $username .= trim($user->field_last_name[LANGUAGE_NONE][0]['value']);
       }
     } else {
       $username = $user->name;

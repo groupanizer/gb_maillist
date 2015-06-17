@@ -455,7 +455,7 @@ function gb_maillist_drush_command() {
     $domain = g3core_get_domain();
     $message_id = $email['headers']['message-id'];
     if( stripos($message_id, $domain) !== FALSE ) {
-watchdog('gb_maillist', 'Discarding an email we just sent');
+      //watchdog('gb_maillist', 'Discarding an email we just sent');
       return; // Don't bounce nor reply
     }
 
