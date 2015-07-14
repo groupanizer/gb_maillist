@@ -249,8 +249,8 @@ function gb_maillist_drush_command() {
         ->fieldCondition('taxonomy_forums', 'tid', $tid)
         ->execute();
     if ($result && count($result)) {
-      watchdog('gb_maillist', 'Would have matched thread by subject line - creating new topic');
-/*
+
+      //watchdog('gb_maillist', 'Would have matched thread by subject line - creating new topic');
       $node = reset($result['node']); // take the first match
       $cid = _post_comment_to_topic($node->nid, $email, $account);
       if ($cid) {
@@ -258,7 +258,6 @@ function gb_maillist_drush_command() {
             $source, $email['html']);
       }
       return;
-*/
     }    
    
     // Couldn't find the original topic if there was one, so new thread
