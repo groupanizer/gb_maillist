@@ -566,12 +566,14 @@ function gb_maillist_drush_command() {
     
     // If user is anonymous
     if ($account->uid == 0) {
+
       // Check for SPAM
-      $result = _check_for_SPAM($email);
-      if ($result) {
-        watchdog('gb_maillist', 'Mail rejected: e-mail contains SPAM');
-        exit(EX_DATAERR);  
-      }
+      // NB: turning this off because it's useless
+      // $result = _check_for_SPAM($email);
+      //if ($result) {
+      //  watchdog('gb_maillist', 'Mail rejected: e-mail contains SPAM');
+      //  exit(EX_DATAERR);  
+      //}
       
       // Since the user is anonymous lets append something to the e-mail body
       // to let people know who this e-mail came from
