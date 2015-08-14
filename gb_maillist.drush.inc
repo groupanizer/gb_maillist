@@ -68,49 +68,56 @@ function gb_maillist_drush_command() {
     $file_fields = array();
     
     for ($i = 0; $i < count($email['attachments']); $i++) {
-      $attachment = $email['attachments'][$i];
-      $filename = $attachment['filename'];
+
+      try {
+
+        $attachment = $email['attachments'][$i];
+        $filename = $attachment['filename'];
       
-      // Save file data
-      $destination = "private://attachments/{$nid}/";
-      // Make sure the directory exists and is writable
-      file_prepare_directory($destination, 
+        // Save file data
+        // what the hell - Bryan hard-coded the attachment path??
+        $destination = "private://attachments/{$nid}/";
+        // Make sure the directory exists and is writable
+        file_prepare_directory($destination, 
           FILE_MODIFY_PERMISSIONS | FILE_CREATE_DIRECTORY);
-      $destination .= $filename;
-      if ($uri = file_unmanaged_save_data($attachment['content'], 
-          $destination, FILE_EXISTS_RENAME)) {
-        // Create and save file object
-        $file = new stdClass();
-        $file->fid = NULL;
-        $file->uri = $uri;
-        $file->filename = $filename;
-        $file->filemime = $attachment['filemime'];
-        $file->uid = $account->uid;
-        $file->status = FILE_STATUS_PERMANENT;
+        $destination .= $filename;
+        if ($uri = file_unmanaged_save_data($attachment['content'], 
+            $destination, FILE_EXISTS_RENAME)) {
+          // Create and save file object
+          $file = new stdClass();
+          $file->fid = NULL;
+          $file->uri = $uri;
+          $file->filename = $filename;
+          $file->filemime = $attachment['filemime'];
+          $file->uid = $account->uid;
+          $file->status = FILE_STATUS_PERMANENT;
     
-        $file = file_save($file);
+          $file = file_save($file);
                 
-        $file_fields[$i] = array(
-          'fid' => $file->fid,
-          'display' => 1, /** @todo investigate */
-          'description' => '',
-          'uid' => $account->uid,
-          'uri' => $file->uri,
-          'filename' => $file->filename,
-          'filemime' => $file->filemime,
-          'filesize' => $file->filesize,
-          'status' => 1, /** either FILE_STATUS_PERMANENT or published.. both 1  
-                           * @todo investigate
-                           */
-          'timestamp' => $file->timestamp,
-          'origname' => $filename,
-          'rdf_mapping' => NULL,
-        );
+          $file_fields[$i] = array(
+            'fid' => $file->fid,
+            'display' => 1, /** @todo investigate */
+            'description' => '',
+            'uid' => $account->uid,
+            'uri' => $file->uri,
+            'filename' => $file->filename,
+            'filemime' => $file->filemime,
+            'filesize' => $file->filesize,
+            'status' => 1, /** either FILE_STATUS_PERMANENT or published.. both 1  
+                             * @todo investigate
+                             */
+            'timestamp' => $file->timestamp,
+            'origname' => $filename,
+            'rdf_mapping' => NULL,
+          );
         
-        if (stristr($file->filemime, 'image') && $attachment['cid'] != NULL) {
-          $email['html'] = str_replace("cid:{$attachment['cid']}", 
-              file_create_url($file->uri), $email['html']);
+          if (stristr($file->filemime, 'image') && $attachment['cid'] != NULL) {
+            $email['html'] = str_replace("cid:{$attachment['cid']}", 
+                file_create_url($file->uri), $email['html']);
+          }
         }
+      } catch( Exception $e ) {
+        watchdog_exception('gb_maillist', $e);
       }
     }
 
@@ -131,17 +138,18 @@ function gb_maillist_drush_command() {
       $node->comment = 2;                 // 0 = disabled, 1 = RO, 2 = R/W
       $node->title = $email['headers']['subject'] ?
           $email['headers']['subject'] : t('(no subject)');
-      $node->status = 0;   // 0 = unpublished, 1 = published
-      //$node->language = LANGUAGE_NONE
+      $node->status = NODE_PUBLISHED;   // 0 = unpublished, 1 = published
       $node->taxonomy_forums[LANGUAGE_NONE][0]['tid'] = $tid;
       $node->body[LANGUAGE_NONE][0]['format'] = variable_get(
           'gb_maillist_filter_format');
       $node->body[LANGUAGE_NONE][0]['summary'] = '';
+
       // MimeMail creates the element html even for plaintext e-mails
       // and wraps the text in <p> tags.
       $node->body[LANGUAGE_NONE][0]['value'] = $email['html'];
       $node->validated = TRUE;
       node_save($node);
+
       // Now we have a node id and can write the attachments
       // into the proper directory structure
       $node = node_load($node->nid);
@@ -150,10 +158,11 @@ function gb_maillist_drush_command() {
       for ($i = 0; $i < count($file_fields); $i++) {
         $node->field_attachment[LANGUAGE_NONE][$i] = $file_fields[$i];
       }
+
       // Re-save
       $node->body[LANGUAGE_NONE][0]['value'] = $email['html']; // Updated
-      $node->status = NODE_PUBLISHED; // publish the node
       node_save($node);
+
       if (count($file_fields) > 0) {
         // Because we're updating a field and updating the forum node
         // hook_pre_storage_field_update is getting called again in forum.module
@@ -164,10 +173,11 @@ function gb_maillist_drush_command() {
         db_query('ALTER TABLE forum_index DROP INDEX dupidx');
       }
       
-      return $node->nid;
     } catch (Exception $e) {
       watchdog_exception('gb_maillist', $e);
     }
+
+    return $node->nid;
   }
 
   function _post_comment_to_topic($nid, $email, $account) {
