@@ -285,7 +285,6 @@ include_once 'gb_maillist.features.inc';
         // make sure the message ids are unique
         $unique_id = uniqid();
         $email->add_header('Message-Id', "<{$unique_id}.{$nid}.{$tid}@{$domain}>");
-        $email->add_header('MAIL FROM', "lists@groupanizer.com");
       }
       
       $emails[] = $email;
