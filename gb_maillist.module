@@ -203,7 +203,11 @@ include_once 'gb_maillist.features.inc';
     $domain = g3core_get_domain();
     $aliases = _fetch_list_aliases_for_tid($tid);
     $alias = $aliases[0]['alias']; // use the first alias in the list
-    $bounces = "bounces@{$domain}";
+
+// maybe always set the bounces to bounces@groupanizer.com?
+    //$bounces = "bounces@{$domain}";
+    $bounces = "bounces@groupanizer.com";
+
     $sender = "{$alias}@{$domain}";
     $from = "\"{$username} via {$alias}\" <{$sender}>";
 
