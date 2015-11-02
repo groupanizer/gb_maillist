@@ -326,10 +326,17 @@ include_once 'gb_maillist.features.inc';
     // we are "in drush" if we are being called from the g3incomingmail drush command
 
     if (_in_drush()) {
-      // Pass unfiltered body from incoming e-mail
       global $_unfiltered_html;
-      $body = $_unfiltered_html;
-      $alt = 'To view this e-mail you need an HTML compatible e-mail client.';
+      // if this is a new email coming in, we can grab the original body from a global we set in the drush command
+      if( isset($_unfiltered_html) ) {
+        $body = $_unfiltered_html;
+      } else {
+        $body = $node->body[LANGUAGE_NONE][0]['value'];
+      }
+      
+      // generate a plain-text version of the body
+      $alt = check_markup($body, 'plain_text');
+
     } else {
 
       // if we're not in drush, we are in the web interface, so we should
@@ -338,19 +345,8 @@ include_once 'gb_maillist.features.inc';
       drupal_set_message(t("The email was queued for sending."));
       return;
 
-
-/* NEVER USED now that we queue the whole job for sending
-      // Pass node body with summary as alt_body if it's available
-      $body = $node->body[LANGUAGE_NONE][0]['value'];
-      if (isset($node->body[LANGUAGE_NONE][0]['summary']) &&
-          !empty($node->body[LANGUAGE_NONE][0]['summary'])) {
-        $alt = drupal_html_to_text($node->body[LANGUAGE_NONE][0]['summary']);
-      } else {
-        $alt = 'To view this e-mail you need an HTML compatible e-mail client.';
-      }
-*/
-
     }
+
     
     if (0) {
       $plain = ($node->body[LANGUAGE_NONE][0]['format'] === 'plain_text');
@@ -416,8 +412,9 @@ include_once 'gb_maillist.features.inc';
       return;
     }
     
-    $alt = 'To view this e-mail you need an HTML compatible e-mail client.';
-    
+    // generate a plain-text version of the body
+    $alt = check_markup($body, 'plain_text');
+
     if (0) {
        $plain = ($comment->comment_body[LANGUAGE_NONE][0]['format'] 
           == 'plain_text');
