@@ -191,10 +191,12 @@ include_once 'gb_maillist.features.inc';
       $username = $user->name;
     }
     
-    // Append the prefix to the subject e.g. [board]
+    // Get rid of any existing prefixes
+    $subject = preg_replace("/^(RE:\s|FWD:\s)?(\[{$prefix}\]\s)?/i", '', $subject);
+    // prepend the prefix to the subject e.g. [board]
     $prefix = $metadata['prefix'];
     $subject = "[{$prefix}] {$subject}";      
-    // Append 'RE: ' if it's an outgoing comment
+    // Prepend 'RE: ' if it's an outgoing comment
     if ($in_reply) {
        $subject = "RE: {$subject}"; 
     }
