@@ -191,8 +191,9 @@ include_once 'gb_maillist.features.inc';
       $username = $user->name;
     }
     
-    // Get rid of any existing prefixes
-    $subject = preg_replace("/^(RE:\s|FWD:\s)?(\[{$prefix}\]\s)?/i", '', $subject);
+    // Get rid of any existing prefixes and anything in square brackets
+    $subject = preg_replace("/^(RE:\s*|FWD:\s*)/i", '', $subject);
+    $subject = preg_replace("/^(\[.*\]\s*)?/i", '', $subject);
     // prepend the prefix to the subject e.g. [board]
     $prefix = $metadata['prefix'];
     $subject = "[{$prefix}] {$subject}";      
