@@ -324,7 +324,7 @@ include_once 'gb_maillist.features.inc';
       // Pass unfiltered body from incoming e-mail
       global $_unfiltered_html;
       $body = $_unfiltered_html;
-      $alt = 'To view this e-mail you need an HTML compatible e-mail client.';
+      $alt = drupal_html_to_text($body);
     } else {
 
       // if we're not in drush, we are in the web interface, so we should
@@ -332,18 +332,6 @@ include_once 'gb_maillist.features.inc';
       g3core_request_background_job('g3sendmail', array('nid'=>$node->nid));
       drupal_set_message(t("The email was queued for sending."));
       return;
-
-
-/* NEVER USED now that we queue the whole job for sending
-      // Pass node body with summary as alt_body if it's available
-      $body = $node->body[LANGUAGE_NONE][0]['value'];
-      if (isset($node->body[LANGUAGE_NONE][0]['summary']) &&
-          !empty($node->body[LANGUAGE_NONE][0]['summary'])) {
-        $alt = drupal_html_to_text($node->body[LANGUAGE_NONE][0]['summary']);
-      } else {
-        $alt = 'To view this e-mail you need an HTML compatible e-mail client.';
-      }
-*/
 
     }
     
@@ -402,8 +390,6 @@ include_once 'gb_maillist.features.inc';
       global $_unfiltered_html;
       $body = $_unfiltered_html;
     } else {
-      $body = $comment->comment_body[LANGUAGE_NONE][0]['value'];
-      // if we're not in drush, we are in the web interface, so we should
       // queue the mail for later
       g3core_request_background_job('g3sendmail', 
         array('nid'=>$comment->nid, 'cid'=>$comment->cid));
@@ -411,7 +397,7 @@ include_once 'gb_maillist.features.inc';
       return;
     }
     
-    $alt = 'To view this e-mail you need an HTML compatible e-mail client.';
+    $alt = drupal_html_to_text($body);
     
     if (0) {
        $plain = ($comment->comment_body[LANGUAGE_NONE][0]['format'] 

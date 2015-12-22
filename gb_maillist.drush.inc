@@ -643,7 +643,7 @@ function drush_gb_maillist_send_queued_mail() {
 
     $comment = comment_load($data['cid']);
     $body = $comment->comment_body[LANGUAGE_NONE][0]['value'];
-    $alt = 'To view this e-mail you need an HTML compatible e-mail client.';
+    $alt = drupal_html_to_text($body);
     $plain = FALSE; // always send HTML
     $subject = $comment->subject;
     // important we set the user to the author of the comment
@@ -668,11 +668,8 @@ function drush_gb_maillist_send_queued_mail() {
     $body = $node->body[LANGUAGE_NONE][0]['value'];
     if (isset($node->body[LANGUAGE_NONE][0]['summary']) &&
         !empty($node->body[LANGUAGE_NONE][0]['summary'])) {
-      $alt = drupal_html_to_text($node->body[LANGUAGE_NONE][0]['summary']);
-    } else {
-      // TODO: this is stupid.  Send a text version of the body.
-      $alt = 'To view this e-mail you need an HTML compatible e-mail client.';
     }
+    $alt = drupal_html_to_text($body);
 
     $plain = FALSE; // always send HTML
     $subject = $node->title;
