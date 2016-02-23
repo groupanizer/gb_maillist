@@ -124,6 +124,9 @@ function gb_maillist_drush_command() {
     return $file_fields;
   }
 
+  /**
+   * Remove emoji utility
+   */
   function remove_emoji($text) {
 
     $emoji = array(
@@ -170,7 +173,7 @@ function gb_maillist_drush_command() {
 
       // Now we have a node id and can write the attachments
       // into the proper directory structure
-      $node = node_load($node->nid);
+      // $node = node_load($node->nid);
       $file_fields = _save_attachments_and_parse_inline_images(
           $node->nid, $email, $account);
       for ($i = 0; $i < count($file_fields); $i++) {
@@ -181,6 +184,7 @@ function gb_maillist_drush_command() {
       $node->body[LANGUAGE_NONE][0]['value'] = remove_emoji($email['html']); // Updated
       node_save($node);
 
+/*
       if (count($file_fields) > 0) {
         // Because we're updating a field and updating the forum node
         // hook_pre_storage_field_update is getting called again in forum.module
@@ -190,6 +194,7 @@ function gb_maillist_drush_command() {
             ' ADD UNIQUE INDEX dupidx (nid, tid, created)');
         db_query('ALTER TABLE forum_index DROP INDEX dupidx');
       }
+*/
       
     } catch (Exception $e) {
       watchdog_exception('gb_maillist', $e);
