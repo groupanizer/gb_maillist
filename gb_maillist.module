@@ -1022,8 +1022,9 @@ include_once 'gb_maillist.features.inc';
       ),
 
       // admin
-      'admin/config/groupanizer/maillists' => array(
-        'title' => t('Mailing lists'),
+      'g/admin/settings/maillists' => array(
+        'title' => t('Mailing list settings'),
+        'description' => t('Disable email, DKIM setup, copy original sender setting'),
         'page callback' => 'drupal_get_form',
         'page arguments' => array('gb_maillist_settings_form'),
         'access arguments' => array('administer forums'),
