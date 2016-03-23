@@ -245,8 +245,12 @@
     };
     
     $variables = array(
-      'header' => array(t('Board'), t('Topics'), t('Posts'), 
-          t('Last post'), t('Actions')),
+      'header' => array(
+        t('Board'), 
+        array('data'=>t('Topics'), 'class'=>array('coldrop')),
+        array('data'=>t('Posts'), 'class'=>array('coldrop')),
+        array('data'=>t('Last post'), 'class'=>array('coldrop')),
+        t('Actions')),
       'empty' => t("There are currently no forums."),
       'rows' => array(),
       'attributes' => array(),
@@ -283,9 +287,9 @@
           'no_striping' => FALSE,
           'data' => array(
             $name_markup . $alias_markup($forum->tid),
-            $forum->num_topics, 
-            $forum->num_posts, 
-            $last_post_markup($forum),
+            array('data'=> $forum->num_topics, 'class'=>array('coldrop')),
+            array('data'=> $forum->num_posts, 'class'=>array('coldrop')),
+            array('data'=> $last_post_markup($forum), 'class'=>array('coldrop')),
             $action_markup($forum->tid, $is_admin, FALSE),
           ),
         );
