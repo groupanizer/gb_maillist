@@ -73,7 +73,16 @@ function gb_maillist_drush_command() {
 
         $attachment = $email['attachments'][$i];
         $filename = $attachment['filename'];
-      
+
+        // Remove anything which isn't a word, whitespace, number
+        // or any of the following caracters -_~,;[]().
+        // If you don't need to handle multi-byte characters
+        // you can use preg_replace rather than mb_ereg_replace
+        // Thanks @Łukasz Rysiak!
+        $filename = mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $filename);
+        // Remove any runs of periods (thanks falstro!)
+        $filename = mb_ereg_replace("([\.]{2,})", '', $filename);
+
         // Save file data
         // what the hell - Bryan hard-coded the attachment path??
         $destination = "private://attachments/{$nid}/";
