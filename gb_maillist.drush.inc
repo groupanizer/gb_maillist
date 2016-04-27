@@ -597,13 +597,13 @@ function drush_gb_maillist_send_queued_mail() {
   // Load the node and 
   $tid = _get_forum_tid_from_topic_node($node);
   if (!$tid) {
-    watchdog('gb_maillist', t('Forum node has no attached tid'), 'error');
+    watchdog('gb_maillist', t('Forum node @nid has no attached tid', array('@nid'=>$forum_nid)));
     return;
   }
     
   $metadata = _fetch_list_metadata_for_tid($tid);
   if (!$metadata) {
-    watchdog('gb_maillist', t('There is no mailing list on this forum.'), 'error');
+    watchdog('gb_maillist', t('There is no mailing list on this forum.'));
     return; // there is no mailing list attached to this forum
   }
 
