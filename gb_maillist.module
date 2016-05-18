@@ -980,6 +980,26 @@ include_once 'gb_maillist.features.inc';
    */
   function gb_maillist_menu() {
     return array(
+
+      'g/comm/maillist/board' => array(
+        'title' => t('Discussion Boards / Mailing Lists'),
+        'page callback' => 'gb_maillist_forums_page',
+        'page arguments' => array(),
+        'access arguments' => array('view forums'),
+        'file' => 'gb_maillist.pages.inc',
+        'type' => MENU_NORMAL_ITEM,
+      ),
+
+      // temporary copy for member use - TODO: replace with simpler non-admin interface
+      'g/group/maillist/board' => array(
+        'title' => t('Email (Discussion boards)'),
+        'page callback' => 'gb_maillist_forums_page',
+        'page arguments' => array(),
+        'access arguments' => array('view forums'),
+        'file' => 'gb_maillist.pages.inc',
+        'type' => MENU_NORMAL_ITEM,
+      ),
+
       'g/comm/maillist/source/%/%/%' => array(
         'title' => t('View the original e-mail source'),
         'page callback' => 'gb_maillist_view_source_page',
@@ -1011,14 +1031,6 @@ include_once 'gb_maillist.features.inc';
         'access arguments' => array(TRUE),
         'file' => 'gb_maillist.pages.inc',
         'type' => MENU_CALLBACK,
-      ),
-      'g/comm/maillist/board' => array(
-        'title' => t('Discussion Boards / Mailing Lists'),
-        'page callback' => 'gb_maillist_forums_page',
-        'page arguments' => array(),
-        'access arguments' => array('view forums'),
-        'file' => 'gb_maillist.pages.inc',
-        'type' => MENU_NORMAL_ITEM,
       ),
 
       // admin

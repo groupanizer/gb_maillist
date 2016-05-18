@@ -167,9 +167,6 @@
           'container' => FALSE,
         ),
         array(
-          // Admin paths are automatically routed to the overlays it seems
-          // no need to add '#overlay=admin/structure/forum/edit/forum/%'
-          // to the base URL
           'path' => 'admin/structure/forum/edit/forum/%',
           'class' => 'g-maillist-edit',
           'title' => t('Edit'),
