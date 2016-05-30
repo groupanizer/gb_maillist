@@ -988,6 +988,7 @@ include_once 'gb_maillist.features.inc';
         'access arguments' => array('view forums'),
         'file' => 'gb_maillist.pages.inc',
         'type' => MENU_NORMAL_ITEM,
+        'weight' => 1,
       ),
 
       // temporary copy for member use - TODO: replace with simpler non-admin interface
