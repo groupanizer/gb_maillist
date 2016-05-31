@@ -41,6 +41,14 @@
   function gb_maillist_default_permissions() {
     $permissions = array();
   
+  $permissions['g3core communications area'] = array(
+    'name' => 'g3core communications area',
+    'roles' => array(
+      'Forum admin' => 'Forum admin',
+    ),
+    'module' => 'g3core',
+  );
+
     // Exported permission: 'view forums'.
     $permissions['view forums'] = array(
       'name' => 'view forums',
