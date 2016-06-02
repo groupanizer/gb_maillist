@@ -993,7 +993,7 @@ include_once 'gb_maillist.features.inc';
 
       // temporary copy for member use - TODO: replace with simpler non-admin interface
       'g/group/maillist/board' => array(
-        'title' => t('Email (Discussion boards)'),
+        'title' => t('Email (Discussion Boards)'),
         'page callback' => 'gb_maillist_forums_page',
         'page arguments' => array(),
         'access arguments' => array('view forums'),
