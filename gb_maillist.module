@@ -1187,6 +1187,88 @@ include_once 'gb_maillist.features.inc';
     }
   }
 
+  /**
+   * hook_block_info
+   */
+  function gb_maillist_block_info() {
+    $blocks['featured_discussions'] = array(
+      'info' => t("Featured discussion boards"),
+      'cache' => DRUPAL_CACHE_PER_USER,
+      'status' => TRUE,
+    );
+    return $blocks;
+  }
+
+  /**
+   * hook_block_view
+   */
+  function gb_maillist_block_view($delta = '') {
+    $block = array();
+    switch($delta) {
+      case 'featured_discussions':
+        $block['subject'] = 'Featured discussion boards';
+
+        $query = db_select('forum_index', 'f')
+          ->fields('f', array('nid', 'title', 'tid', 'last_comment_timestamp', 'comment_count'))
+          ->orderBy('tid')
+          ->orderBy('last_comment_timestamp', 'DESC');
+
+        $featured = variable_get('gb_maillist_featured_discussions', 0);
+        if( $featured ) {
+          $query->condition('tid', $featured, 'IN');
+        }
+
+        $result = $query->execute()->fetchAll();
+
+        $header = array('Topic', 'Replies', 'Latest Update');
+        $rows = array();
+
+        foreach($result as $item) {
+          $date = new DateTime(date("YmdHis", $item->last_comment_timestamp));
+          $date_str = $date->format(variable_get('g3core_date_format_date_only', 'Y-M-d'));
+
+          $rows[$item->tid][] = array(
+            l($item->title, 'node/'.$item->nid),
+            $item->comment_count,
+            $date_str,
+          );
+        }
+
+        if( $rows ) {
+          $block['content'] = 'Showing featured discussion boards.';
+          foreach($rows as $key => $row) {
+            $items = $row;
+            $limit = variable_get('gb_maillist_featured_limit', 5);
+            if( count($row) > $limit ) {
+              $items = array_slice($row, 0 , $limit);
+              $items[] = array(array(
+                'data' => l((count($row) - $limit).' more »', 'forum/'.$key),
+                'class' => 'rtecenter',
+                'colspan' => 3,
+              ));
+            }
+
+            $boards = array();
+            $forum_term = forum_forum_load(0);
+            foreach ($forum_term->forums as $tid => $forum) {
+              $boards[$tid] = $forum->name;
+            }
+
+            $block['content'] .= theme('table', array(
+              'header' => $header,
+              'rows' => $items,
+              'caption' => l($boards[$key], 'forum/'.$key),
+            ));
+          }
+        } else {
+          $block['content'] = 'No featured discussion boards found.';
+        }
+
+        break;
+    }
+
+    return $block;
+  }
 
   /**
    * Implements hook_gdash_blocks
@@ -1194,6 +1276,7 @@ include_once 'gb_maillist.features.inc';
   function gb_maillist_gdash_blocks() {
     return array(
       'views' => array('forums-recent_block', 'forums-recent_titles'),
+      'gb_maillist' => array('featured_discussions'),
     );
   }
 

@@ -30,7 +30,7 @@ function gb_maillist_settings_form($form, &$form_state) {
     'gb_maillist_strict_spam_filtering' => array(
       '#type' => 'checkbox',
       '#title' => t('Strict SPAM filtering'),
-      '#description' => t('If set SPAM filtering is more strict.' . 
+      '#description' => t('If set SPAM filtering is more strict.' .
           ' Less SPAM will get through but there will be more' .
           ' false positives.'),
       '#default_value' => variable_get(
@@ -95,7 +95,7 @@ function gb_maillist_settings_form($form, &$form_state) {
 
     $form['dkim']['instructions'] = array(
       '#type' => 'markup',
-      '#markup' => 
+      '#markup' =>
         t("<p>Please follow these steps:</p><ol>") .
         t("<li>Generate your keys by clicking the button (or paste them in if you already have some you would rather use)</li>") .
         t("<li>Save this page, so the fields at the bottom of the form are populated</li>") .
@@ -151,7 +151,35 @@ function gb_maillist_settings_form($form, &$form_state) {
       '#disabled' => TRUE,
     );
   }
- 
+
+  $form['gb_maillist_featured'] = array(
+    '#type' => 'fieldset',
+    '#title' => "Featured Discussion Boards settings",
+    '#description' => t("Customize the Featured Discussion Boards block"),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+
+  $board_options = array();
+  $forum_term = forum_forum_load(0);
+  foreach ($forum_term->forums as $tid => $forum) {
+    $board_options[$tid] = $forum->name;
+  }
+
+  $form['gb_maillist_featured']['gb_maillist_featured_limit'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Maximum number of topics to show per discussion board',
+    '#default_value' => variable_get('gb_maillist_featured_limit', 5),
+  );
+
+  $form['gb_maillist_featured']['gb_maillist_featured_discussions'] = array(
+    '#type' => 'select',
+    '#multiple' => TRUE,
+    '#title' => 'Show these discussion boards',
+    '#options' => $board_options,
+    '#default_value' => variable_get('gb_maillist_featured_discussions', 0),
+  );
+
   return system_settings_form($form);
 }
 
@@ -174,6 +202,12 @@ function gb_maillist_generate_keys($form, $form_values) {
   $form['dkim']['gl_mail_dkim_private_key']['#value'] = $privKey;
 
   return $form['dkim'];
+}
+
+function gb_maillist_settings_form_validate($form, $form_state) {
+  if( !ctype_digit($form_state['values']['gb_maillist_featured_limit']) ) {
+    form_set_error('gb_maillist_featured_limit', t("The limit topics number must be an integer"));
+  }
 }
 
 /*
