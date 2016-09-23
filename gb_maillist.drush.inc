@@ -519,9 +519,9 @@ function gb_maillist_drush_command() {
     
     // Determine which account is sending the email (or anonymous if no match)
     $account = user_load_by_mail($sender);
-    if (!$account) { // try and load from multiple_email
-      $uid = db_query('SELECT m.uid FROM {multiple_email} m' .
-          ' WHERE m.email = :email', array(':email' => $sender))->fetchField();
+    if (!$account) { // try and load from user_email
+      $uid = db_query('SELECT uid FROM user_email WHERE email = :email', 
+               array(':email' => $sender))->fetchField();
       if ($uid) {
         $account = user_load($uid);
       } 

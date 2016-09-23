@@ -19,7 +19,6 @@ dependencies[] = mailsystem
 dependencies[] = menu
 dependencies[] = mimemail
 dependencies[] = mollom
-dependencies[] = multiple_email
 dependencies[] = role_export
 dependencies[] = strongarm
 dependencies[] = text
