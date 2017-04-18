@@ -124,7 +124,7 @@ function gb_maillist_upgrade_form() {
 }
 function gb_maillist_upgrade_form_submit($form, &$form_state) {
   module_enable(array('gb_mail'));
-  drupal_set_message("The new email system has been enabld");
+  drupal_set_message("The new email system has been enabled");
   module_disable(array('gb_maillist', 'forum'));
   drupal_flush_all_caches();
   drupal_set_message("The old email system has been disabled");
