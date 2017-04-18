@@ -112,11 +112,38 @@
     
     return t('Failed to unsubscribe, please contact an administrator');
   }
-  
+
+/**
+ * Upgrade message and such
+ */
+function gb_maillist_upgrade_form() {
+  return array( 'upgrade' => array(
+    '#type' => 'submit',
+    '#value' => "Upgrade now",
+  ));
+}
+function gb_maillist_upgrade_form_submit($form, &$form_state) {
+  module_enable(array('gb_mail'));
+  drupal_set_message("The new email system has been enabld");
+  module_disable(array('gb_maillist', 'forum'));
+  drupal_flush_all_caches();
+  drupal_set_message("The old email system has been disabled");
+  drupal_set_message("Emails will be migrated over to the new system automatically, over the next 24 hours.");
+  drupal_set_message("Please take the following steps immediately, to enable your mail system:<ol><li>Click on <b>Convert old lists</b> below, to migrate your lists over to the new system</li><li>Check that they are configured correctly, make any necessary adjustments</li><li>Click on the <b>Mail Setup</b> tab below and follow the steps to configure your DNS</li></ol>");
+  $form_state['redirect'] = 'g/admin/settings/mail';
+}
+
+
+
   /** Page to see forum hierarchy and details */
   function gb_maillist_forums_page() {
  
     module_load_include('inc', 'gb_maillist', 'gb_maillist.queries');
+
+    if( user_access('administer email settings') ) {
+     $upgrade = drupal_get_form('gb_maillist_upgrade_form');
+     drupal_set_message(t("IMPORTANT NOTICE: This is the &quot;old&quot; email system and it will be unsupported on July 1, 2017. Please upgrade to the new system at a convenient time before then. Besides fixing several stubborn bugs, the new system adds new features like integrated spam filtering, open and click tracking, and a cleaner, simpler user interface. Your existing emails and lists will be moved over automatically, but you will have to configure DNS before the system will be fully operational.<br>!form", array('!form'=>drupal_render($upgrade))), 'warning');
+    }
 
     $user = g3core_get_user();
     $domain = g3core_get_domain();
