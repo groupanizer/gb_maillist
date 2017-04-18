@@ -1,7 +1,5 @@
 <?php
 
-  module_load_include('inc', 'g3core', 'g3core.utils');
-  
   /** Page to show the original e-mail source to admins */ 
   function gb_maillist_view_source_page($tid, $nid, $cid) {
     if (!is_numeric($tid)) {
@@ -117,6 +115,9 @@
   
   /** Page to see forum hierarchy and details */
   function gb_maillist_forums_page() {
+ 
+    module_load_include('inc', 'gb_maillist', 'gb_maillist.queries');
+
     $user = g3core_get_user();
     $domain = g3core_get_domain();
     
