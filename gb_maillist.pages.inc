@@ -142,7 +142,7 @@ function gb_maillist_upgrade_form_submit($form, &$form_state) {
 
     if( user_access('administer email settings') ) {
      $upgrade = drupal_get_form('gb_maillist_upgrade_form');
-     drupal_set_message(t("IMPORTANT NOTICE: This is the &quot;old&quot; email system and it will be unsupported on July 1, 2017. Please upgrade to the new system at a convenient time before then. Besides fixing several stubborn bugs, the new system adds new features like integrated spam filtering, open and click tracking, and a cleaner, simpler user interface. Your existing emails and lists will be moved over automatically, but you will have to configure DNS before the system will be fully operational.<br>!form", array('!form'=>drupal_render($upgrade))), 'warning');
+     drupal_set_message(t("IMPORTANT NOTICE: This is the &quot;old&quot; email system and it will be unsupported on June 1, 2017. Please upgrade to the new system at a convenient time before then. Besides fixing several stubborn bugs, the new system adds new features like integrated spam filtering, open and click tracking, and a cleaner, simpler user interface. Your existing emails and lists will be moved over automatically, but you will have to configure DNS before the system will be fully operational.<br>!form", array('!form'=>drupal_render($upgrade))), 'warning');
     }
 
     $user = g3core_get_user();
