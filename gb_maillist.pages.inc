@@ -125,9 +125,6 @@ function gb_maillist_upgrade_form() {
 function gb_maillist_upgrade_form_submit($form, &$form_state) {
   module_enable(array('gb_mail'));
   drupal_set_message("The new email system has been enabled");
-  module_disable(array('gb_maillist', 'forum'));
-  drupal_flush_all_caches();
-  drupal_set_message("The old email system has been disabled");
   drupal_set_message("Emails will be migrated over to the new system automatically, over the next 24 hours.");
   drupal_set_message("Please take the following steps immediately, to enable your mail system:<ol><li>Click on <b>Convert old lists</b> below, to migrate your lists over to the new system</li><li>Check that they are configured correctly, make any necessary adjustments</li><li>Click on the <b>Mail Setup</b> tab below and follow the steps to configure your DNS</li></ol>");
   $form_state['redirect'] = 'g/admin/settings/mail';
