@@ -1,7 +1,5 @@
 <?php
 
-  module_load_include('inc', 'g3core', 'g3core.utils');
-  
   /** Page to show the original e-mail source to admins */ 
   function gb_maillist_view_source_page($tid, $nid, $cid) {
     if (!is_numeric($tid)) {
@@ -126,7 +124,7 @@ function gb_maillist_upgrade_form() {
 }
 function gb_maillist_upgrade_form_submit($form, &$form_state) {
   module_enable(array('gb_mail'));
-  drupal_set_message("The new email system has been enabld");
+  drupal_set_message("The new email system has been enabled");
   module_disable(array('gb_maillist', 'forum'));
   drupal_flush_all_caches();
   drupal_set_message("The old email system has been disabled");
@@ -139,10 +137,12 @@ function gb_maillist_upgrade_form_submit($form, &$form_state) {
 
   /** Page to see forum hierarchy and details */
   function gb_maillist_forums_page() {
+ 
+    module_load_include('inc', 'gb_maillist', 'gb_maillist.queries');
 
     if( user_access('administer email settings') ) {
      $upgrade = drupal_get_form('gb_maillist_upgrade_form');
-     drupal_set_message(t("IMPORTANT NOTICE: This is the &quot;old&quot; email system and it will be unsupported on July 1, 2017. Please upgrade to the new system at a convenient time before then. Besides fixing several stubborn bugs, the new system adds new features like integrated spam filtering, open and click tracking, and a cleaner, simpler user interface. Your existing emails and lists will be moved over automatically, but you will have to configure DNS before the system will be fully operational.<br>!form", array('!form'=>drupal_render($upgrade))), 'warning');
+     drupal_set_message(t("IMPORTANT NOTICE: This is the &quot;old&quot; email system and it will be unsupported on June 1, 2017. Please upgrade to the new system at a convenient time before then. Besides fixing several stubborn bugs, the new system adds new features like integrated spam filtering, open and click tracking, and a cleaner, simpler user interface. Your existing emails and lists will be moved over automatically, but you will have to configure DNS before the system will be fully operational.<br>!form", array('!form'=>drupal_render($upgrade))), 'warning');
     }
 
     $user = g3core_get_user();
